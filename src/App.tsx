@@ -28,6 +28,15 @@ import UserProfilesManagement from "./pages/UserProfilesManagement";
 import AddProfile from "./pages/AddProfile";
 import FAQs from "./pages/FAQs";
 import AddFAQ from "./pages/AddFAQ";
+import Testimonials from "./pages/Testimonials";
+import AddTestimonial from "./pages/AddTestimonial";
+import CVSearch from "./pages/CVSearch";
+import CVStatusMaintenance from "./pages/CVStatusMaintenance";
+import AddCVStatus from "./pages/AddCVStatus";
+import Languages from "./pages/Languages";
+import AddLanguage from "./pages/AddLanguage";
+import Countries from "./pages/Countries";
+import AddCountry from "./pages/AddCountry";
 
 export default function App() {
   return (
@@ -58,6 +67,25 @@ export default function App() {
             {/* FAQs Pages */}
             <Route path="/faqs" element={<FAQs />} />
             <Route path="/add-faq" element={<AddFAQ />} />
+
+            {/* Testimonials Pages */}
+            <Route path="/testimonial" element={<Testimonials />} />
+            <Route path="/add-testimonial" element={<AddTestimonial />} />
+
+            {/* CV Search Pages */}
+            <Route path="/cv-search" element={<CVSearch />} />
+
+            {/* CV Status Maintenance Pages */}
+            <Route path="/cv-status-maintenance" element={<CVStatusMaintenance />} />
+            <Route path="/add-cv-status" element={<AddCVStatus />} />
+
+            {/* Languages Pages */}
+            <Route path="/languages" element={<Languages />} />
+            <Route path="/add-language" element={<AddLanguage />} />
+
+            {/* Countries Pages */}
+            <Route path="/countries" element={<Countries />} />
+            <Route path="/add-country" element={<AddCountry />} />
 
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />
