@@ -20,6 +20,14 @@ import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import AdminUsers from "./pages/AdminUsers";
 import AddAdminUsers from "./pages/AddAdminUsers";
+import Jobs from "./pages/Jobs";
+import AddJob from "./pages/AddJob";
+import Companies from "./pages/Companies";
+import AddCompany from "./pages/AddCompany";
+import UserProfilesManagement from "./pages/UserProfilesManagement";
+import AddProfile from "./pages/AddProfile";
+import FAQs from "./pages/FAQs";
+import AddFAQ from "./pages/AddFAQ";
 
 export default function App() {
   return (
@@ -34,6 +42,22 @@ export default function App() {
             {/* Admin Pages */}
             <Route path="/admin-users" element={<AdminUsers />} />
             <Route path="/add-admin-users" element={<AddAdminUsers />} />
+
+            {/* Jobs Pages */}
+            <Route path="/jobs" element={<Jobs />} />
+            <Route path="/add-job" element={<AddJob />} />
+
+            {/* Companies Pages */}
+            <Route path="/companies" element={<Companies />} />
+            <Route path="/add-company" element={<AddCompany />} />
+
+            {/* User Profiles Pages */}
+            <Route path="/user-profiles" element={<UserProfilesManagement />} />
+            <Route path="/add-profile" element={<AddProfile />} />
+
+            {/* FAQs Pages */}
+            <Route path="/faqs" element={<FAQs />} />
+            <Route path="/add-faq" element={<AddFAQ />} />
 
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />

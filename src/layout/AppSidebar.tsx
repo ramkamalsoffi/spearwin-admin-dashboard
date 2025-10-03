@@ -1,36 +1,32 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 
-// Assume these icons are imported from an icon library
 import {
-  BoxCubeIcon,
-  CalenderIcon,
   ChevronDownIcon,
-  GridIcon,
   HorizontaLDots,
-  ListIcon,
-  PageIcon,
   PieChartIcon,
   PlugInIcon,
-  TableIcon,
-  UserCircleIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 
-// Sample icons - you can replace these with your specific icons later
-const BoxIcon = () => <div className="w-6 h-6 bg-gray-400 rounded"></div>;
-const InfoIcon = () => <div className="w-6 h-6 bg-gray-400 rounded-full"></div>;
-const StarIcon = () => <div className="w-6 h-6 bg-gray-400" style={{clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'}}></div>;
-const SearchIcon = () => <div className="w-6 h-6 bg-gray-400 rounded-full border-2 border-transparent" style={{background: 'radial-gradient(circle at center, transparent 40%, currentColor 40%, currentColor 50%, transparent 50%)'}}></div>;
-const CheckIcon = () => <div className="w-6 h-6 bg-gray-400 rounded border-2"></div>;
-const LanguageIcon = () => <div className="w-6 h-6 bg-gray-400 rounded-full"></div>;
-const GlobeIcon = () => <div className="w-6 h-6 bg-gray-400 rounded-full"></div>;
-const MapIcon = () => <div className="w-6 h-6 bg-gray-400"></div>;
-const BuildingIcon = () => <div className="w-6 h-6 bg-gray-400"></div>;
-const PackageIcon = () => <div className="w-6 h-6 bg-gray-400 rounded"></div>;
-const AttributeIcon = () => <div className="w-6 h-6 bg-gray-400"></div>;
-const SettingsIcon = () => <div className="w-6 h-6 bg-gray-400 rounded-full"></div>;
-const LockIcon = () => <div className="w-6 h-6 bg-gray-400 rounded"></div>;
+// Custom sidebar icons
+const DashboardIcon = () => <img src="/images/sidebar-icons/dashboard-icon.png" alt="Dashboard" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
+const AdminIcon = () => <img src="/images/sidebar-icons/admin-icon.png" alt="Admin" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
+const JobIcon = () => <img src="/images/sidebar-icons/job-icon.png" alt="Jobs" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
+const CompaniesIcon = () => <img src="/images/sidebar-icons/companies-icon.png" alt="Companies" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
+const UserProfileIcon = () => <img src="/images/sidebar-icons/userprofile-icon.png" alt="User Profiles" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
+const CMSIcon = () => <img src="/images/sidebar-icons/cms-icon.png" alt="CMS" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
+const FAQIcon = () => <img src="/images/sidebar-icons/faq-icon.png" alt="FAQs" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
+const TestimonialIcon = () => <img src="/images/sidebar-icons/testimonial-icon.png" alt="Testimonial" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
+const CVSearchIcon = () => <img src="/images/sidebar-icons/cv -search-icon.png" alt="CV Search" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
+const CVManagementIcon = () => <img src="/images/sidebar-icons/cv-management.png" alt="CV Status Maintenance" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
+const LanguageIcon = () => <img src="/images/sidebar-icons/language-icon.png" alt="Languages" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
+const CountriesIcon = () => <img src="/images/sidebar-icons/countries-icon.png" alt="Countries" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
+const StatesIcon = () => <img src="/images/sidebar-icons/states-icon.png" alt="States" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
+const PackageIcon = () => <img src="/images/sidebar-icons/package-icon.png" alt="Packages" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
+const JobAttributeIcon = () => <img src="/images/sidebar-icons/job-attribute-icon.png" alt="Job Attributes" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
+const SettingsIcon = () => <img src="/images/sidebar-icons/settings (4) 1.png" alt="Site Settings" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
+const ManagePasswordIcon = () => <img src="/images/sidebar-icons/managepassword-icon.png" alt="Manage Password" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
 
 type NavItem = {
   name: string;
@@ -41,7 +37,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   {
-    icon: <GridIcon />,
+    icon: <DashboardIcon />,
     name: "Dashboard",
     path: "/",
   },
@@ -49,7 +45,7 @@ const navItems: NavItem[] = [
 
 const adminItems: NavItem[] = [
   {
-    icon: <UserCircleIcon />,
+    icon: <AdminIcon />,
     name: "Admin Users",
     path: "/admin-users",
   },
@@ -57,42 +53,42 @@ const adminItems: NavItem[] = [
 
 const moduleItems: NavItem[] = [
   {
-    icon: <BoxCubeIcon />,
+    icon: <JobIcon />,
     name: "Jobs",
     path: "/jobs",
   },
   {
-    icon: <BoxIcon />,
+    icon: <CompaniesIcon />,
     name: "Companies",
     path: "/companies",
   },
   {
-    icon: <UserCircleIcon />,
+    icon: <UserProfileIcon />,
     name: "User Profiles",
     path: "/user-profiles",
   },
   {
-    icon: <PageIcon />,
+    icon: <CMSIcon />,
     name: "CMS",
     path: "/cms",
   },
   {
-    icon: <InfoIcon />,
+    icon: <FAQIcon />,
     name: "FAQs",
     path: "/faqs",
   },
   {
-    icon: <StarIcon />,
+    icon: <TestimonialIcon />,
     name: "Testimonial",
     path: "/testimonial",
   },
   {
-    icon: <SearchIcon />,
+    icon: <CVSearchIcon />,
     name: "CV Search",
     path: "/cv-search",
   },
   {
-    icon: <CheckIcon />,
+    icon: <CVManagementIcon />,
     name: "CV Status Maintenance",
     path: "/cv-status-maintenance",
   },
@@ -108,17 +104,17 @@ const translationItems: NavItem[] = [
 
 const locationItems: NavItem[] = [
   {
-    icon: <GlobeIcon />,
+    icon: <CountriesIcon />,
     name: "Countries",
     path: "/countries",
   },
   {
-    icon: <MapIcon />,
+    icon: <StatesIcon />,
     name: "States",
     path: "/states",
   },
   {
-    icon: <BuildingIcon />,
+    icon: <CompaniesIcon />, // Using companies icon for cities
     name: "Cities",
     path: "/cities",
   },
@@ -134,7 +130,7 @@ const packageItems: NavItem[] = [
 
 const attributeItems: NavItem[] = [
   {
-    icon: <AttributeIcon />,
+    icon: <JobAttributeIcon />,
     name: "Job Attributes",
     path: "/job-attributes",
   },
@@ -147,7 +143,7 @@ const manageItems: NavItem[] = [
     path: "/site-settings",
   },
   {
-    icon: <LockIcon />,
+    icon: <ManagePasswordIcon />,
     name: "Manage Password",
     path: "/manage-password",
   },
@@ -163,7 +159,7 @@ const othersItems: NavItem[] = [
     ],
   },
   {
-    icon: <BoxCubeIcon />,
+    icon: <CMSIcon />, // Using CMS icon for UI Elements
     name: "UI Elements",
     subItems: [
       { name: "Alerts", path: "/alerts", pro: false },
