@@ -37,6 +37,15 @@ import Languages from "./pages/Languages";
 import AddLanguage from "./pages/AddLanguage";
 import Countries from "./pages/Countries";
 import AddCountry from "./pages/AddCountry";
+import States from "./pages/States";
+import AddStates from "./pages/AddStates";
+import Cities from "./pages/Cities";
+import AddCities from "./pages/AddCities";
+import Packages from "./pages/Packages";
+import AddPackage from "./pages/AddPackage";
+import JobAttributes from "./pages/JobAttributes";
+import ManagePassword from "./pages/ManagePassword";
+import SiteSettings from "./pages/SiteSettings";
 
 export default function App() {
   return (
@@ -86,6 +95,25 @@ export default function App() {
             {/* Countries Pages */}
             <Route path="/countries" element={<Countries />} />
             <Route path="/add-country" element={<AddCountry />} />
+
+            {/* Cities Pages */}
+            <Route path="/cities" element={<Cities />} />
+            <Route path="/add-cities" element={<AddCities />} />
+
+            {/* States Pages */}
+            <Route path="/states" element={<States />} />
+            <Route path="/add-states" element={<AddStates />} />
+
+            {/* Packages Pages */}
+            <Route path="/packages" element={<Packages />} />
+            <Route path="/add-package" element={<AddPackage />} />
+
+            {/* Job Attributes Pages */}
+            <Route path="/job-attributes" element={<JobAttributes />} />
+
+            {/* Manage Pages */}
+            <Route path="/manage-password" element={<ManagePassword />} />
+            <Route path="/site-settings" element={<SiteSettings />} />
 
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />
