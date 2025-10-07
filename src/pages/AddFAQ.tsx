@@ -40,7 +40,7 @@ export default function AddFAQ() {
   return (
     <>
       <PageMeta
-        title="Add FAQs | Spearwin Admin"
+        title="Add FAQs | spearwin-admin"
         description="Add new FAQ"
       />
       

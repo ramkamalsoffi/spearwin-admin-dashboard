@@ -91,7 +91,7 @@ export default function AddCVStatus() {
   return (
     <>
       <PageMeta
-        title="Add CV Status | Spearwin Admin"
+        title="Add CV Status | spearwin-admin"
         description="Add new CV status"
       />
       

@@ -116,7 +116,7 @@ export default function AddTestimonial() {
   return (
     <>
       <PageMeta
-        title="Add Testimonial | Spearwin Admin"
+        title="Add Testimonial | spearwin-admin"
         description="Add new testimonial"
       />
       

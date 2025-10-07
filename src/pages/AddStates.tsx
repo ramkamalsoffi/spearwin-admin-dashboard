@@ -92,7 +92,7 @@ export default function AddStates() {
   return (
     <>
       <PageMeta
-        title="Add States | Spearwin Admin"
+        title="Add States | spearwin-admin"
         description="Add new States"
       />
       

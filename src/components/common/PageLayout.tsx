@@ -18,14 +18,14 @@ export default function PageLayout({ title, children }: PageLayoutProps) {
   return (
     <>
       {/* Title Bar */}
-      <div className="px-30 py-4">
+      <div className="px-4 sm:px-6 lg:px-8 py-4">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-4">
           <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="px-30 py-4">
+      <div className="px-4 sm:px-6 lg:px-8 py-4">
         {children}
       </div>
     </>

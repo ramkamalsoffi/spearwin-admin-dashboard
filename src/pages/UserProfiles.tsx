@@ -8,7 +8,7 @@ export default function UserProfiles() {
   return (
     <>
       <PageMeta
-        title="User Profile | Spearwin Admin"
+        title="User Profile | spearwin-admin"
         description="User Profile"
       />
 

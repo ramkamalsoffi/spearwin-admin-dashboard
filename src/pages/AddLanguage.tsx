@@ -97,7 +97,7 @@ export default function AddLanguage() {
   return (
     <>
       <PageMeta
-        title="Add Languages | Spearwin Admin"
+        title="Add Languages | spearwin-admin"
         description="Add new language"
       />
       

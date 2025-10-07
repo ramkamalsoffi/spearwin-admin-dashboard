@@ -108,7 +108,7 @@ export default function AddCountry() {
   return (
     <>
       <PageMeta
-        title="Add Country | Spearwin Admin"
+        title="Add Country | spearwin-admin"
         description="Add new country"
       />
       

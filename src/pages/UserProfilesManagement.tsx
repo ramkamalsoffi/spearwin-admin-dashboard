@@ -227,21 +227,21 @@ export default function UserProfilesManagement() {
           <div className="overflow-x-auto">
             <Table className="w-full min-w-[700px]">
               <TableHeader>
-                <TableRow className="bg-muted/30 bg-gray-100 mx-4">
-                  <TableCell isHeader className="rounded-l-[20px] pl-6 pr-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Profile ID</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Name</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Location</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Contact Number</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Email</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Status</TableCell>
-                  <TableCell isHeader className="rounded-r-[20px] pl-3 pr-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Action</TableCell>
+                <TableRow className="bg-blue-50 mx-4">
+                  <TableCell isHeader className="rounded-l-[20px] pl-6 pr-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Profile ID</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Name</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Location</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Contact Number</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Email</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Status</TableCell>
+                  <TableCell isHeader className="rounded-r-[20px] pl-3 pr-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Action</TableCell>
                 </TableRow>
               </TableHeader>
               <TableBody className="bg-white divide-y divide-gray-200">
                 {userProfiles.map((profile) => (
                   <tr key={profile.id} className="hover:bg-gray-50">
-                    <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{profile.profileId}</td>
-                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900">{profile.name}</td>
+                    <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm font-medium text-gray-500">{profile.profileId}</td>
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{profile.name}</td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{profile.location}</td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{profile.contactNumber}</td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{profile.email}</td>

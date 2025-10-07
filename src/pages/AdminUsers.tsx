@@ -231,16 +231,16 @@ export default function AdminUsers() {
           <div className="overflow-x-auto">
             <Table className="w-full min-w-[700px]">
               <TableHeader>
-                <TableRow className="bg-muted/30 bg-gray-100 mx-4">
-                  <TableCell isHeader className="rounded-l-[20px] pl-8 pr-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                <TableRow className="bg-blue-50 mx-4">
+                  <TableCell isHeader className="rounded-l-[20px] pl-8 pr-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">
                      User Name
                   </TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Email</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Phone</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Role</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Last Login</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Status</TableCell>
-                  <TableCell isHeader className="rounded-r-[20px] pl-3 pr-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Action</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Email</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Phone</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Role</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Last Login</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Status</TableCell>
+                  <TableCell isHeader className="rounded-r-[20px] pl-3 pr-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Action</TableCell>
                 </TableRow>
               </TableHeader>
               <TableBody className="bg-white divide-y divide-gray-200">
@@ -258,12 +258,12 @@ export default function AdminUsers() {
                             }}
                           />
                         </div>
-                        <span className="text-sm font-medium text-gray-900">{user.name}</span>
+                        <span className="text-sm font-medium text-gray-500">{user.name}</span>
                       </div>
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{user.phone}</td>
-                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900">{user.role}</td>
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{user.role}</td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{user.lastLogin}</td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${

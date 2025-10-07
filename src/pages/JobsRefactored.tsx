@@ -111,7 +111,7 @@ export default function JobsRefactored() {
   return (
     <>
       <PageMeta
-        title="Jobs | Spearwin Admin"
+        title="Jobs | spearwin-admin"
         description="Manage jobs"
       />
       

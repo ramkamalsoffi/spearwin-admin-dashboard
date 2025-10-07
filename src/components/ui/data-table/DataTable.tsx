@@ -63,13 +63,13 @@ const DataTable: React.FC<DataTableProps> = ({
     <div className={`bg-white rounded-lg shadow-sm border border-gray-200 ${className}`}>
       <div className="overflow-x-auto">
         <Table>
-          <TableHeader className="bg-gray-50 border-b border-gray-200">
+          <TableHeader className="bg-blue-50 border-b border-gray-200">
             <TableRow>
               {columns.map((column) => (
                 <TableCell
                   key={column.key}
                   isHeader
-                  className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${column.className || ''}`}
+                  className={`px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider ${column.className || ''}`}
                 >
                   {column.label}
                 </TableCell>
@@ -77,7 +77,7 @@ const DataTable: React.FC<DataTableProps> = ({
               {(onEdit || onDelete) && (
                 <TableCell
                   isHeader
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider"
                 >
                   Action
                 </TableCell>

@@ -46,6 +46,9 @@ import AddPackage from "./pages/AddPackage";
 import JobAttributes from "./pages/JobAttributes";
 import ManagePassword from "./pages/ManagePassword";
 import SiteSettings from "./pages/SiteSettings";
+import CMS from "./pages/CMS";
+import AddCMS from "./pages/AddCMS";
+import AddTranslatedPage from "./pages/AddTranslatedPage";
 
 export default function App() {
   return (
@@ -72,6 +75,11 @@ export default function App() {
             {/* User Profiles Pages */}
             <Route path="/user-profiles" element={<UserProfilesManagement />} />
             <Route path="/add-profile" element={<AddProfile />} />
+
+            {/* CMS Pages */}
+            <Route path="/cms" element={<CMS />} />
+            <Route path="/add-cms" element={<AddCMS />} />
+            <Route path="/add-translated-page" element={<AddTranslatedPage />} />
 
             {/* FAQs Pages */}
             <Route path="/faqs" element={<FAQs />} />

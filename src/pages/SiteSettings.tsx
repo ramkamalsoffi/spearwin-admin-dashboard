@@ -38,7 +38,24 @@ const DropdownInput = ({
 };
 
 export default function SiteSettings() {
-  const [activeTab, setActiveTab] = useState("Email");
+  const [activeTab, setActiveTab] = useState("Site");
+  const [siteForm, setSiteForm] = useState({
+    siteLogo: "",
+    favicon: "",
+    siteName: "",
+    siteSlogan: "",
+    primaryPhone: "",
+    secondaryPhone: "",
+    fromEmailAddress: "",
+    fromEmailName: "",
+    defaultCountry: "",
+    countrySpecific: "",
+    defaultCurrencyCode: "",
+    defaultCvStatus: "",
+    defaultJob: "",
+    streetAddress: "",
+    siteGoogleMap: ""
+  });
   const [formData, setFormData] = useState({
     mailDriver: "SMTP",
     mailHost: "",
@@ -93,6 +110,13 @@ export default function SiteSettings() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSiteChange = (field: string, value: string) => {
+    setSiteForm(prev => ({
       ...prev,
       [field]: value
     }));
@@ -170,6 +194,105 @@ export default function SiteSettings() {
 
           {/* Tab Content */}
           <div className="px-6 py-4">
+            {activeTab === "Site" && (
+              <form onSubmit={(e) => { e.preventDefault(); console.log("Site settings:", siteForm); }} className="space-y-8">
+                {/* Uploads */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Site Logo</label>
+                    <div className="flex items-center gap-3">
+                      <label className="inline-flex items-center justify-center px-5 py-2 rounded-md bg-blue-900 hover:bg-blue-800 text-white text-sm cursor-pointer">
+                        Upload
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleSiteChange("siteLogo", e.target.files?.[0]?.name || "")}/>
+                      </label>
+                      {siteForm.siteLogo && <span className="text-sm text-gray-500 truncate max-w-[200px]">{siteForm.siteLogo}</span>}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Favicon</label>
+                    <div className="flex items-center gap-3">
+                      <label className="inline-flex items-center justify-center px-5 py-2 rounded-md bg-blue-900 hover:bg-blue-800 text-white text-sm cursor-pointer">
+                        Upload
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleSiteChange("favicon", e.target.files?.[0]?.name || "")}/>
+                      </label>
+                      {siteForm.favicon && <span className="text-sm text-gray-500 truncate max-w-[200px]">{siteForm.favicon}</span>}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Site Name</label>
+                    <input type="text" value={siteForm.siteName} onChange={(e) => handleSiteChange("siteName", e.target.value)} placeholder="Enter site name" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                  </div>
+                </div>
+
+                {/* Phones */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Site Slogan</label>
+                    <input type="text" value={siteForm.siteSlogan} onChange={(e) => handleSiteChange("siteSlogan", e.target.value)} placeholder="Enter site slogan" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Primary Phone</label>
+                    <input type="text" value={siteForm.primaryPhone} onChange={(e) => handleSiteChange("primaryPhone", e.target.value)} placeholder="Enter phone number" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Secondary Phone</label>
+                    <input type="text" value={siteForm.secondaryPhone} onChange={(e) => handleSiteChange("secondaryPhone", e.target.value)} placeholder="Enter phone number" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                  </div>
+                </div>
+
+                {/* Email From */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">From Email Address</label>
+                    <input type="email" value={siteForm.fromEmailAddress} onChange={(e) => handleSiteChange("fromEmailAddress", e.target.value)} placeholder="Enter email address" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">From Email Name</label>
+                    <input type="text" value={siteForm.fromEmailName} onChange={(e) => handleSiteChange("fromEmailName", e.target.value)} placeholder="Enter email name" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Default Country</label>
+                    <DropdownInput placeholder="Select country" value={siteForm.defaultCountry} onChange={(v) => handleSiteChange("defaultCountry", v)} options={[{ value: "in", label: "India" }, { value: "us", label: "United States" }]} />
+                  </div>
+                </div>
+
+                {/* Country specific & codes */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Make site specific to this country?</label>
+                    <DropdownInput placeholder="Select yes or no" value={siteForm.countrySpecific} onChange={(v) => handleSiteChange("countrySpecific", v)} options={[{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Default Currency Code</label>
+                    <DropdownInput placeholder="Enter currency code" value={siteForm.defaultCurrencyCode} onChange={(v) => handleSiteChange("defaultCurrencyCode", v)} options={[{ value: "INR", label: "INR" }, { value: "USD", label: "USD" }]} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Default CV Status</label>
+                    <DropdownInput placeholder="Select status" value={siteForm.defaultCvStatus} onChange={(v) => handleSiteChange("defaultCvStatus", v)} options={[{ value: "active", label: "Active" }, { value: "inactive", label: "Inactive" }]} />
+                  </div>
+                </div>
+
+                {/* Job, Address, Map */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Default job</label>
+                    <DropdownInput placeholder="Default job" value={siteForm.defaultJob} onChange={(v) => handleSiteChange("defaultJob", v)} options={[{ value: "default", label: "Default job" }]} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Street Address</label>
+                    <input type="text" value={siteForm.streetAddress} onChange={(e) => handleSiteChange("streetAddress", e.target.value)} placeholder="Enter Address" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Site Google Map</label>
+                    <input type="text" value={siteForm.siteGoogleMap} onChange={(e) => handleSiteChange("siteGoogleMap", e.target.value)} placeholder="Enter Address" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <button className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium">Upload</button>
+                </div>
+              </form>
+            )}
             {activeTab === "Email" && (
               <form onSubmit={handleSubmit} className="space-y-8">
                 {/* Mail Driver */}
@@ -1016,12 +1139,7 @@ export default function SiteSettings() {
               </form>
             )}
 
-            {/* Other tabs content can be added here */}
-            {activeTab !== "Email" && activeTab !== "Social Network" && activeTab !== "Manage Ads" && activeTab !== "Captcha" && activeTab !== "Social Media Login" && activeTab !== "Payment Gateways" && activeTab !== "Mail Chimp" && activeTab !== "Google Analytics" && activeTab !== "jobg8 API" && (
-              <div className="text-center py-8">
-                <p className="text-gray-500">Settings for {activeTab} will be implemented here.</p>
-              </div>
-            )}
+          
           </div>
         </div>
       </div>

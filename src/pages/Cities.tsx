@@ -220,22 +220,22 @@ export default function Cities() {
           <div className="overflow-x-auto">
             <Table className="w-full min-w-[700px]">
               <TableHeader>
-                <TableRow className="bg-muted/30 bg-gray-100 mx-4">
-                  <TableCell isHeader className="rounded-l-[20px] pl-6 pr-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Language</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">State</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">City</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Default</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Status</TableCell>
-                  <TableCell isHeader className="rounded-r-[20px] pl-3 pr-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Action</TableCell>
+                <TableRow className="bg-blue-50 mx-4">
+                  <TableCell isHeader className="rounded-l-[20px] pl-6 pr-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Language</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">State</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">City</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Default</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Status</TableCell>
+                  <TableCell isHeader className="rounded-r-[20px] pl-3 pr-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Action</TableCell>
                 </TableRow>
               </TableHeader>
               <TableBody className="bg-white divide-y divide-gray-200">
                 {citiesData.map((row) => (
                   <tr key={row.id} className="hover:bg-gray-50">
-                    <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm text-gray-900">{row.language}</td>
-                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900">{row.state}</td>
-                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900">{row.city}</td>
-                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900">{row.isDefault ? "Yes" : "No"}</td>
+                    <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm text-gray-500">{row.language}</td>
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{row.state}</td>
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{row.city}</td>
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{row.isDefault ? "Yes" : "No"}</td>
                     <td className="px-3 py-3 whitespace-nowrap"><StatusBadge status={row.status.toLowerCase() as "active" | "inactive"} /></td>
                     <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center gap-2">
