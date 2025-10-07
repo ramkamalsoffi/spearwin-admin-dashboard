@@ -7,10 +7,23 @@ export default function Alerts() {
   return (
     <>
       <PageMeta
-        title="React.js Alerts Dashboard | TailAdmin - React.js Admin Dashboard Template"
-        description="This is React.js Alerts Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        title="Alerts | spearwin-admin"
+        description="UI Elements - Alerts"
       />
-      <PageBreadcrumb pageTitle="Alerts" />
+      
+      {/* Title Bar */}
+      <div className="px-4 sm:px-6 lg:px-30 ">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2">
+          <PageBreadcrumb 
+            items={[
+              { label: "Dashboard", path: "/" },
+              { label: "UI Elements", path: "/alerts" },
+              { label: "Alerts" }
+            ]}
+            showAdmin={true}
+          />
+        </div>
+      </div>
       <div className="space-y-5 sm:space-y-6">
         <ComponentCard title="Success Alert">
           <Alert

@@ -5,10 +5,22 @@ export default function Blank() {
   return (
     <div>
       <PageMeta
-        title="React.js Blank Dashboard | TailAdmin - Next.js Admin Dashboard Template"
-        description="This is React.js Blank Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        title="Blank Page | spearwin-admin"
+        description="Blank Page"
       />
-      <PageBreadcrumb pageTitle="Blank Page" />
+      
+      {/* Title Bar */}
+      <div className="px-4 sm:px-6 lg:px-30 ">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2">
+          <PageBreadcrumb 
+            items={[
+              { label: "Dashboard", path: "/" },
+              { label: "Blank Page" }
+            ]}
+            showAdmin={true}
+          />
+        </div>
+      </div>
       <div className="min-h-screen rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/[0.03] xl:px-10 xl:py-12">
         <div className="mx-auto w-full max-w-[630px] text-center">
           <h3 className="mb-4 font-semibold text-gray-800 text-theme-xl dark:text-white/90 sm:text-2xl">

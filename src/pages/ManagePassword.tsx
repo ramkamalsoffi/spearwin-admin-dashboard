@@ -1,5 +1,6 @@
 import { useState } from "react";
 import PageMeta from "../components/common/PageMeta";
+import PageBreadcrumb from "../components/common/PageBreadCrumb";
 
 export default function ManagePassword() {
   const [formData, setFormData] = useState({
@@ -26,18 +27,24 @@ export default function ManagePassword() {
   return (
     <>
       <PageMeta
-        title="Manage Password | Spearwin Admin"
+        title="Manage Password | spearwin-admin"
         description="Manage Password"
       />
       
       {/* Title Bar */}
-      <div className="px-30 py-4">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-4">
-          <h1 className="text-xl font-semibold text-gray-900">Manage Password</h1>
+      <div className="px-4 sm:px-6 lg:px-30 py-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-3">
+          <PageBreadcrumb 
+            items={[
+              { label: "Dashboard", path: "/" },
+              { label: "Manage Password" }
+            ]}
+            showAdmin={true}
+          />
         </div>
       </div>
 
-      <div className="px-30 py-4">
+      <div className="px-4 sm:px-6 lg:px-30 py-2">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <form onSubmit={handleSubmit} className="p-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -75,7 +82,7 @@ export default function ManagePassword() {
                 <div className="pt-4">
                   <button
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors"
+                    className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                   >
                     Submit
                   </button>

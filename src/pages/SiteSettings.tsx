@@ -1,5 +1,6 @@
 import { useState } from "react";
 import PageMeta from "../components/common/PageMeta";
+import PageBreadcrumb from "../components/common/PageBreadCrumb";
 
 // Dropdown Input Component
 const DropdownInput = ({ 
@@ -127,19 +128,25 @@ export default function SiteSettings() {
   return (
     <>
       <PageMeta
-        title="Site Settings | Spearwin Admin"
+        title="Site Settings | spearwin-admin"
         description="Manage Site Settings"
       />
       
       {/* Title Bar */}
-      <div className="px-30 py-4">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-4">
-          <h1 className="text-xl font-semibold text-gray-900">Site Settings</h1>
+      <div className="px-4 sm:px-6 lg:px-30 ">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2">
+          <PageBreadcrumb 
+            items={[
+              { label: "Dashboard", path: "/" },
+              { label: "Site Settings" }
+            ]}
+            showAdmin={true}
+          />
         </div>
       </div>
 
-      <div className="px-30 py-4">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="px-4 sm:px-6 lg:px-30 py-4">
+        <div className="bg-white rounded-[10px] shadow-sm border border-gray-200">
           {/* Tab Navigation */}
           <div className="bg-white px-6 py-4">
             <nav className="flex overflow-x-auto scrollbar-hide">
@@ -339,7 +346,7 @@ export default function SiteSettings() {
                 <div className="pt-6">
                   <button
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors"
+                    className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                   >
                     Save Settings
                   </button>
@@ -412,7 +419,7 @@ export default function SiteSettings() {
                 <div className="pt-6">
                   <button
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors"
+                    className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                   >
                     Upload
                   </button>
@@ -513,7 +520,7 @@ export default function SiteSettings() {
                 <div className="pt-6">
                   <button
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors"
+                    className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                   >
                     Upload
                   </button>
@@ -567,7 +574,7 @@ export default function SiteSettings() {
                 <div className="pt-6">
                   <button
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors"
+                    className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                   >
                     Upload
                   </button>
@@ -640,7 +647,7 @@ export default function SiteSettings() {
                 <div className="pt-6">
                   <button
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors"
+                    className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                   >
                     Upload
                   </button>
@@ -830,7 +837,7 @@ export default function SiteSettings() {
                 <div className="pt-6">
                   <button
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors"
+                    className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                   >
                     Upload
                   </button>
@@ -887,7 +894,7 @@ export default function SiteSettings() {
                 <div className="pt-6">
                   <button
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors"
+                    className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                   >
                     Upload
                   </button>
@@ -944,7 +951,7 @@ export default function SiteSettings() {
                 <div className="pt-6">
                   <button
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors"
+                    className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                   >
                     Upload
                   </button>
@@ -1001,7 +1008,7 @@ export default function SiteSettings() {
                 <div className="pt-6">
                   <button
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors"
+                    className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                   >
                     Upload
                   </button>

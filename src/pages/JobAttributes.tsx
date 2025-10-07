@@ -1,5 +1,6 @@
 import { useState } from "react";
 import PageMeta from "../components/common/PageMeta";
+import PageBreadcrumb from "../components/common/PageBreadCrumb";
 
 // Job Attribute Card Component
 const JobAttributeCard = ({ 
@@ -12,7 +13,7 @@ const JobAttributeCard = ({
   onAddNew: () => void;
 }) => {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-[10px] shadow-sm border border-gray-200 p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
       
       <div className="space-y-3 mb-6">
@@ -36,7 +37,7 @@ const JobAttributeCard = ({
       
       <div
         onClick={onAddNew}
-        className="text-blue-600 hover:text-blue-700 cursor-pointer text-sm font-medium transition-colors"
+        className="text-blue-900 hover:text-blue-800 cursor-pointer text-sm font-medium transition-colors"
       >
         + Add New
       </div>
@@ -137,18 +138,24 @@ export default function JobAttributes() {
   return (
     <>
       <PageMeta
-        title="Job Attributes | Spearwin Admin"
+        title="Job Attributes | spearwin-admin"
         description="Manage Job Attributes"
       />
       
       {/* Title Bar */}
-      <div className="px-30 py-4">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-4">
-          <h1 className="text-xl font-semibold text-gray-900">Job Attributes</h1>
+      <div className="px-4 sm:px-6 lg:px-30 ">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2">
+          <PageBreadcrumb 
+            items={[
+              { label: "Dashboard", path: "/" },
+              { label: "Job Attributes" }
+            ]}
+            showAdmin={true}
+          />
         </div>
       </div>
 
-      <div className="px-30 py-4">
+      <div className="px-4 sm:px-6 lg:px-30 py-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Row 1 */}
           <JobAttributeCard

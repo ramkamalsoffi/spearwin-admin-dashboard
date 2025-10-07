@@ -15,10 +15,23 @@ export default function FormElements() {
   return (
     <div>
       <PageMeta
-        title="React.js Form Elements Dashboard | TailAdmin - React.js Admin Dashboard Template"
-        description="This is React.js Form Elements  Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        title="Form Elements | spearwin-admin"
+        description="Forms - Form Elements"
       />
-      <PageBreadcrumb pageTitle="From Elements" />
+      
+      {/* Title Bar */}
+      <div className="px-4 sm:px-6 lg:px-30 ">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2">
+          <PageBreadcrumb 
+            items={[
+              { label: "Dashboard", path: "/" },
+              { label: "Forms", path: "/form-elements" },
+              { label: "Form Elements" }
+            ]}
+            showAdmin={true}
+          />
+        </div>
+      </div>
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <div className="space-y-6">
           <DefaultInputs />

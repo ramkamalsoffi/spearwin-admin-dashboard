@@ -7,10 +7,23 @@ export default function Avatars() {
   return (
     <>
       <PageMeta
-        title="React.js Avatars Dashboard | TailAdmin - React.js Admin Dashboard Template"
-        description="This is React.js Avatars Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        title="Avatars | spearwin-admin"
+        description="UI Elements - Avatars"
       />
-      <PageBreadcrumb pageTitle="Avatars" />
+      
+      {/* Title Bar */}
+      <div className="px-4 sm:px-6 lg:px-30 ">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2">
+          <PageBreadcrumb 
+            items={[
+              { label: "Dashboard", path: "/" },
+              { label: "UI Elements", path: "/avatars" },
+              { label: "Avatars" }
+            ]}
+            showAdmin={true}
+          />
+        </div>
+      </div>
       <div className="space-y-5 sm:space-y-6">
         <ComponentCard title="Default Avatar">
           {/* Default Avatar (No Status) */}

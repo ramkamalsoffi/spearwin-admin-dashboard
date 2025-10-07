@@ -8,10 +8,23 @@ export default function Badges() {
   return (
     <div>
       <PageMeta
-        title="React.js Badges Dashboard | TailAdmin - React.js Admin Dashboard Template"
-        description="This is React.js Badges Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        title="Badges | spearwin-admin"
+        description="UI Elements - Badges"
       />
-      <PageBreadcrumb pageTitle="Badges" />
+      
+      {/* Title Bar */}
+      <div className="px-4 sm:px-6 lg:px-30 ">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2">
+          <PageBreadcrumb 
+            items={[
+              { label: "Dashboard", path: "/" },
+              { label: "UI Elements", path: "/badge" },
+              { label: "Badges" }
+            ]}
+            showAdmin={true}
+          />
+        </div>
+      </div>
       <div className="space-y-5 sm:space-y-6">
         <ComponentCard title="With Light Background">
           <div className="flex flex-wrap gap-4 sm:items-center sm:justify-center">

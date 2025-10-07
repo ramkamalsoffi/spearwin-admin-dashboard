@@ -10,10 +10,23 @@ export default function Videos() {
   return (
     <>
       <PageMeta
-        title="React.js Videos Tabs | TailAdmin - React.js Admin Dashboard Template"
-        description="This is React.js Videos page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        title="Videos | spearwin-admin"
+        description="UI Elements - Videos"
       />
-      <PageBreadcrumb pageTitle="Videos" />
+      
+      {/* Title Bar */}
+      <div className="px-4 sm:px-6 lg:px-30 ">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2">
+          <PageBreadcrumb 
+            items={[
+              { label: "Dashboard", path: "/" },
+              { label: "UI Elements", path: "/videos" },
+              { label: "Videos" }
+            ]}
+            showAdmin={true}
+          />
+        </div>
+      </div>
       <div className="grid grid-cols-1 gap-5 sm:gap-6 xl:grid-cols-2">
         <div className="space-y-5 sm:space-y-6">
           <ComponentCard title="Video Ratio 16:9">

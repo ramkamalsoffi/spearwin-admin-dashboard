@@ -7,10 +7,23 @@ export default function LineChart() {
   return (
     <>
       <PageMeta
-        title="React.js Chart Dashboard | TailAdmin - React.js Admin Dashboard Template"
-        description="This is React.js Chart Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        title="Line Chart | spearwin-admin"
+        description="Charts - Line Chart"
       />
-      <PageBreadcrumb pageTitle="Line Chart" />
+      
+      {/* Title Bar */}
+      <div className="px-4 sm:px-6 lg:px-30 ">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2">
+          <PageBreadcrumb 
+            items={[
+              { label: "Dashboard", path: "/" },
+              { label: "Charts", path: "/line-chart" },
+              { label: "Line Chart" }
+            ]}
+            showAdmin={true}
+          />
+        </div>
+      </div>
       <div className="space-y-6">
         <ComponentCard title="Line Chart 1">
           <LineChartOne />
