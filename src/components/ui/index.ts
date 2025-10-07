@@ -9,5 +9,5 @@ export { default as DataTable } from './data-table/DataTable';
 export { Table, TableHeader, TableBody, TableRow, TableCell } from './table';
 export { default as Alert } from './alert/Alert';
 export { default as Avatar } from './avatar/Avatar';
-export { default as Dropdown } from './dropdown/Dropdown';
-export { default as Modal } from './modal';
+export { Dropdown } from './dropdown/Dropdown';
+export { Modal } from './modal';
