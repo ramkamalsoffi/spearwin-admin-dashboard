@@ -1,17 +1,39 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
+import { jobService } from "../services";
+import { CreateJobRequest } from "../services/types";
 
 export default function AddJob() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  
   const [formData, setFormData] = useState({
-    jobTitle: "",
-    companyName: "",
-    location: "",
+    title: "",
+    companyId: "",
+    description: "",
     jobType: "",
-    jobDescription: "",
+    workMode: "",
+    experienceLevel: "",
     status: ""
+  });
+
+  // TanStack Query mutation for creating job
+  const createJobMutation = useMutation({
+    mutationFn: (jobData: CreateJobRequest) => jobService.createJob(jobData),
+    onSuccess: (response) => {
+      toast.success("Job created successfully!");
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      navigate('/jobs');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || "Failed to create job";
+      toast.error(errorMessage);
+      console.error("Error creating job:", error);
+    },
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -24,22 +46,44 @@ export default function AddJob() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Adding new job:", formData);
-    // Here you would typically make an API call to add the job
-    // For now, we'll just log the data and redirect back
     
-    // Reset form
-    setFormData({
-      jobTitle: "",
-      companyName: "",
-      location: "",
-      jobType: "",
-      jobDescription: "",
-      status: ""
-    });
-    
-    // Redirect back to jobs page
-    navigate("/jobs");
+    // Validate form data
+    if (!formData.title || !formData.companyId || !formData.description || 
+        !formData.jobType || !formData.workMode || !formData.experienceLevel || !formData.status) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    // Validate description length
+    if (formData.description.length < 10) {
+      toast.error("Description must be at least 10 characters long");
+      return;
+    }
+
+    if (formData.description.length > 5000) {
+      toast.error("Description must be less than 5000 characters");
+      return;
+    }
+
+    // Validate title length
+    if (formData.title.length > 200) {
+      toast.error("Title must be less than 200 characters");
+      return;
+    }
+
+    // Create job data object
+    const jobData: CreateJobRequest = {
+      title: formData.title,
+      companyId: formData.companyId,
+      description: formData.description,
+      jobType: formData.jobType as CreateJobRequest['jobType'],
+      workMode: formData.workMode as CreateJobRequest['workMode'],
+      experienceLevel: formData.experienceLevel as CreateJobRequest['experienceLevel'],
+      status: formData.status as CreateJobRequest['status'],
+    };
+
+    // Submit the form
+    createJobMutation.mutate(jobData);
   };
 
   return (
@@ -72,14 +116,14 @@ export default function AddJob() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Job Title */}
                 <div>
-                  <label htmlFor="jobTitle" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
                     Job Title
                   </label>
                   <input
                     type="text"
-                    id="jobTitle"
-                    name="jobTitle"
-                    value={formData.jobTitle}
+                    id="title"
+                    name="title"
+                    value={formData.title}
                     onChange={handleInputChange}
                     placeholder="Enter job title"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -87,35 +131,18 @@ export default function AddJob() {
                   />
                 </div>
 
-                {/* Company Name */}
+                {/* Company ID */}
                 <div>
-                  <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-2">
-                    Company Name
+                  <label htmlFor="companyId" className="block text-sm font-medium text-gray-700 mb-2">
+                    Company ID
                   </label>
                   <input
                     type="text"
-                    id="companyName"
-                    name="companyName"
-                    value={formData.companyName}
+                    id="companyId"
+                    name="companyId"
+                    value={formData.companyId}
                     onChange={handleInputChange}
-                    placeholder="Enter company name"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-
-                {/* Location */}
-                <div>
-                  <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
-                    Location
-                  </label>
-                  <input
-                    type="text"
-                    id="location"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleInputChange}
-                    placeholder="Enter location"
+                    placeholder="Enter company ID"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
@@ -135,29 +162,53 @@ export default function AddJob() {
                     required
                   >
                     <option value="">Select job type</option>
-                    <option value="Full - Time">Full - Time</option>
-                    <option value="Part - Time">Part - Time</option>
-                    <option value="Contract">Contract</option>
-                    <option value="Freelance">Freelance</option>
-                    <option value="Internship">Internship</option>
+                    <option value="FULL_TIME">Full Time</option>
+                    <option value="PART_TIME">Part Time</option>
+                    <option value="CONTRACT">Contract</option>
+                    <option value="FREELANCE">Freelance</option>
+                    <option value="INTERNSHIP">Internship</option>
                   </select>
                 </div>
 
-                {/* Job Description */}
+                {/* Work Mode */}
                 <div>
-                  <label htmlFor="jobDescription" className="block text-sm font-medium text-gray-700 mb-2">
-                    Job Description
+                  <label htmlFor="workMode" className="block text-sm font-medium text-gray-700 mb-2">
+                    Work Mode
                   </label>
-                  <textarea
-                    id="jobDescription"
-                    name="jobDescription"
-                    value={formData.jobDescription}
+                  <select
+                    id="workMode"
+                    name="workMode"
+                    value={formData.workMode}
                     onChange={handleInputChange}
-                    placeholder="Enter description"
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-500"
                     required
-                  />
+                  >
+                    <option value="">Select work mode</option>
+                    <option value="REMOTE">Remote</option>
+                    <option value="ONSITE">Onsite</option>
+                    <option value="HYBRID">Hybrid</option>
+                  </select>
+                </div>
+
+                {/* Experience Level */}
+                <div>
+                  <label htmlFor="experienceLevel" className="block text-sm font-medium text-gray-700 mb-2">
+                    Experience Level
+                  </label>
+                  <select
+                    id="experienceLevel"
+                    name="experienceLevel"
+                    value={formData.experienceLevel}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-500"
+                    required
+                  >
+                    <option value="">Select experience level</option>
+                    <option value="ENTRY_LEVEL">Entry Level</option>
+                    <option value="MID_LEVEL">Mid Level</option>
+                    <option value="SENIOR_LEVEL">Senior Level</option>
+                    <option value="EXECUTIVE">Executive</option>
+                  </select>
                 </div>
 
                 {/* Status */}
@@ -174,10 +225,28 @@ export default function AddJob() {
                     required
                   >
                     <option value="">Select status</option>
-                    <option value="Active">Active</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Inactive">Inactive</option>
+                    <option value="DRAFT">Draft</option>
+                    <option value="PUBLISHED">Published</option>
+                    <option value="CLOSED">Closed</option>
+                    <option value="ARCHIVED">Archived</option>
                   </select>
+                </div>
+
+                {/* Job Description */}
+                <div className="md:col-span-2">
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                    Job Description
+                  </label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    placeholder="Enter job description (minimum 10 characters)"
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
                 </div>
               </div>
 
@@ -185,9 +254,24 @@ export default function AddJob() {
               <div className="mt-8">
                 <button
                   type="submit"
-                  className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  disabled={createJobMutation.isPending}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    createJobMutation.isPending
+                      ? 'bg-gray-400 cursor-not-allowed text-gray-200'
+                      : 'bg-blue-900 hover:bg-blue-800 text-white'
+                  }`}
                 >
-                  Submit
+                  {createJobMutation.isPending ? (
+                    <div className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Creating Job...
+                    </div>
+                  ) : (
+                    'Submit'
+                  )}
                 </button>
               </div>
             </form>
