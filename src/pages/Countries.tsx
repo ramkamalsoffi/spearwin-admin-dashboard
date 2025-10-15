@@ -32,10 +32,19 @@ export default function Countries() {
     console.error("Error fetching countries:", error);
   }
 
-  const countries = countriesResponse?.data || [];
+  const countries: Country[] = Array.isArray(countriesResponse)
+    ? (countriesResponse as unknown as Country[])
+    : (countriesResponse?.data || []);
   const totalCountries = countries.length;
   const countriesPerPage = 10;
   const totalPages = Math.ceil(totalCountries / countriesPerPage);
+
+  // Debug: Log the countries data to see what we're getting from API
+  console.log('🌍 Countries API Response:', countriesResponse);
+  console.log('🌍 Countries Data Array:', countries);
+  console.log('🌍 Is Loading:', isLoading);
+  console.log('🌍 Has Error:', error);
+  console.log('🌍 Countries Count:', countries.length);
 
   // render filters inline to match standardized layout
 
@@ -192,23 +201,23 @@ export default function Countries() {
               <Table className="w-full min-w-[700px]">
                 <TableHeader>
                   <TableRow className="bg-blue-50 mx-4">
-                    <TableCell isHeader className="rounded-l-[20px] pl-6 pr-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Language</TableCell>
-                    <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Country</TableCell>
-                    <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Nationality</TableCell>
-                    <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Default</TableCell>
+                    <TableCell isHeader className="rounded-l-[20px] pl-6 pr-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Name</TableCell>
+                    <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Code</TableCell>
                     <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Status</TableCell>
+                    <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Created</TableCell>
                     <TableCell isHeader className="rounded-r-[20px] pl-3 pr-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Action</TableCell>
                   </TableRow>
                 </TableHeader>
                 <TableBody className="bg-white divide-y divide-gray-200">
                   {countries.map((country: Country) => (
                     <tr key={country.id} className="hover:bg-gray-50">
-                      <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm text-gray-500">{country.language}</td>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{country.name}</td>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{country.nationality}</td>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{country.isDefault ? "Yes" : "No"}</td>
+                      <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm text-gray-900 font-medium">{country.name}</td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{country.code}</td>
                       <td className="px-3 py-3 whitespace-nowrap">
                         <StatusBadge status={country.isActive ? "active" : "inactive"} />
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(country.createdAt).toLocaleDateString()}
                       </td>
                       <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center gap-2">

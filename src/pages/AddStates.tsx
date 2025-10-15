@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
-import PageBreadcrumb from "../components/common/PageBreadCrumb";
+import { statesService } from "../services";
+import { CreateStateRequest } from "../services/types";
+import { useCountryQueries } from "../hooks/useCountryQueries";
 
 // Dropdown Input Component
 const DropdownInput = ({ 
@@ -40,53 +44,68 @@ const DropdownInput = ({
 
 export default function AddStates() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { useCountries } = useCountryQueries();
+  const { data: countriesResponse, isLoading: isCountriesLoading, isError: isCountriesError } = useCountries();
+  
   const [formData, setFormData] = useState({
-    language: "",
-    country: "",
-    state: "",
-    isDefault: "",
-    active: ""
+    name: "",
+    code: "",
+    countryId: "",
+    isActive: true
   });
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
+  // TanStack Query mutation for creating state
+  const createStateMutation = useMutation({
+    mutationFn: (stateData: CreateStateRequest) => statesService.createState(stateData),
+    onSuccess: () => {
+      toast.success("State created successfully!");
+      queryClient.invalidateQueries({ queryKey: ['states'] });
+      navigate('/states');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || "Failed to create state";
+      toast.error(errorMessage);
+      console.error("Error creating state:", error);
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("States form submitted:", formData);
-    // Handle form submission logic here
-    // For now, just navigate back to States page
-    navigate("/states");
+    
+    const stateData: CreateStateRequest = {
+      name: formData.name,
+      code: formData.code,
+      countryId: formData.countryId,
+      isActive: formData.isActive,
+    };
+
+    createStateMutation.mutate(stateData);
   };
 
-  // Dropdown options
-  const languageOptions = [
-    { value: "english", label: "English" },
-    { value: "spanish", label: "Spanish" },
-    { value: "french", label: "French" },
-    { value: "german", label: "German" }
-  ];
-
-  const countryOptions = [
-    { value: "india", label: "India" },
-    { value: "usa", label: "USA" },
-    { value: "uk", label: "UK" },
-    { value: "canada", label: "Canada" }
-  ];
+  // Dropdown options - fetched from API
+  const countryOptions = (() => {
+    if (isCountriesLoading) {
+      return [{ value: "", label: "Loading countries..." }];
+    }
+    if (isCountriesError) {
+      return [{ value: "", label: "Failed to load countries" }];
+    }
+    // API returns array directly, not wrapped in data property
+    const countries = countriesResponse ?? [];
+    return countries.map((country) => ({ value: country.id, label: country.name }));
+  })();
 
   const statusOptions = [
-    { value: "active", label: "Active" },
-    { value: "inactive", label: "Inactive" },
-    { value: "pending", label: "Pending" }
-  ];
-
-  const yesNoOptions = [
-    { value: "yes", label: "Yes" },
-    { value: "no", label: "No" }
+    { value: "true", label: "Active" },
+    { value: "false", label: "Inactive" }
   ];
 
   return (
@@ -109,58 +128,45 @@ export default function AddStates() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Left Column */}
               <div className="space-y-6">
-                {/* Language */}
+                {/* State Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Language
+                    State Name *
                   </label>
-                  <DropdownInput
-                    placeholder="Select language"
-                    value={formData.language}
-                    onChange={(value) => handleInputChange("language", value)}
-                    options={languageOptions}
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange("name", e.target.value)}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter state name"
                   />
                 </div>
 
-                {/* State */}
+                {/* State Code */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    State
+                    State Code *
                   </label>
-                  <DropdownInput
-                    placeholder="Select State"
-                    value={formData.state}
-                    onChange={(value) => handleInputChange("state", value)}
-                    options={[
-                      { value: "tamilnadu", label: "Tamilnadu" },
-                      { value: "karnataka", label: "Karnataka" },
-                      { value: "maharashtra", label: "Maharashtra" },
-                      { value: "kerala", label: "Kerala" }
-                    ]}
-                  />
-                </div>
-
-                {/* Active */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Active
-                  </label>
-                  <DropdownInput
-                    placeholder="Select status"
-                    value={formData.active}
-                    onChange={(value) => handleInputChange("active", value)}
-                    options={statusOptions}
+                  <input
+                    type="text"
+                    value={formData.code}
+                    onChange={(e) => handleInputChange("code", e.target.value)}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter state code (e.g., TN, KA)"
                   />
                 </div>
 
                 {/* Submit Button */}
                 <div className="pt-4">
-                <button
-                  type="submit"
-                  className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Submit
-                </button>
+                  <button
+                    type="submit"
+                    disabled={createStateMutation.isPending}
+                    className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50"
+                  >
+                    {createStateMutation.isPending ? "Creating..." : "Create State"}
+                  </button>
                 </div>
               </div>
 
@@ -169,26 +175,26 @@ export default function AddStates() {
                 {/* Country */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Country
+                    Country *
                   </label>
                   <DropdownInput
                     placeholder="Select Country"
-                    value={formData.country}
-                    onChange={(value) => handleInputChange("country", value)}
+                    value={formData.countryId}
+                    onChange={(value) => handleInputChange("countryId", value)}
                     options={countryOptions}
                   />
                 </div>
 
-                {/* Is Default? */}
+                {/* Active Status */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Is Default?
+                    Status
                   </label>
                   <DropdownInput
-                    placeholder="Select Yes or No"
-                    value={formData.isDefault}
-                    onChange={(value) => handleInputChange("isDefault", value)}
-                    options={yesNoOptions}
+                    placeholder="Select status"
+                    value={formData.isActive.toString()}
+                    onChange={(value) => handleInputChange("isActive", value === "true")}
+                    options={statusOptions}
                   />
                 </div>
               </div>

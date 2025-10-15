@@ -57,6 +57,53 @@ export interface UpdateCountryRequest extends Partial<CreateCountryRequest> {
   id: string;
 }
 
+// Admin related types
+export interface Admin {
+  id: string;
+  email: string;
+  role: string;
+  status: string;
+  firstName: string;
+  lastName: string;
+  designation: string;
+  department: string;
+  lastLoginAt: string;
+  createdAt: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  accessToken: string;
+  refreshToken: string;
+  user: Admin;
+}
+
+// States related types
+export interface State {
+  id: string;
+  name: string;
+  code: string;
+  countryId: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateStateRequest {
+  name: string;
+  code: string;
+  countryId: string;
+  isActive: boolean;
+}
+
+export interface UpdateStateRequest extends Partial<CreateStateRequest> {
+  id: string;
+}
+
 // Error types
 export interface ApiError {
   message: string;

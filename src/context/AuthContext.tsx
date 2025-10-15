@@ -1,8 +1,18 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { adminService } from '../services';
+import { Admin } from '../services/types';
 
 interface User {
+  id: string;
   email: string;
-  name?: string;
+  role: string;
+  status: string;
+  firstName: string;
+  lastName: string;
+  designation: string;
+  department: string;
+  lastLoginAt: string;
+  createdAt: string;
 }
 
 interface AuthContextType {
@@ -15,10 +25,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Default credentials for testing
-const DEFAULT_EMAIL = 'admin@spearwin.com';
-const DEFAULT_PASSWORD = 'admin123';
-
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -26,7 +32,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     // Check if user is logged in on app start
     const savedUser = localStorage.getItem('user');
-    if (savedUser) {
+    const savedToken = localStorage.getItem('accessToken');
+    if (savedUser && savedToken) {
       setUser(JSON.parse(savedUser));
     }
     setLoading(false);
@@ -35,25 +42,34 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Check against default credentials
-    if (email === DEFAULT_EMAIL && password === DEFAULT_PASSWORD) {
-      const userData = { email, name: 'Admin User' };
-      setUser(userData);
-      localStorage.setItem('user', JSON.stringify(userData));
+    try {
+      const response = await adminService.login({ email, password });
+      
+      if (response.success && response.data) {
+        const { accessToken, refreshToken, user } = response.data;
+        
+        setUser(user);
+        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        setLoading(false);
+        return true;
+      }
+      
       setLoading(false);
-      return true;
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      setLoading(false);
+      return false;
     }
-    
-    setLoading(false);
-    return false;
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
   };
 
   const value: AuthContextType = {

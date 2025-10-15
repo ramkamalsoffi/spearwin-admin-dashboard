@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../components/ui/table";
 import StatusBadge from "../components/ui/status-badge/StatusBadge";
+import { countryService, statesService } from "../services";
+import { Country, State } from "../services/types";
 
 export default function States() {
   const navigate = useNavigate();
@@ -11,99 +15,58 @@ export default function States() {
   const [filterBy, setFilterBy] = useState("Language");
   const [orderType, setOrderType] = useState("Order Type");
   const [orderStatus, setOrderStatus] = useState("Order Status");
+  const [selectedCountryId, setSelectedCountryId] = useState<string>("");
 
-  // Sample States data matching the image
-  const statesData = [
-    {
-      id: 1,
-      language: "English",
-      country: "English",
-      state: "Tamilnadu",
-      isDefault: true,
-      status: "Active"
-    },
-    {
-      id: 2,
-      language: "English",
-      country: "English",
-      state: "Tamilnadu",
-      isDefault: true,
-      status: "Inactive"
-    },
-    {
-      id: 3,
-      language: "English",
-      country: "English",
-      state: "Tamilnadu",
-      isDefault: true,
-      status: "Active"
-    },
-    {
-      id: 4,
-      language: "English",
-      country: "English",
-      state: "Tamilnadu",
-      isDefault: true,
-      status: "Active"
-    },
-    {
-      id: 5,
-      language: "English",
-      country: "English",
-      state: "Tamilnadu",
-      isDefault: true,
-      status: "Active"
-    },
-    {
-      id: 6,
-      language: "English",
-      country: "English",
-      state: "Tamilnadu",
-      isDefault: true,
-      status: "Active"
-    },
-    {
-      id: 7,
-      language: "English",
-      country: "English",
-      state: "Tamilnadu",
-      isDefault: true,
-      status: "Active"
-    },
-    {
-      id: 8,
-      language: "English",
-      country: "English",
-      state: "Tamilnadu",
-      isDefault: true,
-      status: "Active"
-    },
-    {
-      id: 9,
-      language: "English",
-      country: "English",
-      state: "Tamilnadu",
-      isDefault: true,
-      status: "Active"
-    }
-  ];
+  // Fetch countries for the dropdown
+  const { data: countriesResponse, isLoading: countriesLoading, error: countriesError } = useQuery({
+    queryKey: ['countries'],
+    queryFn: () => countryService.getCountries(),
+  });
 
-  const totalStates = 78;
+  // Fetch states based on selected country
+  const { data: statesResponse, isLoading: statesLoading, error: statesError } = useQuery({
+    queryKey: ['states', selectedCountryId],
+    queryFn: () => statesService.getStatesByCountryId(selectedCountryId),
+    enabled: !!selectedCountryId, // Only run query when a country is selected
+  });
+
+  // Handle errors
+  if (countriesError) {
+    const errorMessage = (countriesError as any).response?.data?.message || "Failed to fetch countries";
+    toast.error(errorMessage);
+    console.error("Error fetching countries:", countriesError);
+  }
+
+  if (statesError) {
+    const errorMessage = (statesError as any).response?.data?.message || "Failed to fetch states";
+    toast.error(errorMessage);
+    console.error("Error fetching states:", statesError);
+  }
+
+  const countries: Country[] = Array.isArray(countriesResponse)
+    ? (countriesResponse as unknown as Country[])
+    : (countriesResponse?.data || []);
+
+  const states: State[] = Array.isArray(statesResponse)
+    ? (statesResponse as unknown as State[])
+    : (statesResponse?.data || []);
+
+  const totalStates = states.length;
   const statesPerPage = 10;
   const totalPages = Math.ceil(totalStates / statesPerPage);
 
   // render filters inline to match standardized layout
 
-  const handleEdit = (state: any) => {
+  const handleEdit = (state: State) => {
     console.log("Edit State:", state);
     // Navigate to edit page or open modal
     navigate(`/edit-state/${state.id}`);
   };
 
-  const handleDelete = (state: any) => {
+  const handleDelete = (state: State) => {
     console.log("Delete State:", state);
     // Show confirmation modal or delete directly
-    if (window.confirm(`Are you sure you want to delete this state?`)) {
+    if (window.confirm(`Are you sure you want to delete ${state.name}?`)) {
       // Handle delete logic here
       console.log("State deleted:", state.id);
     }
@@ -140,6 +103,34 @@ export default function States() {
           <div className="px-6 py-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                  <span className="text-sm font-medium text-gray-700">Select Country</span>
+                </div>
+
+                <div className="relative">
+                  <select 
+                    value={selectedCountryId}
+                    onChange={(e) => setSelectedCountryId(e.target.value)}
+                    className="w-full sm:w-auto appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer min-w-[200px]"
+                    disabled={countriesLoading}
+                  >
+                    <option value="">Select a country...</option>
+                    {countries.map((country) => (
+                      <option key={country.id} value={country.id}>
+                        {country.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+
                 <div className="flex items-center gap-2">
                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -220,73 +211,119 @@ export default function States() {
           </div>
 
           <div className="overflow-x-auto">
-            <Table className="w-full min-w-[700px]">
-              <TableHeader>
-                <TableRow className="bg-blue-50 mx-4">
-                  <TableCell isHeader className="rounded-l-[20px] pl-6 pr-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Language</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Country</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">State</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Default</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Status</TableCell>
-                  <TableCell isHeader className="rounded-r-[20px] pl-3 pr-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Action</TableCell>
-                </TableRow>
-              </TableHeader>
-              <TableBody className="bg-white divide-y divide-gray-200">
-                {statesData.map((row) => (
-                  <tr key={row.id} className="hover:bg-gray-50">
-                    <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm text-gray-500">{row.language}</td>
-                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{row.country}</td>
-                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{row.state}</td>
-                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{row.isDefault ? "Yes" : "No"}</td>
-                    <td className="px-3 py-3 whitespace-nowrap"><StatusBadge status={row.status.toLowerCase() as "active" | "inactive"} /></td>
-                    <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center gap-2">
-                        <button className="p-1 text-blue-600 hover:text-blue-800" onClick={() => handleEdit(row)}>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button className="p-1 text-red-600 hover:text-red-800" onClick={() => handleDelete(row)}>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </TableBody>
-            </Table>
+            {!selectedCountryId ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">Select a country</h3>
+                  <p className="mt-1 text-sm text-gray-500">Choose a country from the dropdown above to view its states.</p>
+                </div>
+              </div>
+            ) : statesLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="flex items-center space-x-2">
+                  <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span className="text-gray-600">Loading states...</span>
+                </div>
+              </div>
+            ) : statesError ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">Failed to load states</h3>
+                  <p className="mt-1 text-sm text-gray-500">Please try refreshing the page</p>
+                </div>
+              </div>
+            ) : states.length === 0 ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No states found</h3>
+                  <p className="mt-1 text-sm text-gray-500">This country doesn't have any states yet.</p>
+                </div>
+              </div>
+            ) : (
+              <Table className="w-full min-w-[700px]">
+                <TableHeader>
+                  <TableRow className="bg-blue-50 mx-4">
+                    <TableCell isHeader className="rounded-l-[20px] pl-6 pr-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Name</TableCell>
+                    <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Code</TableCell>
+                    <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Status</TableCell>
+                    <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Created</TableCell>
+                    <TableCell isHeader className="rounded-r-[20px] pl-3 pr-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Action</TableCell>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="bg-white divide-y divide-gray-200">
+                  {states.map((state: State) => (
+                    <tr key={state.id} className="hover:bg-gray-50">
+                      <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm text-gray-900 font-medium">{state.name}</td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{state.code}</td>
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        <StatusBadge status={state.isActive ? "active" : "inactive"} />
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(state.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex items-center gap-2">
+                          <button className="p-1 text-blue-600 hover:text-blue-800" onClick={() => handleEdit(state)}>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button className="p-1 text-red-600 hover:text-red-800" onClick={() => handleDelete(state)}>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </div>
 
           {/* Pagination */}
-          <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-700">
-                Showing 1-{statesPerPage} of {totalStates}
-              </div>
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <button 
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
-                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
+          {selectedCountryId && !statesLoading && !statesError && states.length > 0 && (
+            <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-700">
+                  Showing {((currentPage - 1) * statesPerPage) + 1}-{Math.min(currentPage * statesPerPage, totalStates)} of {totalStates}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <button 
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </>
