@@ -50,6 +50,9 @@ export interface Country {
 export interface CreateCountryRequest {
   name: string;
   code: string;
+  language: string;
+  nationality: string;
+  isDefault?: boolean;
   isActive: boolean;
 }
 
@@ -101,6 +104,28 @@ export interface CreateStateRequest {
 }
 
 export interface UpdateStateRequest extends Partial<CreateStateRequest> {
+  id: string;
+}
+
+// City related types
+export interface City {
+  id: string;
+  name: string;
+  code: string;
+  stateId: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCityRequest {
+  name: string;
+  code: string;
+  stateId: string;
+  isActive?: boolean;
+}
+
+export interface UpdateCityRequest extends Partial<CreateCityRequest> {
   id: string;
 }
 

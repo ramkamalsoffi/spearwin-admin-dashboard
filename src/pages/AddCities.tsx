@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
+import { citiesService, statesService } from "../services";
+import { CreateCityRequest } from "../services/types";
 
 // Dropdown Input Component
 const DropdownInput = ({ 
@@ -41,14 +45,33 @@ const DropdownInput = ({
 export default function AddCities() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    language: "",
-    state: "",
-    city: "",
-    isDefault: "",
-    active: ""
+    name: "",
+    code: "",
+    stateId: "",
+    isActive: true
   });
 
-  const handleInputChange = (field: string, value: string) => {
+  // Fetch states for dropdown
+  const { data: statesData, isLoading: statesLoading } = useQuery({
+    queryKey: ['states'],
+    queryFn: () => statesService.getStates(),
+  });
+
+  // TanStack Query mutation for creating city
+  const createCityMutation = useMutation({
+    mutationFn: (cityData: CreateCityRequest) => citiesService.createCity(cityData),
+    onSuccess: () => {
+      toast.success("City created successfully!");
+      navigate('/cities');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || "Failed to create city";
+      toast.error(errorMessage);
+      console.error("Error creating city:", error);
+    },
+  });
+
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -57,36 +80,34 @@ export default function AddCities() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Cities form submitted:", formData);
-    // Handle form submission logic here
-    // For now, just navigate back to Cities page
-    navigate("/cities");
+    
+    // Validate form data
+    if (!formData.name || !formData.code || !formData.stateId) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    // Create city data object
+    const cityData: CreateCityRequest = {
+      name: formData.name,
+      code: formData.code,
+      stateId: formData.stateId,
+      isActive: formData.isActive
+    };
+
+    // Submit the form
+    createCityMutation.mutate(cityData);
   };
 
-  // Dropdown options
-  const languageOptions = [
-    { value: "english", label: "English" },
-    { value: "spanish", label: "Spanish" },
-    { value: "french", label: "French" },
-    { value: "german", label: "German" }
-  ];
-
-  const stateOptions = [
-    { value: "tamilnadu", label: "Tamilnadu" },
-    { value: "karnataka", label: "Karnataka" },
-    { value: "maharashtra", label: "Maharashtra" },
-    { value: "kerala", label: "Kerala" }
-  ];
+  // Prepare states options for dropdown
+  const stateOptions = statesData?.data?.map(state => ({
+    value: state.id,
+    label: state.name
+  })) || [];
 
   const statusOptions = [
-    { value: "active", label: "Active" },
-    { value: "inactive", label: "Inactive" },
-    { value: "pending", label: "Pending" }
-  ];
-
-  const yesNoOptions = [
-    { value: "yes", label: "Yes" },
-    { value: "no", label: "No" }
+    { value: "true", label: "Active" },
+    { value: "false", label: "Inactive" }
   ];
 
   return (
@@ -116,82 +137,93 @@ export default function AddCities() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Left Column */}
               <div className="space-y-6">
-                {/* Language */}
+                {/* City Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Language
+                    City Name <span className="text-red-500">*</span>
                   </label>
-                  <DropdownInput
-                    placeholder="Select language"
-                    value={formData.language}
-                    onChange={(value) => handleInputChange("language", value)}
-                    options={languageOptions}
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange("name", e.target.value)}
+                    placeholder="Enter city name"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
                   />
                 </div>
 
-                {/* State */}
+                {/* City Code */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    State
+                    City Code <span className="text-red-500">*</span>
                   </label>
-                  <DropdownInput
-                    placeholder="Select State"
-                    value={formData.state}
-                    onChange={(value) => handleInputChange("state", value)}
-                    options={stateOptions}
-                  />
-                </div>
-
-                {/* Active */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Active
-                  </label>
-                  <DropdownInput
-                    placeholder="Select status"
-                    value={formData.active}
-                    onChange={(value) => handleInputChange("active", value)}
-                    options={statusOptions}
+                  <input
+                    type="text"
+                    value={formData.code}
+                    onChange={(e) => handleInputChange("code", e.target.value)}
+                    placeholder="Enter city code (e.g., NYC, LA)"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
                   />
                 </div>
 
                 {/* Submit Button */}
                 <div className="pt-4">
-                <button
-                  type="submit"
-                  className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Submit
-                </button>
+                  <button
+                    type="submit"
+                    disabled={createCityMutation.isPending}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      createCityMutation.isPending
+                        ? 'bg-gray-400 cursor-not-allowed text-gray-200'
+                        : 'bg-blue-900 hover:bg-blue-800 text-white'
+                    }`}
+                  >
+                    {createCityMutation.isPending ? (
+                      <div className="flex items-center">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Creating City...
+                      </div>
+                    ) : (
+                      'Submit'
+                    )}
+                  </button>
                 </div>
               </div>
 
               {/* Right Column */}
               <div className="space-y-6">
-                {/* City */}
+                {/* State */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    City
+                    State <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    value={formData.city}
-                    onChange={(e) => handleInputChange("city", e.target.value)}
-                    placeholder="Enter city name"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
+                  {statesLoading ? (
+                    <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
+                      Loading states...
+                    </div>
+                  ) : (
+                    <DropdownInput
+                      placeholder="Select State"
+                      value={formData.stateId}
+                      onChange={(value) => handleInputChange("stateId", value)}
+                      options={stateOptions}
+                    />
+                  )}
                 </div>
 
-                {/* Is Default? */}
+                {/* Active Status */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Is Default?
+                    Status
                   </label>
                   <DropdownInput
-                    placeholder="Select Yes or No"
-                    value={formData.isDefault}
-                    onChange={(value) => handleInputChange("isDefault", value)}
-                    options={yesNoOptions}
+                    placeholder="Select status"
+                    value={formData.isActive.toString()}
+                    onChange={(value) => handleInputChange("isActive", value === "true")}
+                    options={statusOptions}
                   />
                 </div>
               </div>

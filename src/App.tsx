@@ -38,10 +38,13 @@ import Languages from "./pages/Languages";
 import AddLanguage from "./pages/AddLanguage";
 import Countries from "./pages/Countries";
 import AddCountry from "./pages/AddCountry";
+import EditCountry from "./pages/EditCountry";
 import States from "./pages/States";
 import AddStates from "./pages/AddStates";
+import EditState from "./pages/EditState";
 import Cities from "./pages/Cities";
 import AddCities from "./pages/AddCities";
+import EditCity from "./pages/EditCity";
 import Packages from "./pages/Packages";
 import AddPackage from "./pages/AddPackage";
 import JobAttributes from "./pages/JobAttributes";
@@ -125,14 +128,17 @@ export default function App() {
             {/* Countries Pages */}
             <Route path="/countries" element={<Countries />} />
             <Route path="/add-country" element={<AddCountry />} />
+            <Route path="/edit-country/:id" element={<EditCountry />} />
 
             {/* Cities Pages */}
             <Route path="/cities" element={<Cities />} />
             <Route path="/add-cities" element={<AddCities />} />
+            <Route path="/edit-city/:id" element={<EditCity />} />
 
             {/* States Pages */}
             <Route path="/states" element={<States />} />
             <Route path="/add-states" element={<AddStates />} />
+            <Route path="/edit-state/:id" element={<EditState />} />
 
             {/* Packages Pages */}
             <Route path="/packages" element={<Packages />} />
