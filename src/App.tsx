@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
 import NotFound from "./pages/OtherPage/NotFound";
@@ -49,10 +50,11 @@ import SiteSettings from "./pages/SiteSettings";
 import CMS from "./pages/CMS";
 import AddCMS from "./pages/AddCMS";
 import AddTranslatedPage from "./pages/AddTranslatedPage";
+import { queryClient } from "./lib/queryClient";
 
 export default function App() {
   return (
-    <>
+    <QueryClientProvider client={queryClient}>
       <Router>
         <ScrollToTop />
         <Routes>
@@ -155,6 +157,6 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
-    </>
+    </QueryClientProvider>
   );
 }
