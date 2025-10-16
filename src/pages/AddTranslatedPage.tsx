@@ -27,9 +27,6 @@ export default function AddTranslatedPage() {
     navigate("/cms");
   };
 
-  const handleCancel = () => {
-    navigate("/cms");
-  };
 
   // Sample CMS pages for dropdown
   const cmsPages = [

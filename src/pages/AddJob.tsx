@@ -1,20 +1,41 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
+import { jobService } from "../services";
+import { CreateJobRequest } from "../services/types";
 import { useCreateJob } from "../hooks/useJobs";
 
 export default function AddJob() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  
   const createJobMutation = useCreateJob();
   const [formData, setFormData] = useState({
     title: "",
-    description: "",
     companyId: "",
+    description: "",
     jobType: "",
     workMode: "",
     experienceLevel: "",
     status: ""
+  });
+
+  // TanStack Query mutation for creating job
+  const createJobMutation = useMutation({
+    mutationFn: (jobData: CreateJobRequest) => jobService.createJob(jobData),
+    onSuccess: () => {
+      toast.success("Job created successfully!");
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      navigate('/jobs');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || "Failed to create job";
+      toast.error(errorMessage);
+      console.error("Error creating job:", error);
+    },
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -28,41 +49,43 @@ export default function AddJob() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate that all required fields are filled
-    if (!formData.title || !formData.description || !formData.companyId || !formData.jobType || !formData.workMode || !formData.experienceLevel) {
-      alert("Please fill in all required fields.");
+    // Validate form data
+    if (!formData.title || !formData.companyId || !formData.description || 
+        !formData.jobType || !formData.workMode || !formData.experienceLevel || !formData.status) {
+      toast.error("Please fill in all required fields");
       return;
     }
-    
-    try {
-      await createJobMutation.mutateAsync(formData as any);
-      
-      // Reset form
-      setFormData({
-        title: "",
-        description: "",
-        companyId: "",
-        jobType: "",
-        workMode: "",
-        experienceLevel: "",
-        status: ""
-      });
-      
-      // Redirect back to jobs page
-      navigate("/jobs");
-    } catch (error: any) {
-      console.error("Failed to create job:", error);
-      
-      // More detailed error message
-      let errorMessage = "Failed to create job. Please try again.";
-      if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
-      
-      alert(errorMessage);
+
+    // Validate description length
+    if (formData.description.length < 10) {
+      toast.error("Description must be at least 10 characters long");
+      return;
     }
+
+    if (formData.description.length > 5000) {
+      toast.error("Description must be less than 5000 characters");
+      return;
+    }
+
+    // Validate title length
+    if (formData.title.length > 200) {
+      toast.error("Title must be less than 200 characters");
+      return;
+    }
+
+    // Create job data object
+    const jobData: CreateJobRequest = {
+      title: formData.title,
+      companyId: formData.companyId,
+      description: formData.description,
+      jobType: formData.jobType as CreateJobRequest['jobType'],
+      workMode: formData.workMode as CreateJobRequest['workMode'],
+      experienceLevel: formData.experienceLevel as CreateJobRequest['experienceLevel'],
+      status: formData.status as CreateJobRequest['status'],
+    };
+
+    // Submit the form
+    createJobMutation.mutate(jobData);
   };
 
   return (
@@ -220,7 +243,7 @@ export default function AddJob() {
                     name="description"
                     value={formData.description}
                     onChange={handleInputChange}
-                    placeholder="Enter job description"
+                    placeholder="Enter job description (minimum 10 characters)"
                     rows={4}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
@@ -233,12 +256,23 @@ export default function AddJob() {
                 <button
                   type="submit"
                   disabled={createJobMutation.isPending}
-                  className="bg-blue-900 hover:bg-blue-800 disabled:bg-blue-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    createJobMutation.isPending
+                      ? 'bg-gray-400 cursor-not-allowed text-gray-200'
+                      : 'bg-blue-900 hover:bg-blue-800 text-white'
+                  }`}
                 >
-                  {createJobMutation.isPending && (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  {createJobMutation.isPending ? (
+                    <div className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Creating Job...
+                    </div>
+                  ) : (
+                    'Submit'
                   )}
-                  {createJobMutation.isPending ? "Creating..." : "Submit"}
                 </button>
               </div>
             </form>

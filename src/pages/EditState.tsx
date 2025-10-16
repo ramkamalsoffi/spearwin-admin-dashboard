@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
-import { citiesService, statesService } from "../services";
-import { CreateCityRequest } from "../services/types";
+import { statesService, countryService } from "../services";
+import { UpdateStateRequest } from "../services/types";
 
 // Dropdown Input Component
 const DropdownInput = ({ 
@@ -42,34 +42,54 @@ const DropdownInput = ({
   );
 };
 
-export default function AddCities() {
+export default function EditState() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const [formData, setFormData] = useState({
     name: "",
     code: "",
-    stateId: "",
+    countryId: "",
     isActive: true
   });
 
-  // Fetch states for dropdown
-  const { data: statesData, isLoading: statesLoading } = useQuery({
-    queryKey: ['states'],
-    queryFn: () => statesService.getStates(),
+  // Fetch state data by ID
+  const { data: stateData, isLoading: stateLoading, error: stateError } = useQuery({
+    queryKey: ['state', id],
+    queryFn: () => statesService.getStateById(id!),
+    enabled: !!id,
   });
 
-  // TanStack Query mutation for creating city
-  const createCityMutation = useMutation({
-    mutationFn: (cityData: CreateCityRequest) => citiesService.createCity(cityData),
+  // Fetch countries for dropdown
+  const { data: countriesData, isLoading: countriesLoading } = useQuery({
+    queryKey: ['countries'],
+    queryFn: () => countryService.getCountries(),
+  });
+
+  // Update state mutation
+  const updateStateMutation = useMutation({
+    mutationFn: (stateData: UpdateStateRequest) => statesService.updateState(stateData),
     onSuccess: () => {
-      toast.success("City created successfully!");
-      navigate('/cities');
+      toast.success("State updated successfully!");
+      navigate('/states');
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || "Failed to create city";
+      const errorMessage = error.response?.data?.message || "Failed to update state";
       toast.error(errorMessage);
-      console.error("Error creating city:", error);
+      console.error("Error updating state:", error);
     },
   });
+
+  // Update form data when state data is loaded
+  useEffect(() => {
+    if (stateData?.data) {
+      setFormData({
+        name: stateData.data.name,
+        code: stateData.data.code,
+        countryId: stateData.data.countryId,
+        isActive: stateData.data.isActive
+      });
+    }
+  }, [stateData]);
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
@@ -81,28 +101,34 @@ export default function AddCities() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!id) {
+      toast.error("State ID is missing");
+      return;
+    }
+
     // Validate form data
-    if (!formData.name || !formData.code || !formData.stateId) {
+    if (!formData.name || !formData.code || !formData.countryId) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    // Create city data object
-    const cityData: CreateCityRequest = {
+    // Create update data object
+    const updateData: UpdateStateRequest = {
+      id,
       name: formData.name,
       code: formData.code,
-      stateId: formData.stateId,
+      countryId: formData.countryId,
       isActive: formData.isActive
     };
 
     // Submit the form
-    createCityMutation.mutate(cityData);
+    updateStateMutation.mutate(updateData);
   };
 
-  // Prepare states options for dropdown
-  const stateOptions = statesData?.data?.map(state => ({
-    value: state.id,
-    label: state.name
+  // Prepare countries options for dropdown
+  const countryOptions = countriesData?.data?.map(country => ({
+    value: country.id,
+    label: country.name
   })) || [];
 
   const statusOptions = [
@@ -110,11 +136,53 @@ export default function AddCities() {
     { value: "false", label: "Inactive" }
   ];
 
+  // Loading state
+  if (stateLoading || countriesLoading) {
+    return (
+      <>
+        <PageMeta title="Edit State | spearwin-admin" description="Edit State" />
+        <div className="px-4 sm:px-6 lg:px-30 py-4">
+          <div className="bg-white rounded-[10px] shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-brand-500"></div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Error state
+  if (stateError) {
+    return (
+      <>
+        <PageMeta title="Edit State | spearwin-admin" description="Edit State" />
+        <div className="px-4 sm:px-6 lg:px-30 py-4">
+          <div className="bg-white rounded-[10px] shadow-sm border border-gray-200 p-6">
+            <div className="flex flex-col items-center justify-center py-12">
+              <svg className="w-16 h-16 text-red-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to load state</h3>
+              <p className="text-gray-500 mb-4">There was an error loading the state data.</p>
+              <button 
+                onClick={() => navigate('/states')}
+                className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                Back to States
+              </button>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <PageMeta
-        title="Add Cities | spearwin-admin"
-        description="Add new Cities"
+        title="Edit State | spearwin-admin"
+        description="Edit State"
       />
       
       {/* Title Bar */}
@@ -123,8 +191,8 @@ export default function AddCities() {
           <PageBreadcrumb 
             items={[
               { label: "Dashboard", path: "/" },
-              { label: "Cities", path: "/cities" },
-              { label: "Add Cities" }
+              { label: "States", path: "/states" },
+              { label: "Edit State" }
             ]}
             showAdmin={true}
           />
@@ -137,31 +205,31 @@ export default function AddCities() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Left Column */}
               <div className="space-y-6">
-                {/* City Name */}
+                {/* State Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    City Name <span className="text-red-500">*</span>
+                    State Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
-                    placeholder="Enter city name"
+                    placeholder="Enter state name"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
                 </div>
 
-                {/* City Code */}
+                {/* State Code */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    City Code <span className="text-red-500">*</span>
+                    State Code <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={formData.code}
                     onChange={(e) => handleInputChange("code", e.target.value)}
-                    placeholder="Enter city code (e.g., NYC, LA)"
+                    placeholder="Enter state code (e.g., CA, NY)"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
@@ -171,23 +239,23 @@ export default function AddCities() {
                 <div className="pt-4">
                   <button
                     type="submit"
-                    disabled={createCityMutation.isPending}
+                    disabled={updateStateMutation.isPending}
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      createCityMutation.isPending
+                      updateStateMutation.isPending
                         ? 'bg-gray-400 cursor-not-allowed text-gray-200'
                         : 'bg-blue-900 hover:bg-blue-800 text-white'
                     }`}
                   >
-                    {createCityMutation.isPending ? (
+                    {updateStateMutation.isPending ? (
                       <div className="flex items-center">
                         <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        Creating City...
+                        Updating State...
                       </div>
                     ) : (
-                      'Submit'
+                      'Update State'
                     )}
                   </button>
                 </div>
@@ -195,21 +263,21 @@ export default function AddCities() {
 
               {/* Right Column */}
               <div className="space-y-6">
-                {/* State */}
+                {/* Country */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    State <span className="text-red-500">*</span>
+                    Country <span className="text-red-500">*</span>
                   </label>
-                  {statesLoading ? (
+                  {countriesLoading ? (
                     <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
-                      Loading states...
+                      Loading countries...
                     </div>
                   ) : (
                     <DropdownInput
-                      placeholder="Select State"
-                      value={formData.stateId}
-                      onChange={(value) => handleInputChange("stateId", value)}
-                      options={stateOptions}
+                      placeholder="Select Country"
+                      value={formData.countryId}
+                      onChange={(value) => handleInputChange("countryId", value)}
+                      options={countryOptions}
                     />
                   )}
                 </div>

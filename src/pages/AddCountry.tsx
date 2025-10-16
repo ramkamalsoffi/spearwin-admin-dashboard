@@ -1,53 +1,24 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import PageMeta from "../components/common/PageMeta";
+import PageBreadcrumb from "../components/common/PageBreadCrumb";
+import { useCountryMutations } from "../hooks/useCountryMutations";
+import { CreateCountryRequest } from "../services/types";
 
-// Dropdown Input Component
-const DropdownInput = ({ 
-  placeholder, 
-  value, 
-  onChange, 
-  options 
-}: { 
-  placeholder: string; 
-  value: string; 
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-}) => {
-  return (
-    <div className="relative">
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
-      >
-        <option value="">{placeholder}</option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </div>
-    </div>
-  );
-};
 
 export default function AddCountry() {
   const navigate = useNavigate();
+  const { createCountryMutation } = useCountryMutations();
   const [formData, setFormData] = useState({
+    name: "",
+    code: "",
     language: "",
-    country: "",
     nationality: "",
-    isDefault: "",
-    active: ""
+    isDefault: false,
+    isActive: true
   });
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -56,54 +27,19 @@ export default function AddCountry() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Country form submitted:", formData);
-    // Handle form submission logic here
-    // For now, just navigate back to countries page
-    navigate("/countries");
+    
+    const countryData: CreateCountryRequest = {
+      name: formData.name,
+      code: formData.code,
+      language: formData.language,
+      nationality: formData.nationality,
+      isDefault: formData.isDefault,
+      isActive: formData.isActive,
+    };
+
+    createCountryMutation.mutate(countryData);
   };
 
-  // Dropdown options
-  const languageOptions = [
-    { value: "english", label: "English" },
-    { value: "spanish", label: "Spanish" },
-    { value: "french", label: "French" },
-    { value: "german", label: "German" },
-    { value: "arabic", label: "Arabic" },
-    { value: "chinese", label: "Chinese" }
-  ];
-
-  const countryOptions = [
-    { value: "usa", label: "United States" },
-    { value: "uk", label: "United Kingdom" },
-    { value: "canada", label: "Canada" },
-    { value: "australia", label: "Australia" },
-    { value: "india", label: "India" },
-    { value: "germany", label: "Germany" },
-    { value: "france", label: "France" },
-    { value: "spain", label: "Spain" }
-  ];
-
-  const nationalityOptions = [
-    { value: "american", label: "American" },
-    { value: "british", label: "British" },
-    { value: "canadian", label: "Canadian" },
-    { value: "australian", label: "Australian" },
-    { value: "indian", label: "Indian" },
-    { value: "german", label: "German" },
-    { value: "french", label: "French" },
-    { value: "spanish", label: "Spanish" }
-  ];
-
-  const statusOptions = [
-    { value: "active", label: "Active" },
-    { value: "inactive", label: "Inactive" },
-    { value: "pending", label: "Pending" }
-  ];
-
-  const yesNoOptions = [
-    { value: "yes", label: "Yes" },
-    { value: "no", label: "No" }
-  ];
 
   return (
     <>
@@ -115,93 +51,120 @@ export default function AddCountry() {
       {/* Title Bar */}
       <div className="px-4 sm:px-6 lg:px-30 ">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2">
-          <h1 className="text-lg font-semibold text-gray-900">Add Country</h1>
+          <PageBreadcrumb 
+            items={[
+              { label: "Dashboard", path: "/" },
+              { label: "Countries", path: "/countries" },
+              { label: "Add Country" }
+            ]}
+            showAdmin={true}
+          />
         </div>
       </div>
 
       <div className="px-4 sm:px-6 lg:px-30 py-4">
         <div className="bg-white rounded-[10px] shadow-sm border border-gray-200">
           <form onSubmit={handleSubmit} className="p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Left Column */}
-              <div className="space-y-6">
-                {/* Language */}
+            <div className="space-y-6">
+              <h1 className="text-xl font-semibold text-gray-900 mb-6">Add New Country</h1>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Language
+                    Country Name *
                   </label>
-                  <DropdownInput
-                    placeholder="Select language"
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange("name", e.target.value)}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter country name"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Country Code *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.code}
+                    onChange={(e) => handleInputChange("code", e.target.value)}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter country code (e.g., US, UK)"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Language *
+                  </label>
+                  <input
+                    type="text"
                     value={formData.language}
-                    onChange={(value) => handleInputChange("language", value)}
-                    options={languageOptions}
+                    onChange={(e) => handleInputChange("language", e.target.value)}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter language (e.g., English, Spanish)"
                   />
                 </div>
 
-                {/* Nationality */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nationality
+                    Nationality *
                   </label>
-                  <DropdownInput
-                    placeholder="Select Nationality"
+                  <input
+                    type="text"
                     value={formData.nationality}
-                    onChange={(value) => handleInputChange("nationality", value)}
-                    options={nationalityOptions}
+                    onChange={(e) => handleInputChange("nationality", e.target.value)}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter nationality (e.g., American, Canadian)"
                   />
                 </div>
 
-                {/* Active */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Active
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.isDefault}
+                    onChange={(e) => handleInputChange("isDefault", e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label className="ml-2 block text-sm text-gray-700">
+                    Is Default Country
                   </label>
-                  <DropdownInput
-                    placeholder="Select status"
-                    value={formData.active}
-                    onChange={(value) => handleInputChange("active", value)}
-                    options={statusOptions}
-                  />
                 </div>
 
-                {/* Submit Button */}
-                <div className="pt-4">
-                <button
-                  type="submit"
-                  className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Submit
-                </button>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.isActive}
+                    onChange={(e) => handleInputChange("isActive", e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label className="ml-2 block text-sm text-gray-700">
+                    Active Country
+                  </label>
                 </div>
               </div>
 
-              {/* Right Column */}
-              <div className="space-y-6">
-                {/* Country */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Country
-                  </label>
-                  <DropdownInput
-                    placeholder="Select Country"
-                    value={formData.country}
-                    onChange={(value) => handleInputChange("country", value)}
-                    options={countryOptions}
-                  />
-                </div>
-
-                {/* Is Default? */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Is Default?
-                  </label>
-                  <DropdownInput
-                    placeholder="Select Yes or No"
-                    value={formData.isDefault}
-                    onChange={(value) => handleInputChange("isDefault", value)}
-                    options={yesNoOptions}
-                  />
-                </div>
+              <div className="flex justify-end space-x-4 pt-6">
+                <button
+                  type="button"
+                  onClick={() => navigate("/countries")}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createCountryMutation.isPending}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {createCountryMutation.isPending ? "Creating..." : "Create Country"}
+                </button>
               </div>
             </div>
           </form>
@@ -210,3 +173,4 @@ export default function AddCountry() {
     </>
   );
 }
+

@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../components/ui/table";
+import { companyService } from "../services/companyService";
+import { Company } from "../services/types";
 
 export default function Companies() {
   const navigate = useNavigate();
@@ -10,117 +13,49 @@ export default function Companies() {
   const [filterBy, setFilterBy] = useState("Company Name");
   const [orderType, setOrderType] = useState("Order Type");
   const [orderStatus, setOrderStatus] = useState("Order Status");
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Sample data - you can replace this with real data
-  const companies = [
-    {
-      id: 1,
-      companyName: "Spearwin Pvt. Ltd.",
-      industry: "Technology",
-      location: "Bangalore, IN",
-      website: "www.spearwin.com",
-      contactPerson: "John Doe",
-      email: "contact@spearwin.com",
-      phone: "+91 9876543210",
-      status: "Active"
-    },
-    {
-      id: 2,
-      companyName: "TechCorp Solutions",
-      industry: "Software",
-      location: "Mumbai, IN",
-      website: "www.techcorp.com",
-      contactPerson: "Jane Smith",
-      email: "info@techcorp.com",
-      phone: "+91 9876543211",
-      status: "Pending"
-    },
-    {
-      id: 3,
-      companyName: "Innovate Labs",
-      industry: "Research",
-      location: "Delhi, IN",
-      website: "www.innovatelabs.com",
-      contactPerson: "Mike Johnson",
-      email: "hello@innovatelabs.com",
-      phone: "+91 9876543212",
-      status: "Active"
-    },
-    {
-      id: 4,
-      companyName: "Global Systems",
-      industry: "Consulting",
-      location: "Chennai, IN",
-      website: "www.globalsys.com",
-      contactPerson: "Sarah Wilson",
-      email: "contact@globalsys.com",
-      phone: "+91 9876543213",
-      status: "Inactive"
-    },
-    {
-      id: 5,
-      companyName: "Future Tech",
-      industry: "AI/ML",
-      location: "Hyderabad, IN",
-      website: "www.futuretech.com",
-      contactPerson: "David Brown",
-      email: "info@futuretech.com",
-      phone: "+91 9876543214",
-      status: "Active"
-    },
-    {
-      id: 6,
-      companyName: "Data Dynamics",
-      industry: "Analytics",
-      location: "Pune, IN",
-      website: "www.datadynamics.com",
-      contactPerson: "Lisa Davis",
-      email: "contact@datadynamics.com",
-      phone: "+91 9876543215",
-      status: "Active"
-    },
-    {
-      id: 7,
-      companyName: "Cloud Masters",
-      industry: "Cloud Services",
-      location: "Kolkata, IN",
-      website: "www.cloudmasters.com",
-      contactPerson: "Tom Wilson",
-      email: "info@cloudmasters.com",
-      phone: "+91 9876543216",
-      status: "Pending"
-    },
-    {
-      id: 8,
-      companyName: "Digital Solutions",
-      industry: "Digital Marketing",
-      location: "Ahmedabad, IN",
-      website: "www.digitalsolutions.com",
-      contactPerson: "Emma Taylor",
-      email: "hello@digitalsolutions.com",
-      phone: "+91 9876543217",
-      status: "Active"
-    },
-    {
-      id: 9,
-      companyName: "Secure Systems",
-      industry: "Cybersecurity",
-      location: "Jaipur, IN",
-      website: "www.securesys.com",
-      contactPerson: "Alex Johnson",
-      email: "contact@securesys.com",
-      phone: "+91 9876543218",
-      status: "Active"
-    }
-  ];
 
-  const totalCompanies = 45;
+  const totalCompanies = companies.length;
   const companiesPerPage = 10;
   const totalPages = Math.ceil(totalCompanies / companiesPerPage);
 
-  const handleRefresh = () => {
-    console.log("Refresh companies data");
-    // Reload data from API
+  // Fetch companies on component mount
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        setIsLoading(true);
+        const response = await companyService.getCompanies();
+        setCompanies(response.data);
+        setError(null);
+      } catch (err: any) {
+        console.error("Error fetching companies:", err);
+        setError("Failed to load companies. Please try again.");
+        setCompanies([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCompanies();
+  }, []);
+
+  const handleRefresh = async () => {
+    try {
+      setIsLoading(true);
+      const response = await companyService.getCompanies();
+      setCompanies(response.data);
+      setError(null);
+      toast.success("Companies data refreshed!");
+    } catch (err: any) {
+      console.error("Error refreshing companies:", err);
+      setError("Failed to refresh companies data.");
+      toast.error("Failed to refresh companies data.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -167,7 +102,7 @@ export default function Companies() {
                     >
                       <option>Company Name</option>
                       <option>Industry</option>
-                      <option>Location</option>
+                      <option>Headquarters</option>
                       <option>Status</option>
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -202,8 +137,8 @@ export default function Companies() {
                     >
                       <option>Order Status</option>
                       <option>Active</option>
-                      <option>Pending</option>
                       <option>Inactive</option>
+                      <option>Verified</option>
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -213,7 +148,11 @@ export default function Companies() {
                   </div>
                 </div>
 
-                <button className="p-2 text-gray-400 hover:text-gray-600">
+                <button 
+                  onClick={handleRefresh}
+                  className="p-2 text-gray-400 hover:text-gray-600"
+                  title="Refresh companies"
+                >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
@@ -231,35 +170,99 @@ export default function Companies() {
         
           <div className="overflow-x-auto">
             <Table className="w-full min-w-[700px]">
-              <TableHeader>
-                <TableRow className="bg-blue-50 mx-4">
-                  <TableCell isHeader className="rounded-l-[20px] pl-6 pr-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Company Name</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Industry</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Location</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Contact Person</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Email</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Status</TableCell>
-                  <TableCell isHeader className="rounded-r-[20px] pl-3 pr-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Action</TableCell>
-                </TableRow>
-              </TableHeader>
+              {/* Error Message */}
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-md mb-4">
+                  <p className="text-sm text-red-600">{error}</p>
+                </div>
+              )}
+
+              {/* Loading State */}
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900"></div>
+                  <span className="ml-2 text-gray-600">Loading companies...</span>
+                </div>
+              ) : companies.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <svg className="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No companies found</h3>
+                  <p className="text-gray-500 mb-4">Get started by adding your first company.</p>
+                  <button 
+                    onClick={() => navigate("/add-company")}
+                    className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Add Company
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <TableHeader>
+                    <TableRow className="bg-blue-50 mx-4">
+                      <TableCell isHeader className="rounded-l-[20px] pl-6 pr-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Company Name</TableCell>
+                      <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Industry</TableCell>
+                      <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Headquarters</TableCell>
+                      <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Website</TableCell>
+                      <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Founded</TableCell>
+                      <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Status</TableCell>
+                      <TableCell isHeader className="rounded-r-[20px] pl-3 pr-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Action</TableCell>
+                    </TableRow>
+                  </TableHeader>
               <TableBody className="bg-white divide-y divide-gray-200">
                 {companies.map((company) => (
                   <tr key={company.id} className="hover:bg-gray-50">
-                    <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm font-medium text-gray-500">{company.companyName}</td>
+                    <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <div className="flex items-center">
+                        {company.logo && (
+                          <img 
+                            src={company.logo} 
+                            alt={`${company.name} logo`}
+                            className="w-8 h-8 rounded-full mr-3 object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        )}
+                        <div>
+                          <div className="font-medium text-gray-900">{company.name}</div>
+                          {company.slug && (
+                            <div className="text-xs text-gray-500">@{company.slug}</div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{company.industry}</td>
-                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{company.location}</td>
-                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{company.contactPerson}</td>
-                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{company.email}</td>
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{company.headquarters}</td>
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
+                      {company.website && (
+                        <a 
+                          href={company.website} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 underline"
+                        >
+                          {company.website.replace(/^https?:\/\//, '')}
+                        </a>
+                      )}
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{company.foundedYear}</td>
                     <td className="px-3 py-3 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                        company.status === 'Active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : company.status === 'Pending'
-                          ? 'bg-orange-100 text-orange-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {company.status}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                          company.isActive 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {company.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                        {company.isVerified && (
+                          <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                            Verified
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center gap-2">
@@ -278,6 +281,8 @@ export default function Companies() {
                   </tr>
                 ))}
               </TableBody>
+                </>
+              )}
             </Table>
           </div>
           

@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { citiesService, statesService } from "../services";
-import { CreateCityRequest } from "../services/types";
+import { UpdateCityRequest } from "../services/types";
 
 // Dropdown Input Component
 const DropdownInput = ({ 
@@ -42,13 +42,21 @@ const DropdownInput = ({
   );
 };
 
-export default function AddCities() {
+export default function EditCity() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const [formData, setFormData] = useState({
     name: "",
     code: "",
     stateId: "",
     isActive: true
+  });
+
+  // Fetch city data by ID
+  const { data: cityData, isLoading: cityLoading, error: cityError } = useQuery({
+    queryKey: ['city', id],
+    queryFn: () => citiesService.getCityById(id!),
+    enabled: !!id,
   });
 
   // Fetch states for dropdown
@@ -57,19 +65,31 @@ export default function AddCities() {
     queryFn: () => statesService.getStates(),
   });
 
-  // TanStack Query mutation for creating city
-  const createCityMutation = useMutation({
-    mutationFn: (cityData: CreateCityRequest) => citiesService.createCity(cityData),
+  // Update city mutation
+  const updateCityMutation = useMutation({
+    mutationFn: (cityData: UpdateCityRequest) => citiesService.updateCity(cityData),
     onSuccess: () => {
-      toast.success("City created successfully!");
+      toast.success("City updated successfully!");
       navigate('/cities');
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || "Failed to create city";
+      const errorMessage = error.response?.data?.message || "Failed to update city";
       toast.error(errorMessage);
-      console.error("Error creating city:", error);
+      console.error("Error updating city:", error);
     },
   });
+
+  // Update form data when city data is loaded
+  useEffect(() => {
+    if (cityData?.data) {
+      setFormData({
+        name: cityData.data.name,
+        code: cityData.data.code,
+        stateId: cityData.data.stateId,
+        isActive: cityData.data.isActive
+      });
+    }
+  }, [cityData]);
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
@@ -81,14 +101,20 @@ export default function AddCities() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!id) {
+      toast.error("City ID is missing");
+      return;
+    }
+
     // Validate form data
     if (!formData.name || !formData.code || !formData.stateId) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    // Create city data object
-    const cityData: CreateCityRequest = {
+    // Create update data object
+    const updateData: UpdateCityRequest = {
+      id,
       name: formData.name,
       code: formData.code,
       stateId: formData.stateId,
@@ -96,7 +122,7 @@ export default function AddCities() {
     };
 
     // Submit the form
-    createCityMutation.mutate(cityData);
+    updateCityMutation.mutate(updateData);
   };
 
   // Prepare states options for dropdown
@@ -110,11 +136,53 @@ export default function AddCities() {
     { value: "false", label: "Inactive" }
   ];
 
+  // Loading state
+  if (cityLoading || statesLoading) {
+    return (
+      <>
+        <PageMeta title="Edit City | spearwin-admin" description="Edit City" />
+        <div className="px-4 sm:px-6 lg:px-30 py-4">
+          <div className="bg-white rounded-[10px] shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-brand-500"></div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Error state
+  if (cityError) {
+    return (
+      <>
+        <PageMeta title="Edit City | spearwin-admin" description="Edit City" />
+        <div className="px-4 sm:px-6 lg:px-30 py-4">
+          <div className="bg-white rounded-[10px] shadow-sm border border-gray-200 p-6">
+            <div className="flex flex-col items-center justify-center py-12">
+              <svg className="w-16 h-16 text-red-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to load city</h3>
+              <p className="text-gray-500 mb-4">There was an error loading the city data.</p>
+              <button 
+                onClick={() => navigate('/cities')}
+                className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                Back to Cities
+              </button>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <PageMeta
-        title="Add Cities | spearwin-admin"
-        description="Add new Cities"
+        title="Edit City | spearwin-admin"
+        description="Edit City"
       />
       
       {/* Title Bar */}
@@ -124,7 +192,7 @@ export default function AddCities() {
             items={[
               { label: "Dashboard", path: "/" },
               { label: "Cities", path: "/cities" },
-              { label: "Add Cities" }
+              { label: "Edit City" }
             ]}
             showAdmin={true}
           />
@@ -171,23 +239,23 @@ export default function AddCities() {
                 <div className="pt-4">
                   <button
                     type="submit"
-                    disabled={createCityMutation.isPending}
+                    disabled={updateCityMutation.isPending}
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      createCityMutation.isPending
+                      updateCityMutation.isPending
                         ? 'bg-gray-400 cursor-not-allowed text-gray-200'
                         : 'bg-blue-900 hover:bg-blue-800 text-white'
                     }`}
                   >
-                    {createCityMutation.isPending ? (
+                    {updateCityMutation.isPending ? (
                       <div className="flex items-center">
                         <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        Creating City...
+                        Updating City...
                       </div>
                     ) : (
-                      'Submit'
+                      'Update City'
                     )}
                   </button>
                 </div>

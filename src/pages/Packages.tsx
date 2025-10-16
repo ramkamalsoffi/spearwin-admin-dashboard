@@ -3,7 +3,6 @@ import { useNavigate } from "react-router";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../components/ui/table";
-import StatusBadge from "../components/ui/status-badge/StatusBadge";
 
 export default function Packages() {
   const navigate = useNavigate();
@@ -94,20 +93,6 @@ export default function Packages() {
 
   // filters will be rendered inline in the card header
 
-  const handleEdit = (packageItem: any) => {
-    console.log("Edit Package:", packageItem);
-    // Navigate to edit page or open modal
-    navigate(`/edit-package/${packageItem.id}`);
-  };
-
-  const handleDelete = (packageItem: any) => {
-    console.log("Delete Package:", packageItem);
-    // Show confirmation modal or delete directly
-    if (window.confirm(`Are you sure you want to delete this package?`)) {
-      // Handle delete logic here
-      console.log("Package deleted:", packageItem.id);
-    }
-  };
 
   const handleRefresh = () => {
     console.log("Refresh Packages data");

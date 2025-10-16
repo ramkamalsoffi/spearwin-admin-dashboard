@@ -175,7 +175,7 @@ export default function SiteSettings() {
           <div className="bg-white px-6 py-4">
             <nav className="flex overflow-x-auto scrollbar-hide">
               <div className="flex rounded-md border border-gray-200 overflow-hidden">
-                {tabs.map((tab, index) => (
+                {tabs.map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
