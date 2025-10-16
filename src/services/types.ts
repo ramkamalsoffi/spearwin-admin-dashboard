@@ -104,6 +104,52 @@ export interface UpdateStateRequest extends Partial<CreateStateRequest> {
   id: string;
 }
 
+// Company related types
+export interface Company {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  website: string;
+  logo?: string;
+  industry: string;
+  foundedYear: number;
+  employeeCount: string;
+  headquarters: string;
+  cityId: string;
+  address: string;
+  linkedinUrl?: string;
+  twitterUrl?: string;
+  facebookUrl?: string;
+  isVerified: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCompanyRequest {
+  name: string;
+  slug: string;
+  description: string;
+  website: string;
+  logo?: string;
+  industry: string;
+  foundedYear: number;
+  employeeCount: string;
+  headquarters: string;
+  cityId: string;
+  address: string;
+  linkedinUrl?: string;
+  twitterUrl?: string;
+  facebookUrl?: string;
+  isVerified?: boolean;
+  isActive?: boolean;
+}
+
+export interface UpdateCompanyRequest extends Partial<CreateCompanyRequest> {
+  id: string;
+}
+
 // Error types
 export interface ApiError {
   message: string;

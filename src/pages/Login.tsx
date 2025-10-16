@@ -57,7 +57,7 @@ export default function Login() {
       
       if (success) {
         toast.success("Login successful!");
-        navigate("/");
+        navigate("/dashboard");
       } else {
         toast.error("Invalid email or password");
         setErrors({
@@ -115,7 +115,7 @@ export default function Login() {
                       type="email"
                       value={email}
                       onChange={handleEmailChange}
-                      placeholder="admin@spearwin.com"
+                      placeholder="superadmin3@example.com"
                       className={errors.email ? "border-red-500 focus:border-red-500 focus:ring-red-200" : ""}
                     />
                     {errors.email && (
@@ -179,14 +179,14 @@ export default function Login() {
                       Test Credentials
                     </h3>
                     <div className="space-y-1 text-sm text-blue-700 dark:text-blue-300">
-                      <p><strong>Email:</strong> admin@spearwin.com</p>
-                      <p><strong>Password:</strong> admin123</p>
+                      <p><strong>Email:</strong> superadmin3@example.com</p>
+                      <p><strong>Password:</strong> SuperSecurePass456!</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => {
-                        setEmail("admin@spearwin.com");
-                        setPassword("admin123");
+                        setEmail("superadmin3@example.com");
+                        setPassword("SuperSecurePass456!");
                         setErrors({});
                       }}
                       className="mt-2 text-xs bg-blue-100 hover:bg-blue-200 dark:bg-blue-800 dark:hover:bg-blue-700 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-md transition-colors"

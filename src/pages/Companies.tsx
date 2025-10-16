@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../components/ui/table";
+import { companyService } from "../services/companyService";
+import { Company } from "../services/types";
 
 export default function Companies() {
   const navigate = useNavigate();
@@ -10,9 +12,12 @@ export default function Companies() {
   const [filterBy, setFilterBy] = useState("Company Name");
   const [orderType, setOrderType] = useState("Order Type");
   const [orderStatus, setOrderStatus] = useState("Order Status");
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Sample data - you can replace this with real data
-  const companies = [
+  // Sample data - fallback when API is not available
+  const sampleCompanies = [
     {
       id: 1,
       companyName: "Spearwin Pvt. Ltd.",
@@ -114,13 +119,43 @@ export default function Companies() {
     }
   ];
 
-  const totalCompanies = 45;
+  const totalCompanies = companies.length;
   const companiesPerPage = 10;
   const totalPages = Math.ceil(totalCompanies / companiesPerPage);
 
-  const handleRefresh = () => {
-    console.log("Refresh companies data");
-    // Reload data from API
+  // Fetch companies on component mount
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        setIsLoading(true);
+        const response = await companyService.getCompanies();
+        setCompanies(response.data);
+        setError(null);
+      } catch (err: any) {
+        console.error("Error fetching companies:", err);
+        setError("Failed to load companies. Using sample data.");
+        // Fallback to sample data
+        setCompanies(sampleCompanies as any);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCompanies();
+  }, []);
+
+  const handleRefresh = async () => {
+    try {
+      setIsLoading(true);
+      const response = await companyService.getCompanies();
+      setCompanies(response.data);
+      setError(null);
+    } catch (err: any) {
+      console.error("Error refreshing companies:", err);
+      setError("Failed to refresh companies data.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -231,17 +266,32 @@ export default function Companies() {
         
           <div className="overflow-x-auto">
             <Table className="w-full min-w-[700px]">
-              <TableHeader>
-                <TableRow className="bg-blue-50 mx-4">
-                  <TableCell isHeader className="rounded-l-[20px] pl-6 pr-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Company Name</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Industry</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Location</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Contact Person</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Email</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Status</TableCell>
-                  <TableCell isHeader className="rounded-r-[20px] pl-3 pr-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Action</TableCell>
-                </TableRow>
-              </TableHeader>
+              {/* Error Message */}
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-md mb-4">
+                  <p className="text-sm text-red-600">{error}</p>
+                </div>
+              )}
+
+              {/* Loading State */}
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900"></div>
+                  <span className="ml-2 text-gray-600">Loading companies...</span>
+                </div>
+              ) : (
+                <>
+                  <TableHeader>
+                    <TableRow className="bg-blue-50 mx-4">
+                      <TableCell isHeader className="rounded-l-[20px] pl-6 pr-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Company Name</TableCell>
+                      <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Industry</TableCell>
+                      <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Location</TableCell>
+                      <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Contact Person</TableCell>
+                      <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Email</TableCell>
+                      <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Status</TableCell>
+                      <TableCell isHeader className="rounded-r-[20px] pl-3 pr-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Action</TableCell>
+                    </TableRow>
+                  </TableHeader>
               <TableBody className="bg-white divide-y divide-gray-200">
                 {companies.map((company) => (
                   <tr key={company.id} className="hover:bg-gray-50">
@@ -252,13 +302,14 @@ export default function Companies() {
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{company.email}</td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                        company.status === 'Active' 
+                        company.status === 'ACTIVE' 
                           ? 'bg-green-100 text-green-800' 
-                          : company.status === 'Pending'
+                          : company.status === 'PENDING'
                           ? 'bg-orange-100 text-orange-800'
                           : 'bg-red-100 text-red-800'
                       }`}>
-                        {company.status}
+                        {company.status === 'ACTIVE' ? 'Active' : 
+                         company.status === 'PENDING' ? 'Pending' : 'Inactive'}
                       </span>
                     </td>
                     <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
@@ -278,6 +329,8 @@ export default function Companies() {
                   </tr>
                 ))}
               </TableBody>
+                </>
+              )}
             </Table>
           </div>
           

@@ -1,7 +1,8 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
 import Login from "./pages/Login";
 import NotFound from "./pages/OtherPage/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { useAuth } from "./context/AuthContext";
 import UserProfiles from "./pages/UserProfiles";
 import Videos from "./pages/UiElements/Videos";
 import Images from "./pages/UiElements/Images";
@@ -50,18 +51,36 @@ import CMS from "./pages/CMS";
 import AddCMS from "./pages/AddCMS";
 import AddTranslatedPage from "./pages/AddTranslatedPage";
 
+// Component to handle root route redirection
+function RootRedirect() {
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-brand-500"></div>
+      </div>
+    );
+  }
+  
+  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
+}
+
 export default function App() {
   return (
     <>
       <Router>
         <ScrollToTop />
         <Routes>
+          {/* Root redirect - shows login first */}
+          <Route path="/" element={<RootRedirect />} />
+          
           {/* Login Route */}
           <Route path="/login" element={<Login />} />
           
           {/* Protected Dashboard Layout */}
           <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-            <Route index path="/" element={<Home />} />
+            <Route path="/dashboard" element={<Home />} />
 
             {/* Admin Pages */}
             <Route path="/admin-users" element={<AdminUsers />} />
