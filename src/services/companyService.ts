@@ -10,13 +10,13 @@ export const companyService = {
 
   // Get company by ID
   getCompanyById: async (id: string): Promise<ApiResponse<Company>> => {
-    const response = await api.get(`/companies/${id}`);
+    const response = await api.get(`/api/companies/${id}`);
     return response.data;
   },
 
   // Create new company (ADMIN+)
   createCompany: async (companyData: CreateCompanyRequest): Promise<ApiResponse<Company>> => {
-    const response = await api.post('/companies', companyData);
+    const response = await api.post('/api/companies', companyData);
     return response.data;
   },
 

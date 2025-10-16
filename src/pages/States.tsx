@@ -24,7 +24,7 @@ export default function States() {
   });
 
   // Fetch states based on selected country
-  const { data: statesResponse, isLoading: statesLoading, error: statesError } = useQuery({
+  const { data: statesResponse, isLoading: statesLoading, error: statesError, refetch: refetchStates } = useQuery({
     queryKey: ['states', selectedCountryId],
     queryFn: () => statesService.getStatesByCountryId(selectedCountryId),
     enabled: !!selectedCountryId, // Only run query when a country is selected
@@ -74,7 +74,8 @@ export default function States() {
 
   const handleRefresh = () => {
     console.log("Refresh States data");
-    // Reload data from API
+    refetchStates();
+    toast.success("States data refreshed!");
   };
 
   return (

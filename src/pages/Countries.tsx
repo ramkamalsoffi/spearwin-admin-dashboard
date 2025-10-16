@@ -18,7 +18,7 @@ export default function Countries() {
   const [orderStatus, setOrderStatus] = useState("Order Status");
 
   // Fetch countries from API
-  const { data: countriesResponse, isLoading, error } = useQuery({
+  const { data: countriesResponse, isLoading, error, refetch } = useQuery({
     queryKey: ['countries'],
     queryFn: () => countryService.getCountries(),
   });
@@ -60,7 +60,8 @@ export default function Countries() {
 
   const handleRefresh = () => {
     console.log("Refresh Countries data");
-    // Reload data from API
+    refetch();
+    toast.success("Countries data refreshed!");
   };
 
   return (

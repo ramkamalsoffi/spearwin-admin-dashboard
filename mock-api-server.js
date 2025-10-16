@@ -7,6 +7,27 @@ const PORT = 5000;
 app.use(cors());
 app.use(express.json());
 
+// Mock authentication middleware
+app.use((req, res, next) => {
+  // Skip auth for login endpoint
+  if (req.path === '/api/admin/login') {
+    return next();
+  }
+  
+  // For all other endpoints, check for Authorization header
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      message: 'Unauthorized',
+      statusCode: 401
+    });
+  }
+  
+  // Mock token validation - accept any Bearer token
+  next();
+});
+
 // Mock data
 let companies = [
   {
@@ -1073,6 +1094,125 @@ app.patch('/jobs/:id/stats', (req, res) => {
   });
 });
 
+// Mock data for admin users
+let adminUsers = [
+  {
+    id: "1",
+    email: "superadmin3@example.com",
+    password: "SuperSecurePass456!", // In real app, this would be hashed
+    role: "SUPER_ADMIN",
+    status: "ACTIVE",
+    firstName: "Super",
+    lastName: "Admin",
+    designation: "System Administrator",
+    department: "IT",
+    lastLoginAt: new Date().toISOString(),
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "2",
+    email: "admin@example.com",
+    password: "AdminPass123!",
+    role: "ADMIN",
+    status: "ACTIVE",
+    firstName: "Admin",
+    lastName: "User",
+    designation: "Administrator",
+    department: "Operations",
+    lastLoginAt: new Date().toISOString(),
+    createdAt: new Date().toISOString()
+  }
+];
+
+// Admin authentication endpoints
+// POST /api/admin/login - Admin login
+app.post('/api/admin/login', (req, res) => {
+  const { email, password } = req.body;
+  
+  // Validation
+  if (!email || !password) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email and password are required'
+    });
+  }
+
+  // Find user by email
+  const user = adminUsers.find(u => u.email === email);
+  if (!user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid email or password'
+    });
+  }
+
+  // Check password (in real app, this would be hashed comparison)
+  if (user.password !== password) {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid email or password'
+    });
+  }
+
+  // Check if user is active
+  if (user.status !== 'ACTIVE') {
+    return res.status(401).json({
+      success: false,
+      message: 'Account is not active'
+    });
+  }
+
+  // Update last login
+  user.lastLoginAt = new Date().toISOString();
+
+  // Generate mock tokens (in real app, these would be JWT tokens)
+  const accessToken = `mock_access_token_${user.id}_${Date.now()}`;
+  const refreshToken = `mock_refresh_token_${user.id}_${Date.now()}`;
+
+  // Return user data without password
+  const { password: _, ...userWithoutPassword } = user;
+
+  res.json({
+    success: true,
+    data: {
+      accessToken,
+      refreshToken,
+      user: userWithoutPassword
+    },
+    message: 'Login successful'
+  });
+});
+
+// POST /api/admin/logout - Admin logout
+app.post('/api/admin/logout', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Logout successful'
+  });
+});
+
+// GET /api/admin/profile - Get admin profile
+app.get('/api/admin/profile', (req, res) => {
+  // In real app, this would verify the token
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authorization token required'
+    });
+  }
+
+  // For mock purposes, return the first user
+  const user = adminUsers[0];
+  const { password: _, ...userWithoutPassword } = user;
+
+  res.json({
+    success: true,
+    data: userWithoutPassword,
+    message: 'Profile retrieved successfully'
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({
@@ -1126,6 +1266,10 @@ app.listen(PORT, () => {
   console.log(`     PUT    /jobs/:id (alternative)`);
   console.log(`     DELETE /jobs/:id (alternative)`);
   console.log(`     PATCH  /jobs/:id/stats (alternative)`);
+  console.log(`   Admin Auth:`);
+  console.log(`     POST   /api/admin/login`);
+  console.log(`     POST   /api/admin/logout`);
+  console.log(`     GET    /api/admin/profile`);
   console.log(`   Health:`);
   console.log(`     GET    /api/health`);
 });

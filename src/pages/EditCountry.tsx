@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { countryService } from "../services";
 import { UpdateCountryRequest } from "../services/types";
+import { useCountryMutations } from "../hooks/useCountryMutations";
 
 export default function EditCountry() {
   const navigate = useNavigate();
@@ -26,19 +27,8 @@ export default function EditCountry() {
     enabled: !!id,
   });
 
-  // Update country mutation
-  const updateCountryMutation = useMutation({
-    mutationFn: (countryData: UpdateCountryRequest) => countryService.updateCountry(countryData),
-    onSuccess: () => {
-      toast.success("Country updated successfully!");
-      navigate('/countries');
-    },
-    onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || "Failed to update country";
-      toast.error(errorMessage);
-      console.error("Error updating country:", error);
-    },
-  });
+  // Use the mutation from the hook
+  const { updateCountryMutation } = useCountryMutations();
 
   // Update form data when country data is loaded
   useEffect(() => {
@@ -87,7 +77,11 @@ export default function EditCountry() {
     };
 
     // Submit the form
-    updateCountryMutation.mutate(updateData);
+    updateCountryMutation.mutate(updateData, {
+      onSuccess: () => {
+        navigate('/countries');
+      }
+    });
   };
 
   // Loading state

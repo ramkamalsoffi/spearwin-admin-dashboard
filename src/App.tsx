@@ -23,6 +23,7 @@ import AdminUsers from "./pages/AdminUsers";
 import AddAdminUsers from "./pages/AddAdminUsers";
 import Jobs from "./pages/Jobs";
 import AddJob from "./pages/AddJob";
+import EditJob from "./pages/EditJob";
 import Companies from "./pages/Companies";
 import AddCompany from "./pages/AddCompany";
 import UserProfilesManagement from "./pages/UserProfilesManagement";
@@ -92,6 +93,7 @@ export default function App() {
             {/* Jobs Pages */}
             <Route path="/jobs" element={<Jobs />} />
             <Route path="/add-job" element={<AddJob />} />
+            <Route path="/edit-job/:id" element={<EditJob />} />
 
             {/* Companies Pages */}
             <Route path="/companies" element={<Companies />} />

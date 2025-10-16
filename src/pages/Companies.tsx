@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../components/ui/table";
@@ -47,9 +48,11 @@ export default function Companies() {
       const response = await companyService.getCompanies();
       setCompanies(response.data);
       setError(null);
+      toast.success("Companies data refreshed!");
     } catch (err: any) {
       console.error("Error refreshing companies:", err);
       setError("Failed to refresh companies data.");
+      toast.error("Failed to refresh companies data.");
     } finally {
       setIsLoading(false);
     }

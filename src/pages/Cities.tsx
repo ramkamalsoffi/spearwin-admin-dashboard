@@ -20,7 +20,7 @@ export default function Cities() {
   const citiesPerPage = 10;
 
   // Fetch cities data
-  const { data: citiesData, isLoading: citiesLoading, error: citiesError } = useQuery({
+  const { data: citiesData, isLoading: citiesLoading, error: citiesError, refetch: refetchCities } = useQuery({
     queryKey: ['cities', selectedState],
     queryFn: () => selectedState ? citiesService.getCitiesByStateId(selectedState) : citiesService.getCities(),
   });

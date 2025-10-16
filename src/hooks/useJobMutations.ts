@@ -56,10 +56,9 @@ export const useJobMutations = () => {
   const updateJobStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) => 
       jobService.updateJobStatus(id, status),
-    onSuccess: (response) => {
+    onSuccess: () => {
       toast.success("Job status updated successfully!");
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
-      queryClient.invalidateQueries({ queryKey: ['job', response.data.id] });
     },
     onError: (error: any) => {
       const errorMessage = error.response?.data?.message || "Failed to update job status";
