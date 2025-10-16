@@ -99,8 +99,8 @@ export default function AddStates() {
       return [{ value: "", label: "Failed to load countries" }];
     }
     // API returns array directly, not wrapped in data property
-    const countries = countriesResponse ?? [];
-    return countries.map((country) => ({ value: country.id, label: country.name }));
+    const countries = Array.isArray(countriesResponse) ? countriesResponse : countriesResponse?.data ?? [];
+    return countries.map((country: any) => ({ value: country.id, label: country.name }));
   })();
 
   const statusOptions = [

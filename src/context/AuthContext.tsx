@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { adminService } from '../services';
-import { Admin } from '../services/types';
 
 interface User {
   id: string;

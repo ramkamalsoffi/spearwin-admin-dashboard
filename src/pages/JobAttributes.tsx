@@ -1,4 +1,3 @@
-import { useState } from "react";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 
@@ -46,89 +45,89 @@ const JobAttributeCard = ({
 };
 
 export default function JobAttributes() {
-  const [languageLevels, setLanguageLevels] = useState([
+  const languageLevels = [
     { id: 1, name: "Beginner", checked: true },
     { id: 2, name: "Intermediate", checked: false },
     { id: 3, name: "Advanced", checked: true },
     { id: 4, name: "Native Speaker", checked: false }
-  ]);
+  ];
 
-  const [careerLevels, setCareerLevels] = useState([
+  const careerLevels = [
     { id: 1, name: "High School / Secondary", checked: true },
     { id: 2, name: "Diploma / Certification", checked: false },
     { id: 3, name: "Bachelor's Degree", checked: true },
     { id: 4, name: "Master's Degree", checked: false }
-  ]);
+  ];
 
-  const [functionalAreas, setFunctionalAreas] = useState([
+  const functionalAreas = [
     { id: 1, name: "Software Development", checked: true },
     { id: 2, name: "UI/UX & Design", checked: false },
     { id: 3, name: "Banking & Insurance", checked: true },
     { id: 4, name: "Education & Training", checked: false }
-  ]);
+  ];
 
-  const [genders, setGenders] = useState([
+  const genders = [
     { id: 1, name: "Male", checked: true },
     { id: 2, name: "Female", checked: false },
     { id: 3, name: "Transgender", checked: true },
     { id: 4, name: "Non-Binary", checked: false }
-  ]);
+  ];
 
-  const [industries, setIndustries] = useState([
+  const industries = [
     { id: 1, name: "IT", checked: true },
     { id: 2, name: "Banking", checked: false },
     { id: 3, name: "Manufacturing", checked: true },
     { id: 4, name: "Healthcare", checked: false }
-  ]);
+  ];
 
-  const [jobExperience, setJobExperience] = useState([
+  const jobExperience = [
     { id: 1, name: "Fresher / Entry", checked: true },
     { id: 2, name: "0 - 1 Year", checked: false },
     { id: 3, name: "1 - 3 Years", checked: true },
     { id: 4, name: "3 - 5 Years", checked: false }
-  ]);
+  ];
 
-  const [jobSkills, setJobSkills] = useState([
+  const jobSkills = [
     { id: 1, name: "Project Management", checked: true },
     { id: 2, name: "UI/UX & Design", checked: false },
     { id: 3, name: "React.js", checked: true },
     { id: 4, name: "Digital Marketing", checked: false }
-  ]);
+  ];
 
-  const [jobTypes, setJobTypes] = useState([
+  const jobTypes = [
     { id: 1, name: "Full-Time", checked: true },
     { id: 2, name: "Part-Time", checked: false },
     { id: 3, name: "Internship", checked: true },
     { id: 4, name: "Contract", checked: false }
-  ]);
+  ];
 
-  const [jobShifts, setJobShifts] = useState([
+  const jobShifts = [
     { id: 1, name: "Day Shift", checked: true },
     { id: 2, name: "Night Shift", checked: false },
     { id: 3, name: "Manufacturing", checked: true },
     { id: 4, name: "Flexible", checked: false }
-  ]);
+  ];
 
-  const [degreeLevels, setDegreeLevels] = useState([
+  const degreeLevels = [
     { id: 1, name: "High School / Secondary", checked: true },
     { id: 2, name: "Diploma / Certification", checked: false },
     { id: 3, name: "Bachelor's Degree", checked: true },
     { id: 4, name: "Master's Degree", checked: false }
-  ]);
+  ];
 
-  const [degreeTypes, setDegreeTypes] = useState([
+  const degreeTypes = [
     { id: 1, name: "Arts & Science", checked: true },
     { id: 2, name: "Engineering", checked: false },
     { id: 3, name: "Medicine", checked: true },
     { id: 4, name: "Agriculture", checked: false }
-  ]);
+  ];
 
-  const [majorSubjects, setMajorSubjects] = useState([
+  const majorSubjects = [
     { id: 1, name: "Computer Science", checked: true },
     { id: 2, name: "Mechanical Engineering", checked: false },
     { id: 3, name: "Electronics", checked: true },
     { id: 4, name: "Nursing", checked: false }
-  ]);
+  ];
 
   const handleAddNew = (category: string) => {
     console.log(`Add new item to ${category}`);

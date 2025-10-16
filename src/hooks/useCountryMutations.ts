@@ -11,7 +11,7 @@ export const useCountryMutations = () => {
   // Create country mutation
   const createCountryMutation = useMutation({
     mutationFn: (countryData: CreateCountryRequest) => countryService.createCountry(countryData),
-    onSuccess: (response) => {
+    onSuccess: () => {
       toast.success("Country created successfully!");
       queryClient.invalidateQueries({ queryKey: ['countries'] });
       navigate("/countries");

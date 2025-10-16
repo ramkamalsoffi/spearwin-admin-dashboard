@@ -31,9 +31,6 @@ export default function AddCMS() {
     navigate("/cms");
   };
 
-  const handleCancel = () => {
-    navigate("/cms");
-  };
 
   return (
     <>

@@ -29,9 +29,9 @@ export default function JobsList() {
       <div className="grid gap-4">
         {jobs.map((job) => (
           <div key={job.id} className="border rounded-lg p-4">
-            <h3 className="text-lg font-semibold">{job.jobTitle}</h3>
-            <p className="text-gray-600">{job.companyName}</p>
-            <p className="text-sm text-gray-500">{job.location}</p>
+            <h3 className="text-lg font-semibold">{job.title}</h3>
+            <p className="text-gray-600">Company ID: {job.companyId}</p>
+            <p className="text-sm text-gray-500">{job.jobType} • {job.workMode}</p>
             <div className="flex gap-2 mt-2">
               <button
                 onClick={() => handleDeleteJob(job.id)}

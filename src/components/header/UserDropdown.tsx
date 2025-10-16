@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
-import { Link } from "react-router";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 
@@ -32,7 +31,7 @@ export default function UserDropdown() {
           <img src="/images/user/owner.jpg" alt="User" className="w-full h-full object-cover" />
         </span>
         <div className="flex flex-col items-start">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{user?.name || 'Admin User'}</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{user ? `${user.firstName} ${user.lastName}` : 'Admin User'}</span>
           <span className="text-xs text-gray-400 dark:text-gray-500">Admin</span>
         </div>
         <svg
@@ -62,7 +61,7 @@ export default function UserDropdown() {
       >
         <div>
           <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
-            {user?.name || 'Admin User'}
+            {user ? `${user.firstName} ${user.lastName}` : 'Admin User'}
           </span>
           <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
             {user?.email || 'admin@spearwin.com'}

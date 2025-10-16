@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
@@ -6,7 +6,6 @@ import { Table, TableHeader, TableBody, TableRow, TableCell } from "../component
 
 export default function CMS() {
   const navigate = useNavigate();
-  const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState<"cms" | "translated">("cms");
   const [filterBy, setFilterBy] = useState("Date");
   const [orderType, setOrderType] = useState("Order Type");
@@ -61,9 +60,6 @@ export default function CMS() {
     { id: "23440", cmsPage: "Careers", pageTitle: "Careers", language: "English" },
   ];
 
-  const totalPages = 78;
-  const pagesPerPage = 10;
-  const totalPageCount = Math.ceil(totalPages / pagesPerPage);
 
   return (
     <>

@@ -12,6 +12,9 @@ export default function AddCountry() {
   const [formData, setFormData] = useState({
     name: "",
     code: "",
+    language: "",
+    nationality: "",
+    isDefault: false,
     isActive: true
   });
 
@@ -28,6 +31,9 @@ export default function AddCountry() {
     const countryData: CreateCountryRequest = {
       name: formData.name,
       code: formData.code,
+      language: formData.language,
+      nationality: formData.nationality,
+      isDefault: formData.isDefault,
       isActive: formData.isActive,
     };
 

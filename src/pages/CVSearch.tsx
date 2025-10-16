@@ -90,23 +90,6 @@ export default function CVSearch() {
     }, 1000);
   };
 
-  const clearSearch = () => {
-    setSearchData({
-      company: "",
-      jobCode: "",
-      candidateName: "",
-      email: "",
-      selectSkill: "",
-      candidateCV: "",
-      experience: "",
-      salary: "",
-      currentCompany: "",
-      currentLocation: "",
-      noticePeriod: "",
-      profileType: ""
-    });
-    setSearchResults([]);
-  };
 
   return (
     <>

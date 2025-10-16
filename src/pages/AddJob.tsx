@@ -24,7 +24,7 @@ export default function AddJob() {
   // TanStack Query mutation for creating job
   const createJobMutation = useMutation({
     mutationFn: (jobData: CreateJobRequest) => jobService.createJob(jobData),
-    onSuccess: (response) => {
+    onSuccess: () => {
       toast.success("Job created successfully!");
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
       navigate('/jobs');
