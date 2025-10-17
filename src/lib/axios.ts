@@ -14,7 +14,14 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     // Add auth token if available
-    const token = localStorage.getItem('accessToken');
+    let token = localStorage.getItem('accessToken');
+    
+    // In development, set a mock token if none exists
+    if (import.meta.env.DEV && !token) {
+      token = 'mock_access_token_1_1737022594189';
+      localStorage.setItem('accessToken', token);
+    }
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
