@@ -13,10 +13,7 @@ export default function EditCountry() {
   const { id } = useParams<{ id: string }>();
   const [formData, setFormData] = useState({
     name: "",
-    code: "",
-    language: "",
-    nationality: "",
-    isDefault: false,
+    region: "",
     isActive: true
   });
 
@@ -35,10 +32,7 @@ export default function EditCountry() {
     if (countryData?.data) {
       setFormData({
         name: countryData.data.name,
-        code: countryData.data.code,
-        language: countryData.data.language,
-        nationality: countryData.data.nationality,
-        isDefault: countryData.data.isDefault,
+        region: countryData.data.region,
         isActive: countryData.data.isActive
       });
     }
@@ -60,7 +54,7 @@ export default function EditCountry() {
     }
 
     // Validate form data
-    if (!formData.name || !formData.code || !formData.language || !formData.nationality) {
+    if (!formData.name || !formData.region) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -69,10 +63,7 @@ export default function EditCountry() {
     const updateData: UpdateCountryRequest = {
       id,
       name: formData.name,
-      code: formData.code,
-      language: formData.language,
-      nationality: formData.nationality,
-      isDefault: formData.isDefault,
+      region: formData.region,
       isActive: formData.isActive
     };
 
@@ -150,9 +141,10 @@ export default function EditCountry() {
       <div className="px-4 sm:px-6 lg:px-30 py-4">
         <div className="bg-white rounded-[10px] shadow-sm border border-gray-200">
           <form onSubmit={handleSubmit} className="p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Left Column */}
-              <div className="space-y-6">
+            <div className="space-y-6">
+              <h1 className="text-xl font-semibold text-gray-900 mb-6">Edit Country</h1>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Country Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -168,90 +160,19 @@ export default function EditCountry() {
                   />
                 </div>
 
-                {/* Country Code */}
+                {/* Region */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Country Code <span className="text-red-500">*</span>
+                    Region <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    value={formData.code}
-                    onChange={(e) => handleInputChange("code", e.target.value)}
-                    placeholder="Enter country code (e.g., US, CA)"
+                    value={formData.region}
+                    onChange={(e) => handleInputChange("region", e.target.value)}
+                    placeholder="Enter region (e.g., Asia, Europe, Africa)"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
-                </div>
-
-                {/* Language */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Language <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.language}
-                    onChange={(e) => handleInputChange("language", e.target.value)}
-                    placeholder="Enter language (e.g., English, Spanish)"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-
-                {/* Submit Button */}
-                <div className="pt-4">
-                  <button
-                    type="submit"
-                    disabled={updateCountryMutation.isPending}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      updateCountryMutation.isPending
-                        ? 'bg-gray-400 cursor-not-allowed text-gray-200'
-                        : 'bg-blue-900 hover:bg-blue-800 text-white'
-                    }`}
-                  >
-                    {updateCountryMutation.isPending ? (
-                      <div className="flex items-center">
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Updating Country...
-                      </div>
-                    ) : (
-                      'Update Country'
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Right Column */}
-              <div className="space-y-6">
-                {/* Nationality */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nationality <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.nationality}
-                    onChange={(e) => handleInputChange("nationality", e.target.value)}
-                    placeholder="Enter nationality (e.g., American, Canadian)"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-
-                {/* Is Default */}
-                <div>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.isDefault}
-                      onChange={(e) => handleInputChange("isDefault", e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">Is Default Country</span>
-                  </label>
                 </div>
 
                 {/* Active Status */}
@@ -263,10 +184,29 @@ export default function EditCountry() {
                       onChange={(e) => handleInputChange("isActive", e.target.checked)}
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Active</span>
+                    <span className="ml-2 text-sm text-gray-700">Active Country</span>
                   </label>
                 </div>
+
               </div>
+
+              <div className="flex justify-end space-x-4 pt-6">
+                <button
+                  type="button"
+                  onClick={() => navigate("/countries")}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updateCountryMutation.isPending}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {updateCountryMutation.isPending ? "Updating..." : "Update Country"}
+                </button>
+              </div>
+
             </div>
           </form>
         </div>

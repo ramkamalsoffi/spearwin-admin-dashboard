@@ -83,7 +83,7 @@ export default function AddStates() {
     const stateData: CreateStateRequest = {
       name: formData.name,
       code: formData.code,
-      countryId: formData.countryId,
+      countryId: parseInt(formData.countryId) || Number(formData.countryId),
       isActive: formData.isActive,
     };
 

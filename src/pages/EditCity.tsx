@@ -117,7 +117,7 @@ export default function EditCity() {
       id,
       name: formData.name,
       code: formData.code,
-      stateId: formData.stateId,
+      stateId: parseInt(formData.stateId) || Number(formData.stateId),
       isActive: formData.isActive
     };
 

@@ -1,4 +1,4 @@
-import api from './api';
+import api from '../utils/axios';
 
 export interface CreateJobDto {
   title: string;

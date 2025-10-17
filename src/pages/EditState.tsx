@@ -117,7 +117,7 @@ export default function EditState() {
       id,
       name: formData.name,
       code: formData.code,
-      countryId: formData.countryId,
+      countryId: parseInt(formData.countryId) || Number(formData.countryId),
       isActive: formData.isActive
     };
 

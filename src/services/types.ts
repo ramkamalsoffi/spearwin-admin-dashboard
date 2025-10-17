@@ -38,10 +38,7 @@ export interface UpdateJobRequest extends Partial<CreateJobRequest> {
 export interface Country {
   id: string;
   name: string;
-  code: string;
-  language: string;
-  nationality: string;
-  isDefault: boolean;
+  region: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -49,10 +46,7 @@ export interface Country {
 
 export interface CreateCountryRequest {
   name: string;
-  code: string;
-  language: string;
-  nationality: string;
-  isDefault?: boolean;
+  region: string;
   isActive: boolean;
 }
 
@@ -99,7 +93,7 @@ export interface State {
 export interface CreateStateRequest {
   name: string;
   code: string;
-  countryId: string;
+  countryId: number;
   isActive: boolean;
 }
 
@@ -121,7 +115,7 @@ export interface City {
 export interface CreateCityRequest {
   name: string;
   code: string;
-  stateId: string;
+  stateId: number;
   isActive?: boolean;
 }
 
@@ -173,6 +167,45 @@ export interface CreateCompanyRequest {
 
 export interface UpdateCompanyRequest extends Partial<CreateCompanyRequest> {
   id: string;
+}
+
+// User related types
+export interface User {
+  id: string;
+  email: string;
+  emailVerified: boolean;
+  emailVerifiedAt: string | null;
+  phone: string;
+  phoneVerified: boolean;
+  phoneVerifiedAt: string | null;
+  password: string;
+  role: 'CANDIDATE' | 'ADMIN' | 'EMPLOYER';
+  status: 'PENDING_VERIFICATION' | 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  lastLoginAt: string | null;
+  profileCompleted: boolean;
+  twoFactorEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// User Profile types for profile components
+export interface UserProfile {
+  id?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  avatar?: string;
+  designation?: string;
+  role?: string;
+  location?: string;
+  bio?: string;
+  socialLinks?: {
+    linkedin?: string;
+    twitter?: string;
+    facebook?: string;
+    instagram?: string;
+  };
 }
 
 // Error types

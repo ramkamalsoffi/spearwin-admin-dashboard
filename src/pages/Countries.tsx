@@ -203,7 +203,7 @@ export default function Countries() {
                 <TableHeader>
                   <TableRow className="bg-blue-50 mx-4">
                     <TableCell isHeader className="rounded-l-[20px] pl-6 pr-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Name</TableCell>
-                    <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Code</TableCell>
+                    <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Region</TableCell>
                     <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Status</TableCell>
                     <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Created</TableCell>
                     <TableCell isHeader className="rounded-r-[20px] pl-3 pr-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Action</TableCell>
@@ -213,7 +213,7 @@ export default function Countries() {
                   {countries.map((country: Country) => (
                     <tr key={country.id} className="hover:bg-gray-50">
                       <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm text-gray-900 font-medium">{country.name}</td>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{country.code}</td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{country.region}</td>
                       <td className="px-3 py-3 whitespace-nowrap">
                         <StatusBadge status={country.isActive ? "active" : "inactive"} />
                       </td>

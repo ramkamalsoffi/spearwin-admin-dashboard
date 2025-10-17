@@ -1,5 +1,4 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Login from "./pages/Login";
 import NotFound from "./pages/OtherPage/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -70,12 +69,9 @@ function RootRedirect() {
   
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
 }
-import { queryClient } from "./lib/queryClient";
-
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
+    <Router>
         <ScrollToTop />
         <Routes>
           {/* Root redirect - shows login first */}
@@ -184,6 +180,5 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
-    </QueryClientProvider>
   );
 }

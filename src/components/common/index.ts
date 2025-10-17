@@ -4,4 +4,4 @@ export { default as PageHeader } from './PageHeader';
 export { default as PageBreadcrumb } from './PageBreadCrumb';
 export { default as PageMeta } from './PageMeta';
 export { default as ComponentCard } from './ComponentCard';
-export { ScrollToTop } from './ScrollToTop';
+export { default as ScrollToTop } from './ScrollToTop';

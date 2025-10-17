@@ -11,10 +11,7 @@ export default function AddCountry() {
   const { createCountryMutation } = useCountryMutations();
   const [formData, setFormData] = useState({
     name: "",
-    code: "",
-    language: "",
-    nationality: "",
-    isDefault: false,
+    region: "",
     isActive: true
   });
 
@@ -30,10 +27,7 @@ export default function AddCountry() {
     
     const countryData: CreateCountryRequest = {
       name: formData.name,
-      code: formData.code,
-      language: formData.language,
-      nationality: formData.nationality,
-      isDefault: formData.isDefault,
+      region: formData.region,
       isActive: formData.isActive,
     };
 
@@ -85,56 +79,16 @@ export default function AddCountry() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Country Code *
+                    Region *
                   </label>
                   <input
                     type="text"
-                    value={formData.code}
-                    onChange={(e) => handleInputChange("code", e.target.value)}
+                    value={formData.region}
+                    onChange={(e) => handleInputChange("region", e.target.value)}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter country code (e.g., US, UK)"
+                    placeholder="Enter region (e.g., Asia, Europe, Africa)"
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Language *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.language}
-                    onChange={(e) => handleInputChange("language", e.target.value)}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter language (e.g., English, Spanish)"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nationality *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.nationality}
-                    onChange={(e) => handleInputChange("nationality", e.target.value)}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter nationality (e.g., American, Canadian)"
-                  />
-                </div>
-
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={formData.isDefault}
-                    onChange={(e) => handleInputChange("isDefault", e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label className="ml-2 block text-sm text-gray-700">
-                    Is Default Country
-                  </label>
                 </div>
 
                 <div className="flex items-center">

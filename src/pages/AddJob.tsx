@@ -12,7 +12,6 @@ export default function AddJob() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
-  const createJobMutation = useCreateJob();
   const [formData, setFormData] = useState({
     title: "",
     companyId: "",

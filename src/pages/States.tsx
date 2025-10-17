@@ -6,8 +6,8 @@ import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../components/ui/table";
 import StatusBadge from "../components/ui/status-badge/StatusBadge";
-import { countryService, statesService } from "../services";
-import { Country, State } from "../services/types";
+import { statesService } from "../services";
+import { State } from "../services/types";
 
 export default function States() {
   const navigate = useNavigate();
@@ -15,37 +15,20 @@ export default function States() {
   const [filterBy, setFilterBy] = useState("Language");
   const [orderType, setOrderType] = useState("Order Type");
   const [orderStatus, setOrderStatus] = useState("Order Status");
-  const [selectedCountryId, setSelectedCountryId] = useState<string>("");
 
-  // Fetch countries for the dropdown
-  const { data: countriesResponse, isLoading: countriesLoading, error: countriesError } = useQuery({
-    queryKey: ['countries'],
-    queryFn: () => countryService.getCountries(),
-  });
 
-  // Fetch states based on selected country
+  // Fetch states directly from API
   const { data: statesResponse, isLoading: statesLoading, error: statesError, refetch: refetchStates } = useQuery({
-    queryKey: ['states', selectedCountryId],
-    queryFn: () => statesService.getStatesByCountryId(selectedCountryId),
-    enabled: !!selectedCountryId, // Only run query when a country is selected
+    queryKey: ['states'],
+    queryFn: () => statesService.getStates(),
   });
 
   // Handle errors
-  if (countriesError) {
-    const errorMessage = (countriesError as any).response?.data?.message || "Failed to fetch countries";
-    toast.error(errorMessage);
-    console.error("Error fetching countries:", countriesError);
-  }
-
   if (statesError) {
     const errorMessage = (statesError as any).response?.data?.message || "Failed to fetch states";
     toast.error(errorMessage);
     console.error("Error fetching states:", statesError);
   }
-
-  const countries: Country[] = Array.isArray(countriesResponse)
-    ? (countriesResponse as unknown as Country[])
-    : (countriesResponse?.data || []);
 
   const states: State[] = Array.isArray(statesResponse)
     ? (statesResponse as unknown as State[])
@@ -104,34 +87,6 @@ export default function States() {
           <div className="px-6 py-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                  </svg>
-                  <span className="text-sm font-medium text-gray-700">Select Country</span>
-                </div>
-
-                <div className="relative">
-                  <select 
-                    value={selectedCountryId}
-                    onChange={(e) => setSelectedCountryId(e.target.value)}
-                    className="w-full sm:w-auto appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer min-w-[200px]"
-                    disabled={countriesLoading}
-                  >
-                    <option value="">Select a country...</option>
-                    {countries.map((country) => (
-                      <option key={country.id} value={country.id}>
-                        {country.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-
                 <div className="flex items-center gap-2">
                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -212,17 +167,7 @@ export default function States() {
           </div>
 
           <div className="overflow-x-auto">
-            {!selectedCountryId ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                  </svg>
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">Select a country</h3>
-                  <p className="mt-1 text-sm text-gray-500">Choose a country from the dropdown above to view its states.</p>
-                </div>
-              </div>
-            ) : statesLoading ? (
+            {statesLoading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="flex items-center space-x-2">
                   <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -296,7 +241,7 @@ export default function States() {
           </div>
 
           {/* Pagination */}
-          {selectedCountryId && !statesLoading && !statesError && states.length > 0 && (
+          {!statesLoading && !statesError && states.length > 0 && (
             <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-700">

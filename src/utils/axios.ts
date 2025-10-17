@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3008', // Backend API URL
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3006', // Backend API URL
   timeout: 10000, // 10 seconds timeout
   headers: {
     'Content-Type': 'application/json',
@@ -13,7 +13,7 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     // Add auth token to requests if available
-    const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -24,7 +24,7 @@ api.interceptors.request.use(
       config.headers['X-User-Type'] = userType;
     }
     
-    console.log('Making request to:', config.baseURL + config.url);
+    console.log('Making request to:', (config.baseURL || '') + (config.url || ''));
     return config;
   },
   (error) => {

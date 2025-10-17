@@ -91,7 +91,7 @@ export default function AddCities() {
     const cityData: CreateCityRequest = {
       name: formData.name,
       code: formData.code,
-      stateId: formData.stateId,
+      stateId: parseInt(formData.stateId) || Number(formData.stateId),
       isActive: formData.isActive
     };
 

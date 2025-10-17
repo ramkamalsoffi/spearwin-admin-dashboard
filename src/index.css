@@ -802,3 +802,20 @@ span.flatpickr-weekday,
 .simplebar-scrollbar.simplebar-visible:before {
   @apply opacity-100;
 }
+
+/* Fix for scrollbar styling */
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-gray-200);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: var(--color-gray-700);
+}
+
+.simplebar-scrollbar:before {
+  background-color: var(--color-gray-200);
+}
+
+.dark .simplebar-scrollbar:before {
+  background-color: var(--color-gray-700);
+}
