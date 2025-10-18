@@ -11,7 +11,23 @@ export default function AddCountry() {
   const { createCountryMutation } = useCountryMutations();
   const [formData, setFormData] = useState({
     name: "",
+    iso3: "",
+    iso2: "",
+    numeric_code: "",
+    phonecode: "",
+    capital: "",
+    currency: "",
+    currency_name: "",
+    currency_symbol: "",
+    tld: "",
+    native: "",
     region: "",
+    region_id: 0,
+    subregion: "",
+    subregion_id: 0,
+    nationality: "",
+    latitude: "",
+    longitude: "",
     isActive: true
   });
 
@@ -27,7 +43,23 @@ export default function AddCountry() {
     
     const countryData: CreateCountryRequest = {
       name: formData.name,
+      iso3: formData.iso3,
+      iso2: formData.iso2,
+      numeric_code: formData.numeric_code,
+      phonecode: formData.phonecode,
+      capital: formData.capital,
+      currency: formData.currency,
+      currency_name: formData.currency_name,
+      currency_symbol: formData.currency_symbol,
+      tld: formData.tld,
+      native: formData.native,
       region: formData.region,
+      region_id: formData.region_id,
+      subregion: formData.subregion,
+      subregion_id: formData.subregion_id,
+      nationality: formData.nationality,
+      latitude: formData.latitude,
+      longitude: formData.longitude,
       isActive: formData.isActive,
     };
 
@@ -63,6 +95,7 @@ export default function AddCountry() {
               <h1 className="text-xl font-semibold text-gray-900 mb-6">Add New Country</h1>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Basic Information */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Country Name *
@@ -79,6 +112,20 @@ export default function AddCountry() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nationality *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.nationality}
+                    onChange={(e) => handleInputChange("nationality", e.target.value)}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter nationality (e.g., Afghan, American)"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Region *
                   </label>
                   <input
@@ -88,6 +135,182 @@ export default function AddCountry() {
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter region (e.g., Asia, Europe, Africa)"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Subregion
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.subregion}
+                    onChange={(e) => handleInputChange("subregion", e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter subregion (e.g., Southern Asia)"
+                  />
+                </div>
+
+                {/* ISO Codes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ISO2 Code *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.iso2}
+                    onChange={(e) => handleInputChange("iso2", e.target.value)}
+                    required
+                    maxLength={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., AF, US, IN"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ISO3 Code *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.iso3}
+                    onChange={(e) => handleInputChange("iso3", e.target.value)}
+                    required
+                    maxLength={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., AFG, USA, IND"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Numeric Code
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.numeric_code}
+                    onChange={(e) => handleInputChange("numeric_code", e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., 004, 840, 356"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone Code
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.phonecode}
+                    onChange={(e) => handleInputChange("phonecode", e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., 93, 1, 91"
+                  />
+                </div>
+
+                {/* Capital and Currency */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Capital
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.capital}
+                    onChange={(e) => handleInputChange("capital", e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., Kabul, Washington D.C."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Currency
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.currency}
+                    onChange={(e) => handleInputChange("currency", e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., AFN, USD, INR"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Currency Name
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.currency_name}
+                    onChange={(e) => handleInputChange("currency_name", e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., Afghan afghani, US Dollar"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Currency Symbol
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.currency_symbol}
+                    onChange={(e) => handleInputChange("currency_symbol", e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., ؋, $, ₹"
+                  />
+                </div>
+
+                {/* Additional Information */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Top Level Domain
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.tld}
+                    onChange={(e) => handleInputChange("tld", e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., .af, .us, .in"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Native Name
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.native}
+                    onChange={(e) => handleInputChange("native", e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Native name in local language"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Latitude
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.latitude}
+                    onChange={(e) => handleInputChange("latitude", e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., 33.00000000"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Longitude
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.longitude}
+                    onChange={(e) => handleInputChange("longitude", e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., 65.00000000"
                   />
                 </div>
 

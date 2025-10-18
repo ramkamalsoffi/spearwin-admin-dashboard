@@ -13,7 +13,7 @@ import { useCountryMutations } from "../hooks/useCountryMutations";
 export default function Countries() {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
-  const [filterBy, setFilterBy] = useState("Language");
+  const [filterBy, setFilterBy] = useState("Region");
   const [orderType, setOrderType] = useState("Order Type");
   const [orderStatus, setOrderStatus] = useState("Order Status");
 
@@ -25,12 +25,6 @@ export default function Countries() {
 
   const { deleteCountryMutation } = useCountryMutations();
 
-  // Handle error with useEffect
-  if (error) {
-    const errorMessage = (error as any).response?.data?.message || "Failed to fetch countries";
-    toast.error(errorMessage);
-    console.error("Error fetching countries:", error);
-  }
 
   const countries: Country[] = Array.isArray(countriesResponse)
     ? (countriesResponse as unknown as Country[])
@@ -39,12 +33,6 @@ export default function Countries() {
   const countriesPerPage = 10;
   const totalPages = Math.ceil(totalCountries / countriesPerPage);
 
-  // Debug: Log the countries data to see what we're getting from API
-  console.log('🌍 Countries API Response:', countriesResponse);
-  console.log('🌍 Countries Data Array:', countries);
-  console.log('🌍 Is Loading:', isLoading);
-  console.log('🌍 Has Error:', error);
-  console.log('🌍 Countries Count:', countries.length);
 
   // render filters inline to match standardized layout
 
@@ -54,12 +42,11 @@ export default function Countries() {
 
   const handleDelete = (country: Country) => {
     if (window.confirm(`Are you sure you want to delete ${country.name}?`)) {
-      deleteCountryMutation.mutate(country.id);
+      deleteCountryMutation.mutate(String(country.id));
     }
   };
 
   const handleRefresh = () => {
-    console.log("Refresh Countries data");
     refetch();
     toast.success("Countries data refreshed!");
   };
@@ -103,10 +90,9 @@ export default function Countries() {
                     onChange={(e) => setFilterBy(e.target.value)}
                     className="appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
                   >
-                    <option>Language</option>
-                    <option>Country</option>
+                    <option>Region</option>
+                    <option>Subregion</option>
                     <option>Nationality</option>
-                    <option>Default</option>
                     <option>Status</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -204,6 +190,7 @@ export default function Countries() {
                   <TableRow className="bg-blue-50 mx-4">
                     <TableCell isHeader className="rounded-l-[20px] pl-6 pr-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Name</TableCell>
                     <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Region</TableCell>
+                    <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Nationality</TableCell>
                     <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Status</TableCell>
                     <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Created</TableCell>
                     <TableCell isHeader className="rounded-r-[20px] pl-3 pr-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Action</TableCell>
@@ -214,6 +201,7 @@ export default function Countries() {
                     <tr key={country.id} className="hover:bg-gray-50">
                       <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm text-gray-900 font-medium">{country.name}</td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{country.region}</td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{country.nationality}</td>
                       <td className="px-3 py-3 whitespace-nowrap">
                         <StatusBadge status={country.isActive ? "active" : "inactive"} />
                       </td>

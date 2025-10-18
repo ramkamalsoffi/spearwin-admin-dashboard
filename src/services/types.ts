@@ -36,9 +36,25 @@ export interface UpdateJobRequest extends Partial<CreateJobRequest> {
 
 // Country related types
 export interface Country {
-  id: string;
+  id: number;
   name: string;
+  iso3: string;
+  iso2: string;
+  numeric_code: string;
+  phonecode: string;
+  capital: string;
+  currency: string;
+  currency_name: string;
+  currency_symbol: string;
+  tld: string;
+  native: string;
   region: string;
+  region_id: number;
+  subregion: string;
+  subregion_id: number;
+  nationality: string;
+  latitude: string;
+  longitude: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -46,8 +62,24 @@ export interface Country {
 
 export interface CreateCountryRequest {
   name: string;
+  iso3: string;
+  iso2: string;
+  numeric_code: string;
+  phonecode: string;
+  capital: string;
+  currency: string;
+  currency_name: string;
+  currency_symbol: string;
+  tld: string;
+  native: string;
   region: string;
-  isActive: boolean;
+  region_id: number;
+  subregion: string;
+  subregion_id: number;
+  nationality: string;
+  latitude: string;
+  longitude: string;
+  isActive?: boolean;
 }
 
 export interface UpdateCountryRequest extends Partial<CreateCountryRequest> {
