@@ -6,21 +6,30 @@ import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../components/ui/table";
 import StatusBadge from "../components/ui/status-badge/StatusBadge";
-import { statesService } from "../services";
+import { statesService, countryService } from "../services";
 import { State } from "../services/types";
 
 export default function States() {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
-  const [filterBy, setFilterBy] = useState("Language");
-  const [orderType, setOrderType] = useState("Order Type");
-  const [orderStatus, setOrderStatus] = useState("Order Status");
+  const [filterBy, setFilterBy] = useState("Region");
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [orderBy, setOrderBy] = useState("name");
+  const [orderDirection, setOrderDirection] = useState("asc");
 
 
-  // Fetch states directly from API
+  // Fetch countries for filter
+  const { data: countriesResponse, isLoading: countriesLoading } = useQuery({
+    queryKey: ['countries'],
+    queryFn: () => countryService.getCountries(),
+  });
+
+  // Fetch states - either all states or filtered by country
   const { data: statesResponse, isLoading: statesLoading, error: statesError, refetch: refetchStates } = useQuery({
-    queryKey: ['states'],
-    queryFn: () => statesService.getStates(),
+    queryKey: ['states', selectedCountry],
+    queryFn: () => selectedCountry 
+      ? statesService.getStatesByCountryId(selectedCountry)
+      : statesService.getStates(),
   });
 
   // Handle errors
@@ -30,15 +39,36 @@ export default function States() {
     console.error("Error fetching states:", statesError);
   }
 
+  const countries = Array.isArray(countriesResponse)
+    ? (countriesResponse as unknown as any[])
+    : (countriesResponse?.data || []);
+
   const states: State[] = Array.isArray(statesResponse)
     ? (statesResponse as unknown as State[])
     : (statesResponse?.data || []);
 
-  const totalStates = states.length;
+  // Filter and sort states
+  const filteredStates = states.filter(state => {
+    if (selectedCountry && state.countryId?.toString() !== selectedCountry) return false;
+    return true;
+  }).sort((a, b) => {
+    const aValue = a[orderBy as keyof State];
+    const bValue = b[orderBy as keyof State];
+
+    if (orderDirection === 'asc') {
+      return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+    } else {
+      return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+    }
+  });
+
+  const totalStates = filteredStates.length;
   const statesPerPage = 10;
   const totalPages = Math.ceil(totalStates / statesPerPage);
 
-  // render filters inline to match standardized layout
+  const handleRefresh = () => {
+    refetchStates();
+  };
 
   const handleEdit = (state: State) => {
     console.log("Edit State:", state);
@@ -55,11 +85,6 @@ export default function States() {
     }
   };
 
-  const handleRefresh = () => {
-    console.log("Refresh States data");
-    refetchStates();
-    toast.success("States data refreshed!");
-  };
 
   return (
     <>
@@ -94,18 +119,49 @@ export default function States() {
                   <span className="text-sm font-medium text-gray-700">Filter By</span>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                <div className="flex flex-wrap items-center gap-4">
+                  {/* Country Filter */}
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                    </svg>
+                    <span className="text-sm font-medium text-gray-700">Filter By Country</span>
+                  </div>
+
                   <div className="relative">
-                    <select 
-                      value={filterBy}
-                      onChange={(e) => setFilterBy(e.target.value)}
-                      className="w-full sm:w-auto appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer min-w-[120px]"
+                    <select
+                      value={selectedCountry}
+                      onChange={(e) => setSelectedCountry(e.target.value)}
+                      className="appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer min-w-[150px]"
                     >
-                      <option>Language</option>
-                      <option>Country</option>
-                      <option>State</option>
-                      <option>Default</option>
-                      <option>Status</option>
+                      <option value="">All Countries</option>
+                      {countries.map(country => (
+                        <option key={country.id} value={country.id}>
+                          {country.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Sort By */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-700">Sort By</span>
+                  </div>
+
+                  <div className="relative">
+                    <select
+                      value={orderBy}
+                      onChange={(e) => setOrderBy(e.target.value)}
+                      className="appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
+                    >
+                      <option value="name">Name</option>
+                      <option value="code">Code</option>
+                      <option value="createdAt">Created Date</option>
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,32 +171,13 @@ export default function States() {
                   </div>
 
                   <div className="relative">
-                    <select 
-                      value={orderType}
-                      onChange={(e) => setOrderType(e.target.value)}
-                      className="w-full sm:w-auto appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer min-w-[120px]"
+                    <select
+                      value={orderDirection}
+                      onChange={(e) => setOrderDirection(e.target.value)}
+                      className="appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
                     >
-                      <option>Order Type</option>
-                      <option>Ascending</option>
-                      <option>Descending</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
-
-                  <div className="relative">
-                    <select 
-                      value={orderStatus}
-                      onChange={(e) => setOrderStatus(e.target.value)}
-                      className="w-full sm:w-auto appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer min-w-[120px]"
-                    >
-                      <option>Order Status</option>
-                      <option>Active</option>
-                      <option>Pending</option>
-                      <option>Inactive</option>
+                      <option value="asc">Ascending</option>
+                      <option value="desc">Descending</option>
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -187,7 +224,7 @@ export default function States() {
                   <p className="mt-1 text-sm text-gray-500">Please try refreshing the page</p>
                 </div>
               </div>
-            ) : states.length === 0 ? (
+            ) : filteredStates.length === 0 ? (
               <div className="flex items-center justify-center py-12">
                 <div className="text-center">
                   <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -209,7 +246,7 @@ export default function States() {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="bg-white divide-y divide-gray-200">
-                  {states.map((state: State) => (
+                  {filteredStates.map((state: State) => (
                     <tr key={state.id} className="hover:bg-gray-50">
                       <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm text-gray-900 font-medium">{state.name}</td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{state.code}</td>

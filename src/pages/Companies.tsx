@@ -14,13 +14,73 @@ export default function Companies() {
   const [orderType, setOrderType] = useState("Order Type");
   const [orderStatus, setOrderStatus] = useState("Order Status");
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-
-  const totalCompanies = companies.length;
+  const totalCompanies = filteredCompanies.length;
   const companiesPerPage = 10;
   const totalPages = Math.ceil(totalCompanies / companiesPerPage);
+  
+  // Calculate pagination
+  const startIndex = (currentPage - 1) * companiesPerPage;
+  const endIndex = startIndex + companiesPerPage;
+  const paginatedCompanies = filteredCompanies.slice(startIndex, endIndex);
+
+  // Filter and sort companies
+  const applyFiltersAndSort = (companiesData: Company[]) => {
+    let filtered = [...companiesData];
+
+    // Apply status filter
+    if (orderStatus !== "Order Status") {
+      if (orderStatus === "Active") {
+        filtered = filtered.filter(company => company.isActive);
+      } else if (orderStatus === "Inactive") {
+        filtered = filtered.filter(company => !company.isActive);
+      } else if (orderStatus === "Verified") {
+        filtered = filtered.filter(company => company.isVerified);
+      }
+    }
+
+    // Apply sorting
+    if (orderType !== "Order Type") {
+      filtered.sort((a, b) => {
+        let aValue: string | number;
+        let bValue: string | number;
+
+        switch (filterBy) {
+          case "Company Name":
+            aValue = a.name.toLowerCase();
+            bValue = b.name.toLowerCase();
+            break;
+          case "Industry":
+            aValue = a.industry.toLowerCase();
+            bValue = b.industry.toLowerCase();
+            break;
+          case "Headquarters":
+            aValue = a.headquarters.toLowerCase();
+            bValue = b.headquarters.toLowerCase();
+            break;
+          case "Status":
+            aValue = a.isActive ? 1 : 0;
+            bValue = b.isActive ? 1 : 0;
+            break;
+          default:
+            aValue = a.name.toLowerCase();
+            bValue = b.name.toLowerCase();
+        }
+
+        if (orderType === "Ascending") {
+          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        } else {
+          return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+        }
+      });
+    }
+
+    setFilteredCompanies(filtered);
+    setCurrentPage(1); // Reset to first page when filters change
+  };
 
   // Fetch companies on component mount
   useEffect(() => {
@@ -30,10 +90,13 @@ export default function Companies() {
         const response = await companyService.getCompanies();
         setCompanies(response.data);
         setError(null);
+        // Apply initial filters
+        applyFiltersAndSort(response.data);
       } catch (err: any) {
         console.error("Error fetching companies:", err);
         setError("Failed to load companies. Please try again.");
         setCompanies([]);
+        setFilteredCompanies([]);
       } finally {
         setIsLoading(false);
       }
@@ -42,12 +105,21 @@ export default function Companies() {
     fetchCompanies();
   }, []);
 
+  // Apply filters when filter options change
+  useEffect(() => {
+    if (companies.length > 0) {
+      applyFiltersAndSort(companies);
+    }
+  }, [filterBy, orderType, orderStatus, companies]);
+
   const handleRefresh = async () => {
     try {
       setIsLoading(true);
       const response = await companyService.getCompanies();
       setCompanies(response.data);
       setError(null);
+      // Apply filters to refreshed data
+      applyFiltersAndSort(response.data);
       toast.success("Companies data refreshed!");
     } catch (err: any) {
       console.error("Error refreshing companies:", err);
@@ -183,7 +255,7 @@ export default function Companies() {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900"></div>
                   <span className="ml-2 text-gray-600">Loading companies...</span>
                 </div>
-              ) : companies.length === 0 ? (
+              ) : filteredCompanies.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <svg className="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -211,7 +283,7 @@ export default function Companies() {
                     </TableRow>
                   </TableHeader>
               <TableBody className="bg-white divide-y divide-gray-200">
-                {companies.map((company) => (
+                {paginatedCompanies.map((company) => (
                   <tr key={company.id} className="hover:bg-gray-50">
                     <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                       <div className="flex items-center">
@@ -290,7 +362,7 @@ export default function Companies() {
           <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-700">
-                Showing 1-{companiesPerPage} of {totalCompanies}
+                Showing {startIndex + 1}-{Math.min(endIndex, totalCompanies)} of {totalCompanies}
               </div>
               <div className="flex items-center gap-2">
                 <button 

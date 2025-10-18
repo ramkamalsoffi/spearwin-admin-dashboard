@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
+import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { statesService } from "../services";
 import { CreateStateRequest } from "../services/types";
 import { useCountryQueries } from "../hooks/useCountryQueries";
@@ -80,10 +81,26 @@ export default function AddStates() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate required fields
+    if (!formData.name.trim()) {
+      toast.error("State name is required");
+      return;
+    }
+    
+    if (!formData.code.trim()) {
+      toast.error("State code is required");
+      return;
+    }
+    
+    if (!formData.countryId) {
+      toast.error("Please select a country");
+      return;
+    }
+    
     const stateData: CreateStateRequest = {
-      name: formData.name,
-      code: formData.code,
-      countryId: parseInt(formData.countryId) || Number(formData.countryId),
+      name: formData.name.trim(),
+      code: formData.code.trim(),
+      countryId: parseInt(formData.countryId),
       isActive: formData.isActive,
     };
 
@@ -118,7 +135,14 @@ export default function AddStates() {
       {/* Title Bar */}
       <div className="px-4 sm:px-6 lg:px-30 ">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2">
-          <h1 className="text-lg font-semibold text-gray-900">Add States</h1>
+          <PageBreadcrumb 
+            items={[
+              { label: "Dashboard", path: "/" },
+              { label: "States", path: "/states" },
+              { label: "Add States" }
+            ]}
+            showAdmin={true}
+          />
         </div>
       </div>
 
@@ -178,11 +202,14 @@ export default function AddStates() {
                     Country *
                   </label>
                   <DropdownInput
-                    placeholder="Select Country"
+                    placeholder={isCountriesLoading ? "Loading countries..." : "Select Country"}
                     value={formData.countryId}
                     onChange={(value) => handleInputChange("countryId", value)}
                     options={countryOptions}
                   />
+                  {isCountriesError && (
+                    <p className="mt-1 text-sm text-red-600">Failed to load countries. Please refresh the page.</p>
+                  )}
                 </div>
 
                 {/* Active Status */}

@@ -15,8 +15,15 @@ api.interceptors.request.use(
   (config) => {
     // Add auth token if available
     const token = localStorage.getItem('accessToken');
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      // For POST/PUT/DELETE requests, we need authentication
+      if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(config.method?.toUpperCase() || '')) {
+        console.warn('Authentication required for this request. Please login first.');
+        // Don't add mock token - let the request fail with 401/403
+      }
     }
     
     // Log request in development
@@ -24,6 +31,8 @@ api.interceptors.request.use(
       console.log('API Request:', {
         method: config.method?.toUpperCase(),
         url: config.url,
+        hasToken: !!token,
+        tokenPreview: token ? `${token.substring(0, 20)}...` : 'No token',
         data: config.data,
         params: config.params,
       });
@@ -54,26 +63,34 @@ api.interceptors.response.use(
   (error) => {
     // Handle common error cases
     if (error.response) {
-      // const { status, data } = error.response;
+      const { status, data } = error.response;
       
-      // switch (status) {
-      //   case 401:
-      //     // Unauthorized - redirect to login
-      //     localStorage.removeItem('authToken');
-      //     window.location.href = '/login';
-      //     break;
-      //   case 403:
-      //     console.error('Forbidden: Access denied');
-      //     break;
-      //   case 404:
-      //     console.error('Not Found: Resource not found');
-      //     break;
-      //   case 500:
-      //     console.error('Server Error: Internal server error');
-      //     break;
-      //   default:
-      //     console.error('API Error:', data?.message || 'Unknown error');
-      // }
+      switch (status) {
+        case 401:
+          // Unauthorized - redirect to login
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('user');
+          console.warn('Authentication required. Redirecting to login.');
+          // Uncomment the next line to auto-redirect to login
+          // window.location.href = '/login';
+          break;
+        case 403:
+          console.error('Forbidden: Access denied', data);
+          // Show user-friendly error message
+          if (typeof window !== 'undefined') {
+            const errorMsg = data?.message || 'Access denied. You may not have permission to perform this action.';
+            console.error('403 Error Details:', errorMsg);
+          }
+          break;
+        case 404:
+          console.error('Not Found: Resource not found');
+          break;
+        case 500:
+          console.error('Server Error: Internal server error');
+          break;
+        default:
+          console.error('API Error:', data?.message || 'Unknown error');
+      }
     } else if (error.request) {
       console.error('Network Error: No response received');
     } else {

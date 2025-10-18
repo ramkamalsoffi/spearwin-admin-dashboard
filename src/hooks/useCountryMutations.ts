@@ -40,7 +40,7 @@ export const useCountryMutations = () => {
 
   // Delete country mutation
   const deleteCountryMutation = useMutation({
-    mutationFn: (id: string) => countryService.deleteCountry(id),
+    mutationFn: (id: string | number) => countryService.deleteCountry(String(id)),
     onSuccess: () => {
       toast.success("Country deleted successfully!");
       queryClient.invalidateQueries({ queryKey: ['countries'] });
