@@ -32,4 +32,10 @@ export const countryService = {
     const response = await api.delete(`/locations/countries/${id}`);
     return response.data;
   },
+
+  // Get states by country
+  getStatesByCountry: async (countryId: string): Promise<ApiResponse<any[]>> => {
+    const response = await api.get(`/locations/countries/${countryId}/states`);
+    return response.data;
+  },
 };

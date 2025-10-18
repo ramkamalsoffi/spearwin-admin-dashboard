@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { companyService } from "../services/companyService";
@@ -7,6 +9,7 @@ import { CreateCompanyRequest } from "../services/types";
 
 export default function AddCompany() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -25,8 +28,21 @@ export default function AddCompany() {
     isVerified: false,
     isActive: true
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  // TanStack Query mutation for creating company
+  const createCompanyMutation = useMutation({
+    mutationFn: (companyData: CreateCompanyRequest) => companyService.createCompany(companyData),
+    onSuccess: () => {
+      toast.success("Company created successfully!");
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      navigate('/companies');
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || "Failed to create company";
+      toast.error(errorMessage);
+      console.error("Error creating company:", error);
+    },
+  });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -36,61 +52,76 @@ export default function AddCompany() {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const companyData: CreateCompanyRequest = {
-        name: formData.name,
-        slug: formData.slug,
-        description: formData.description,
-        website: formData.website,
-        logo: formData.logo || undefined,
-        industry: formData.industry,
-        foundedYear: formData.foundedYear,
-        employeeCount: formData.employeeCount,
-        headquarters: formData.headquarters,
-        cityId: formData.cityId,
-        address: formData.address,
-        linkedinUrl: formData.linkedinUrl || undefined,
-        twitterUrl: formData.twitterUrl || undefined,
-        facebookUrl: formData.facebookUrl || undefined,
-        isVerified: formData.isVerified,
-        isActive: formData.isActive
-      };
-
-      await companyService.createCompany(companyData);
-      
-      // Reset form
-      setFormData({
-        name: "",
-        slug: "",
-        description: "",
-        website: "",
-        logo: "",
-        industry: "",
-        foundedYear: new Date().getFullYear(),
-        employeeCount: "",
-        headquarters: "",
-        cityId: "",
-        address: "",
-        linkedinUrl: "",
-        twitterUrl: "",
-        facebookUrl: "",
-        isVerified: false,
-        isActive: true
-      });
-      
-      // Redirect back to companies page
-      navigate("/companies");
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to create company. Please try again.");
-      console.error("Error creating company:", err);
-    } finally {
-      setIsLoading(false);
+    
+    // Validate required fields
+    if (!formData.name.trim()) {
+      toast.error("Company name is required");
+      return;
     }
+    
+    if (!formData.slug.trim()) {
+      toast.error("Company slug is required");
+      return;
+    }
+    
+    if (!formData.description.trim()) {
+      toast.error("Company description is required");
+      return;
+    }
+    
+    if (!formData.website.trim()) {
+      toast.error("Company website is required");
+      return;
+    }
+    
+    if (!formData.industry) {
+      toast.error("Please select an industry");
+      return;
+    }
+    
+    if (!formData.employeeCount) {
+      toast.error("Please select employee count");
+      return;
+    }
+    
+    if (!formData.headquarters.trim()) {
+      toast.error("Headquarters is required");
+      return;
+    }
+    
+    if (!formData.cityId.trim()) {
+      toast.error("City ID is required");
+      return;
+    }
+    
+    if (!formData.address.trim()) {
+      toast.error("Address is required");
+      return;
+    }
+    
+    const companyData: CreateCompanyRequest = {
+      name: formData.name.trim(),
+      slug: formData.slug.trim(),
+      description: formData.description.trim(),
+      website: formData.website.trim(),
+      logo: formData.logo || undefined,
+      industry: formData.industry,
+      foundedYear: formData.foundedYear,
+      employeeCount: formData.employeeCount,
+      headquarters: formData.headquarters.trim(),
+      cityId: formData.cityId.trim(),
+      address: formData.address.trim(),
+      linkedinUrl: formData.linkedinUrl || undefined,
+      twitterUrl: formData.twitterUrl || undefined,
+      facebookUrl: formData.facebookUrl || undefined,
+      isVerified: formData.isVerified,
+      isActive: formData.isActive
+    };
+
+    console.log('📤 Submitting company data:', companyData);
+    createCompanyMutation.mutate(companyData);
   };
 
   return (
@@ -405,21 +436,14 @@ export default function AddCompany() {
                 </div>
               </div>
 
-              {/* Error Message */}
-              {error && (
-                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
-                  <p className="text-sm text-red-600">{error}</p>
-                </div>
-              )}
-
               {/* Submit Button */}
               <div className="mt-8">
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={createCompanyMutation.isPending}
                   className="bg-blue-900 hover:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                 >
-                  {isLoading ? "Creating..." : "Submit"}
+                  {createCompanyMutation.isPending ? "Creating Company..." : "Create Company"}
                 </button>
               </div>
             </form>
