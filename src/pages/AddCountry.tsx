@@ -8,12 +8,12 @@ import { CreateCountryRequest } from "../services/types";
 export default function AddCountry() {
   const navigate = useNavigate();
   const { createCountryMutation } = useCountryMutations();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CreateCountryRequest>({
     name: "",
     isActive: true
   });
 
-  const handleInputChange = (field: string, value: string | boolean | number) => {
+  const handleInputChange = (field: keyof CreateCountryRequest, value: string | boolean | number) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
