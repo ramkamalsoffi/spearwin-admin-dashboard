@@ -5,32 +5,32 @@ import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { useCountryMutations } from "../hooks/useCountryMutations";
 import { CreateCountryRequest } from "../services/types";
 
-
 export default function AddCountry() {
   const navigate = useNavigate();
   const { createCountryMutation } = useCountryMutations();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CreateCountryRequest>({
     name: "",
-    slug: "",
-    description: "",
-    website: "",
-    address: "",
-    city: "",
-    state: "",
-    country: "",
-    employeeCount: "",
-    facebookUrl: "",
-    foundedYear: new Date().getFullYear(),
-    headquarters: "",
-    industry: "",
-    isActive: true,
-    isVerified: false,
-    linkedinUrl: "",
-    logo: "",
-    twitterUrl: ""
+    iso3: "",
+    iso2: "",
+    numeric_code: "",
+    phonecode: "",
+    capital: "",
+    currency: "",
+    currency_name: "",
+    currency_symbol: "",
+    tld: "",
+    native: "",
+    region: "",
+    region_id: 0,
+    subregion: "",
+    subregion_id: 0,
+    nationality: "",
+    latitude: "",
+    longitude: "",
+    isActive: true
   });
 
-  const handleInputChange = (field: string, value: string | boolean | number) => {
+  const handleInputChange = (field: keyof CreateCountryRequest, value: string | boolean | number) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -39,39 +39,15 @@ export default function AddCountry() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const companyData = {
-      name: formData.name,
-      slug: formData.slug,
-      description: formData.description,
-      website: formData.website,
-      address: formData.address,
-      city: formData.city,
-      state: formData.state,
-      country: formData.country,
-      employeeCount: formData.employeeCount,
-      facebookUrl: formData.facebookUrl,
-      foundedYear: formData.foundedYear,
-      headquarters: formData.headquarters,
-      industry: formData.industry,
-      isActive: formData.isActive,
-      isVerified: formData.isVerified,
-      linkedinUrl: formData.linkedinUrl,
-      logo: formData.logo,
-      twitterUrl: formData.twitterUrl
-    };
-
-    console.log('Company Data:', companyData);
-    // TODO: Replace with actual company mutation
-    // createCountryMutation.mutate(companyData);
+    createCountryMutation.mutate(formData);
   };
 
 
   return (
     <>
       <PageMeta
-        title="Add Company | spearwin-admin"
-        description="Add new company"
+        title="Add Country | Spearwin Admin Dashboard"
+        description="Add new country"
       />
       
       {/* Title Bar */}
@@ -80,8 +56,8 @@ export default function AddCountry() {
           <PageBreadcrumb 
             items={[
               { label: "Dashboard", path: "/" },
-              { label: "Companies", path: "/companies" },
-              { label: "Add Company" }
+              { label: "Countries", path: "/countries" },
+              { label: "Add Country" }
             ]}
             showAdmin={true}
           />
@@ -92,13 +68,13 @@ export default function AddCountry() {
         <div className="bg-white rounded-[10px] shadow-sm border border-gray-200">
           <form onSubmit={handleSubmit} className="p-6">
             <div className="space-y-6">
-              <h1 className="text-xl font-semibold text-gray-900 mb-6">Add New Company</h1>
+              <h1 className="text-xl font-semibold text-gray-900 mb-6">Add New Country</h1>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Basic Information */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Company Name *
+                    Country Name *
                   </label>
                   <input
                     type="text"
@@ -106,254 +82,267 @@ export default function AddCountry() {
                     onChange={(e) => handleInputChange("name", e.target.value)}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter company name"
+                    placeholder="Enter country name"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Slug *
+                    ISO2 Code *
                   </label>
                   <input
                     type="text"
-                    value={formData.slug}
-                    onChange={(e) => handleInputChange("slug", e.target.value)}
+                    value={formData.iso2}
+                    onChange={(e) => handleInputChange("iso2", e.target.value)}
                     required
+                    maxLength={2}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter company slug (e.g., webnox-technologies)"
+                    placeholder="e.g., US, CA, GB"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description *
-                  </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => handleInputChange("description", e.target.value)}
-                    required
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter company description"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Website
-                  </label>
-                  <input
-                    type="url"
-                    value={formData.website}
-                    onChange={(e) => handleInputChange("website", e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="https://example.com"
-                  />
-                </div>
-
-                {/* Location Information */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Address *
+                    ISO3 Code *
                   </label>
                   <input
                     type="text"
-                    value={formData.address}
-                    onChange={(e) => handleInputChange("address", e.target.value)}
+                    value={formData.iso3}
+                    onChange={(e) => handleInputChange("iso3", e.target.value)}
                     required
+                    maxLength={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter company address"
+                    placeholder="e.g., USA, CAN, GBR"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    City *
+                    Numeric Code *
                   </label>
                   <input
                     type="text"
-                    value={formData.city}
-                    onChange={(e) => handleInputChange("city", e.target.value)}
+                    value={formData.numeric_code}
+                    onChange={(e) => handleInputChange("numeric_code", e.target.value)}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter city"
+                    placeholder="e.g., 840, 124, 826"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    State *
+                    Phone Code *
                   </label>
                   <input
                     type="text"
-                    value={formData.state}
-                    onChange={(e) => handleInputChange("state", e.target.value)}
+                    value={formData.phonecode}
+                    onChange={(e) => handleInputChange("phonecode", e.target.value)}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter state"
+                    placeholder="e.g., +1, +44, +33"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Country *
+                    Capital *
                   </label>
                   <input
                     type="text"
-                    value={formData.country}
-                    onChange={(e) => handleInputChange("country", e.target.value)}
+                    value={formData.capital}
+                    onChange={(e) => handleInputChange("capital", e.target.value)}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter country"
+                    placeholder="e.g., Washington D.C."
                   />
                 </div>
 
-                {/* Business Information */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Industry *
+                    Currency *
                   </label>
                   <input
                     type="text"
-                    value={formData.industry}
-                    onChange={(e) => handleInputChange("industry", e.target.value)}
+                    value={formData.currency}
+                    onChange={(e) => handleInputChange("currency", e.target.value)}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., Technology, Healthcare, Finance"
+                    placeholder="e.g., USD, EUR, GBP"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Employee Count
+                    Currency Name *
                   </label>
-                  <select
-                    value={formData.employeeCount}
-                    onChange={(e) => handleInputChange("employeeCount", e.target.value)}
+                  <input
+                    type="text"
+                    value={formData.currency_name}
+                    onChange={(e) => handleInputChange("currency_name", e.target.value)}
+                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select employee count</option>
-                    <option value="1-10">1-10</option>
-                    <option value="11-50">11-50</option>
-                    <option value="51-200">51-200</option>
-                    <option value="201-500">201-500</option>
-                    <option value="501-1000">501-1000</option>
-                    <option value="1000+">1000+</option>
-                  </select>
+                    placeholder="e.g., US Dollar, Euro, British Pound"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Founded Year
+                    Currency Symbol *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.currency_symbol}
+                    onChange={(e) => handleInputChange("currency_symbol", e.target.value)}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., $, €, £"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    TLD *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.tld}
+                    onChange={(e) => handleInputChange("tld", e.target.value)}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., .us, .ca, .uk"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Native Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.native}
+                    onChange={(e) => handleInputChange("native", e.target.value)}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., United States, Canada, United Kingdom"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Region *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.region}
+                    onChange={(e) => handleInputChange("region", e.target.value)}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., North America, Europe, Asia"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Region ID *
                   </label>
                   <input
                     type="number"
-                    value={formData.foundedYear}
-                    onChange={(e) => handleInputChange("foundedYear", parseInt(e.target.value))}
-                    min="1800"
-                    max={new Date().getFullYear()}
+                    value={formData.region_id}
+                    onChange={(e) => handleInputChange("region_id", parseInt(e.target.value))}
+                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., 2020"
+                    placeholder="e.g., 1, 2, 3"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Headquarters
+                    Subregion *
                   </label>
                   <input
                     type="text"
-                    value={formData.headquarters}
-                    onChange={(e) => handleInputChange("headquarters", e.target.value)}
+                    value={formData.subregion}
+                    onChange={(e) => handleInputChange("subregion", e.target.value)}
+                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., San Francisco, CA"
-                  />
-                </div>
-
-                {/* Social Media & Logo */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Logo URL
-                  </label>
-                  <input
-                    type="url"
-                    value={formData.logo}
-                    onChange={(e) => handleInputChange("logo", e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="https://example.com/logo.png"
+                    placeholder="e.g., Northern America, Western Europe"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    LinkedIn URL
+                    Subregion ID *
                   </label>
                   <input
-                    type="url"
-                    value={formData.linkedinUrl}
-                    onChange={(e) => handleInputChange("linkedinUrl", e.target.value)}
+                    type="number"
+                    value={formData.subregion_id}
+                    onChange={(e) => handleInputChange("subregion_id", parseInt(e.target.value))}
+                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="https://linkedin.com/company/example"
+                    placeholder="e.g., 1, 2, 3"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Facebook URL
+                    Nationality *
                   </label>
                   <input
-                    type="url"
-                    value={formData.facebookUrl}
-                    onChange={(e) => handleInputChange("facebookUrl", e.target.value)}
+                    type="text"
+                    value={formData.nationality}
+                    onChange={(e) => handleInputChange("nationality", e.target.value)}
+                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="https://facebook.com/example"
+                    placeholder="e.g., American, Canadian, British"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Twitter URL
+                    Latitude *
                   </label>
                   <input
-                    type="url"
-                    value={formData.twitterUrl}
-                    onChange={(e) => handleInputChange("twitterUrl", e.target.value)}
+                    type="text"
+                    value={formData.latitude}
+                    onChange={(e) => handleInputChange("latitude", e.target.value)}
+                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="https://twitter.com/example"
+                    placeholder="e.g., 39.8283"
                   />
                 </div>
 
-                <div className="flex items-center space-x-6">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.isActive}
-                      onChange={(e) => handleInputChange("isActive", e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label className="ml-2 block text-sm text-gray-700">
-                      Active Company
-                    </label>
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.isVerified}
-                      onChange={(e) => handleInputChange("isVerified", e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label className="ml-2 block text-sm text-gray-700">
-                      Verified Company
-                    </label>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Longitude *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.longitude}
+                    onChange={(e) => handleInputChange("longitude", e.target.value)}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., -98.5795"
+                  />
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.isActive}
+                    onChange={(e) => handleInputChange("isActive", e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label className="ml-2 block text-sm text-gray-700">
+                    Active Country
+                  </label>
                 </div>
               </div>
 
               <div className="flex justify-end space-x-4 pt-6">
                 <button
                   type="button"
-                  onClick={() => navigate("/companies")}
+                  onClick={() => navigate("/countries")}
                   className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
@@ -363,7 +352,7 @@ export default function AddCountry() {
                   disabled={createCountryMutation.isPending}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {createCountryMutation.isPending ? "Creating..." : "Create Company"}
+                  {createCountryMutation.isPending ? "Creating..." : "Create Country"}
                 </button>
               </div>
             </div>
