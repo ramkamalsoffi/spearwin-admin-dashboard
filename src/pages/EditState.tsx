@@ -127,7 +127,7 @@ export default function EditState() {
 
   // Prepare countries options for dropdown
   const countryOptions = countriesData?.data?.map(country => ({
-    value: country.id,
+    value: String(country.id),
     label: country.name
   })) || [];
 
