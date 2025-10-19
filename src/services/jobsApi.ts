@@ -27,8 +27,8 @@ export const jobsApi = {
   // Create new job
   createJob: async (jobData: CreateJobDto): Promise<Job> => {
     console.log('Creating job with data:', jobData);
-    console.log('API URL:', api.defaults.baseURL + '/api/admin/jobs');
-    const response = await api.post('/api/admin/jobs', jobData);
+    console.log('API URL:', api.defaults.baseURL + '/jobs');
+    const response = await api.post('/jobs', jobData);
     console.log('Job created successfully:', response.data);
     return response.data;
   },

@@ -1,4 +1,4 @@
-import api from '../lib/axios';
+import api from '../utils/axios';
 import { ApiResponse, Job, CreateJobRequest, UpdateJobRequest } from './types';
 
 export const jobService = {

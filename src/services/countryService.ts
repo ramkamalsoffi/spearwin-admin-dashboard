@@ -1,4 +1,4 @@
-import api from '../lib/axios';
+import api from '../utils/axios';
 import { ApiResponse, Country, CreateCountryRequest, UpdateCountryRequest } from './types';
 
 export const countryService = {

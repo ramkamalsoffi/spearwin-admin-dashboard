@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3006', // Backend API URL
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000', // Backend API URL
   timeout: 10000, // 10 seconds timeout
   headers: {
     'Content-Type': 'application/json',
@@ -13,9 +13,19 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     // Add auth token to requests if available
-      const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('🔑 Token found and added to request');
+    } else {
+      console.warn('⚠️ No access token found in localStorage');
+      
+      // TEMPORARY: For development, add a mock token if no real token exists
+      // Remove this when you have proper authentication set up
+      if (import.meta.env.DEV) {
+        console.log('🔧 DEV MODE: Adding mock token for development');
+        config.headers.Authorization = 'Bearer mock-dev-token-12345';
+      }
     }
     
     // Add user type to headers if available
@@ -25,6 +35,10 @@ api.interceptors.request.use(
     }
     
     console.log('Making request to:', (config.baseURL || '') + (config.url || ''));
+    console.log('Request headers:', {
+      Authorization: config.headers.Authorization ? 'Bearer [TOKEN]' : 'No token',
+      'X-User-Type': config.headers['X-User-Type'] || 'No user type'
+    });
     return config;
   },
   (error) => {
@@ -51,13 +65,16 @@ api.interceptors.response.use(
       switch (status) {
         case 401:
           // Unauthorized - clear auth data and redirect to login
-          localStorage.removeItem('token');
-          localStorage.removeItem('isLoggedIn');
+          console.log('🔓 401 Unauthorized - clearing authentication data');
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('user');
           localStorage.removeItem('userType');
           localStorage.removeItem('userEmail');
+          localStorage.removeItem('refreshToken');
           
           // Only redirect if not already on login page
           if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+            console.log('🔄 Redirecting to login page');
             window.location.href = '/login';
           }
           break;

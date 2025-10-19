@@ -1,4 +1,4 @@
-import api from '../lib/axios';
+import api from '../utils/axios';
 import { ApiResponse, Company, CreateCompanyRequest, UpdateCompanyRequest } from './types';
 
 export const companyService = {
