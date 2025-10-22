@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
-import { companyService } from "../services/companyService";
+import { companyService } from "../services";
 import { CreateCompanyRequest } from "../services/types";
 
 export default function AddCompany() {
@@ -20,7 +20,6 @@ export default function AddCompany() {
     foundedYear: new Date().getFullYear(),
     employeeCount: "",
     headquarters: "",
-    cityId: "",
     address: "",
     linkedinUrl: "",
     twitterUrl: "",
@@ -28,6 +27,7 @@ export default function AddCompany() {
     isVerified: false,
     isActive: true
   });
+
 
   // TanStack Query mutation for creating company
   const createCompanyMutation = useMutation({
@@ -91,10 +91,6 @@ export default function AddCompany() {
       return;
     }
     
-    if (!formData.cityId.trim()) {
-      toast.error("City ID is required");
-      return;
-    }
     
     if (!formData.address.trim()) {
       toast.error("Address is required");
@@ -111,7 +107,6 @@ export default function AddCompany() {
       foundedYear: formData.foundedYear,
       employeeCount: formData.employeeCount,
       headquarters: formData.headquarters.trim(),
-      cityId: formData.cityId.trim(),
       address: formData.address.trim(),
       linkedinUrl: formData.linkedinUrl || undefined,
       twitterUrl: formData.twitterUrl || undefined,
@@ -321,22 +316,6 @@ export default function AddCompany() {
                   />
                 </div>
 
-                {/* City ID */}
-                <div>
-                  <label htmlFor="cityId" className="block text-sm font-medium text-gray-700 mb-2">
-                    City ID <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="cityId"
-                    name="cityId"
-                    value={formData.cityId}
-                    onChange={handleInputChange}
-                    placeholder="city_12345678-1234-1234-1234-123456789012"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
 
                 {/* Address */}
                 <div className="md:col-span-2">

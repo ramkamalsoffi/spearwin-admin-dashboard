@@ -4,4 +4,5 @@ export { countryService } from './countryService';
 export { adminService } from './adminService';
 export { statesService } from './statesService';
 export { citiesService } from './citiesService';
+export { companyService } from './companyService';
 export * from './types';

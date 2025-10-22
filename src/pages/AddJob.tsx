@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
-import { jobService } from "../services";
+import { jobService, companyService } from "../services";
 import { CreateJobRequest } from "../services/types";
 import { useCreateJob } from "../hooks/useJobs";
 
@@ -14,12 +14,18 @@ export default function AddJob() {
   
   const [formData, setFormData] = useState({
     title: "",
-    companyId: "",
+    companyName: "",
     description: "",
     jobType: "",
     workMode: "",
     experienceLevel: "",
     status: ""
+  });
+
+  // Fetch companies for dropdown
+  const { data: companiesData } = useQuery({
+    queryKey: ['companies'],
+    queryFn: () => companyService.getCompanies(),
   });
 
   // TanStack Query mutation for creating job
@@ -49,7 +55,7 @@ export default function AddJob() {
     e.preventDefault();
     
     // Validate form data
-    if (!formData.title || !formData.companyId || !formData.description || 
+    if (!formData.title || !formData.companyName || !formData.description || 
         !formData.jobType || !formData.workMode || !formData.experienceLevel || !formData.status) {
       toast.error("Please fill in all required fields");
       return;
@@ -75,7 +81,7 @@ export default function AddJob() {
     // Create job data object
     const jobData: CreateJobRequest = {
       title: formData.title,
-      companyId: formData.companyId,
+      companyId: formData.companyName, // Send company name instead of ID
       description: formData.description,
       jobType: formData.jobType as CreateJobRequest['jobType'],
       workMode: formData.workMode as CreateJobRequest['workMode'],
@@ -132,21 +138,26 @@ export default function AddJob() {
                   />
                 </div>
 
-                {/* Company ID */}
+                {/* Company */}
                 <div>
-                  <label htmlFor="companyId" className="block text-sm font-medium text-gray-700 mb-2">
-                    Company ID
+                  <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-2">
+                    Company
                   </label>
-                  <input
-                    type="text"
-                    id="companyId"
-                    name="companyId"
-                    value={formData.companyId}
+                  <select
+                    id="companyName"
+                    name="companyName"
+                    value={formData.companyName}
                     onChange={handleInputChange}
-                    placeholder="Enter company ID"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
-                  />
+                  >
+                    <option value="">Select a company</option>
+                    {companiesData?.data?.map((company) => (
+                      <option key={company.id} value={company.name}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Job Type */}

@@ -19,10 +19,12 @@ export default function Cities() {
 
   const citiesPerPage = 10;
 
-  // Fetch cities data
+  // Fetch cities data with pagination
   const { data: citiesData, isLoading: citiesLoading, error: citiesError, refetch: refetchCities } = useQuery({
-    queryKey: ['cities', selectedState],
-    queryFn: () => selectedState ? citiesService.getCitiesByStateId(selectedState) : citiesService.getCities(),
+    queryKey: ['cities', selectedState, currentPage, searchTerm],
+    queryFn: () => selectedState 
+      ? citiesService.getCitiesByStateId(selectedState, currentPage, citiesPerPage, searchTerm || undefined)
+      : citiesService.getCities(currentPage, citiesPerPage, searchTerm || undefined),
   });
 
   // Fetch states for filter dropdown
@@ -45,24 +47,20 @@ export default function Cities() {
     },
   });
 
-  // Filter and search cities
+  // Filter cities by status (server-side search is handled by API)
   const filteredCities = citiesData?.data?.filter((city: City) => {
-    const matchesSearch = searchTerm === "" || 
-      city.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      city.code.toLowerCase().includes(searchTerm.toLowerCase());
-    
     const matchesStatus = orderStatus === "Order Status" || 
       (orderStatus === "Active" && city.isActive) ||
       (orderStatus === "Inactive" && !city.isActive);
     
-    return matchesSearch && matchesStatus;
+    return matchesStatus;
   }) || [];
 
+  // For server-side pagination, we need to get total count from API response
+  // For now, we'll use the current data length and assume there might be more pages
   const totalCities = filteredCities.length;
-  const totalPages = Math.ceil(totalCities / citiesPerPage);
-  const startIndex = (currentPage - 1) * citiesPerPage;
-  const endIndex = startIndex + citiesPerPage;
-  const paginatedCities = filteredCities.slice(startIndex, endIndex);
+  const hasNextPage = filteredCities.length === citiesPerPage; // If we got exactly 10, there might be more
+  const hasPrevPage = currentPage > 1;
 
   // filters will be rendered inline in the card header
 
@@ -93,6 +91,18 @@ export default function Cities() {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
     setCurrentPage(1); // Reset to first page when searching
+  };
+
+  const handleNextPage = () => {
+    if (hasNextPage) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (hasPrevPage) {
+      setCurrentPage(prev => prev - 1);
+    }
   };
 
   // Get state name by ID
@@ -252,7 +262,7 @@ export default function Cities() {
                 </TableRow>
               </TableHeader>
               <TableBody className="bg-white divide-y divide-gray-200">
-                {paginatedCities.length === 0 ? (
+                {filteredCities.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center justify-center">
@@ -278,7 +288,7 @@ export default function Cities() {
                     </td>
                   </tr>
                 ) : (
-                  paginatedCities.map((city: City) => (
+                  filteredCities.map((city: City) => (
                     <tr key={city.id} className="hover:bg-gray-50">
                       <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                         {city.name}
@@ -329,13 +339,13 @@ export default function Cities() {
             <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-700">
-                  Showing {startIndex + 1}-{Math.min(endIndex, totalCities)} of {totalCities}
-                  {searchTerm && ` (filtered from ${citiesData?.data?.length || 0} total)`}
+                  Showing {totalCities} cities on page {currentPage}
+                  {searchTerm && ` (searching for "${searchTerm}")`}
                 </div>
                 <div className="flex items-center gap-2">
                   <button 
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
+                    onClick={handlePrevPage}
+                    disabled={!hasPrevPage}
                     className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -343,11 +353,11 @@ export default function Cities() {
                     </svg>
                   </button>
                   <span className="text-sm text-gray-500">
-                    Page {currentPage} of {totalPages}
+                    Page {currentPage}
                   </span>
                   <button 
-                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
+                    onClick={handleNextPage}
+                    disabled={!hasNextPage}
                     className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

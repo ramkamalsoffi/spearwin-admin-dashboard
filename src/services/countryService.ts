@@ -5,7 +5,12 @@ export const countryService = {
   // Get all countries
   getCountries: async (): Promise<ApiResponse<Country[]>> => {
     const response = await api.get('/locations/countries');
-    return response.data;
+    // The API returns countries array directly, wrap it in ApiResponse format
+    return {
+      success: true,
+      data: response.data,
+      message: 'Countries retrieved successfully'
+    };
   },
 
   // Get country by ID
