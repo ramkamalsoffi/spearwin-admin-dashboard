@@ -128,6 +128,11 @@ export default function Countries() {
     const aValue = a[orderBy as keyof Country];
     const bValue = b[orderBy as keyof Country];
 
+    // Handle null/undefined values
+    if (aValue == null && bValue == null) return 0;
+    if (aValue == null) return 1;
+    if (bValue == null) return -1;
+
     if (orderDirection === 'asc') {
       return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
     } else {

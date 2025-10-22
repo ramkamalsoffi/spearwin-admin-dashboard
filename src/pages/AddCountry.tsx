@@ -10,6 +10,23 @@ export default function AddCountry() {
   const { createCountryMutation } = useCountryMutations();
   const [formData, setFormData] = useState<CreateCountryRequest>({
     name: "",
+    iso3: "",
+    iso2: "",
+    numeric_code: "",
+    phonecode: "",
+    capital: "",
+    currency: "",
+    currency_name: "",
+    currency_symbol: "",
+    tld: "",
+    native: "",
+    region: "",
+    region_id: null,
+    subregion: "",
+    subregion_id: null,
+    nationality: "",
+    latitude: "",
+    longitude: "",
     isActive: true
   });
 
@@ -63,8 +80,6 @@ export default function AddCountry() {
               { label: "Dashboard", path: "/" },
               { label: "Countries", path: "/countries" },
               { label: "Add Country" }
-              { label: "Countries", path: "/countries" },
-              { label: "Add Country" }
             ]}
             showAdmin={true}
           />
@@ -91,7 +106,6 @@ export default function AddCountry() {
                     onChange={(e) => handleInputChange("name", e.target.value)}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter country name"
                     placeholder="Enter country name"
                   />
                 </div>
