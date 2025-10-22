@@ -18,6 +18,11 @@ export default function Companies() {
     queryFn: () => companyService.getCompanies(),
   });
 
+  // Debug logging
+  console.log('Companies Response:', companiesResponse);
+  console.log('Companies Loading:', isLoading);
+  console.log('Companies Error:', error);
+
   // Handle error
   if (error) {
     const errorMessage = (error as any).response?.data?.message || "Failed to fetch companies";

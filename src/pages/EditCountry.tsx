@@ -61,7 +61,7 @@ export default function EditCountry() {
 
     // Create update data object
     const updateData: UpdateCountryRequest = {
-      id,
+      id: Number(id),
       name: formData.name,
       region: formData.region,
       isActive: formData.isActive

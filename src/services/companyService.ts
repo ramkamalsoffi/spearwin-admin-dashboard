@@ -5,7 +5,13 @@ export const companyService = {
   // Get all companies
   getCompanies: async (): Promise<ApiResponse<Company[]>> => {
     const response = await api.get('/companies');
-    return response.data;
+    // The API returns { companies: [...], total, page, limit, totalPages }
+    // Extract the companies array from the response
+    return {
+      success: true,
+      data: response.data.companies || [],
+      message: 'Companies retrieved successfully'
+    };
   },
 
   // Get company by ID

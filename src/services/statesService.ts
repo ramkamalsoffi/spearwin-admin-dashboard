@@ -5,13 +5,23 @@ export const statesService = {
   // Get all states
   getStates: async (): Promise<ApiResponse<State[]>> => {
     const response = await api.get('/locations/states');
-    return response.data;
+    // The API returns states array directly, wrap it in ApiResponse format
+    return {
+      success: true,
+      data: response.data,
+      message: 'States retrieved successfully'
+    };
   },
 
   // Get states by country ID
   getStatesByCountryId: async (countryId: string): Promise<ApiResponse<State[]>> => {
     const response = await api.get(`/locations/countries/${countryId}/states`);
-    return response.data;
+    // The API returns states array directly, wrap it in ApiResponse format
+    return {
+      success: true,
+      data: response.data,
+      message: 'States retrieved successfully'
+    };
   },
 
   // Get state by ID

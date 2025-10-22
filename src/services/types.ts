@@ -42,19 +42,19 @@ export interface Country {
   iso2: string;
   numeric_code: string;
   phonecode: string;
-  capital: string;
-  currency: string;
-  currency_name: string;
-  currency_symbol: string;
-  tld: string;
-  native: string;
+  capital: string | null;
+  currency: string | null;
+  currency_name: string | null;
+  currency_symbol: string | null;
+  tld: string | null;
+  native: string | null;
   region: string;
-  region_id: number;
-  subregion: string;
-  subregion_id: number;
+  region_id: number | null;
+  subregion: string | null;
+  subregion_id: number | null;
   nationality: string;
-  latitude: string;
-  longitude: string;
+  latitude: string | null;
+  longitude: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -66,24 +66,24 @@ export interface CreateCountryRequest {
   iso2: string;
   numeric_code: string;
   phonecode: string;
-  capital: string;
-  currency: string;
-  currency_name: string;
-  currency_symbol: string;
-  tld: string;
-  native: string;
+  capital?: string | null;
+  currency?: string | null;
+  currency_name?: string | null;
+  currency_symbol?: string | null;
+  tld?: string | null;
+  native?: string | null;
   region: string;
-  region_id: number;
-  subregion: string;
-  subregion_id: number;
+  region_id?: number | null;
+  subregion?: string | null;
+  subregion_id?: number | null;
   nationality: string;
-  latitude: string;
-  longitude: string;
+  latitude?: string | null;
+  longitude?: string | null;
   isActive?: boolean;
 }
 
 export interface UpdateCountryRequest extends Partial<CreateCountryRequest> {
-  id: string;
+  id: number;
 }
 
 // Admin related types
@@ -167,7 +167,7 @@ export interface Company {
   foundedYear: number;
   employeeCount: string;
   headquarters: string;
-  cityId: string;
+
   address: string;
   linkedinUrl?: string;
   twitterUrl?: string;
@@ -188,7 +188,6 @@ export interface CreateCompanyRequest {
   foundedYear: number;
   employeeCount: string;
   headquarters: string;
-  cityId: string;
   address: string;
   linkedinUrl?: string;
   twitterUrl?: string;

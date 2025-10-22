@@ -2,16 +2,36 @@ import api from '../utils/axios';
 import { ApiResponse, City, CreateCityRequest, UpdateCityRequest } from './types';
 
 export const citiesService = {
-  // Get all cities
-  getCities: async (): Promise<ApiResponse<City[]>> => {
-    const response = await api.get('/locations/cities');
-    return response.data;
+  // Get all cities with pagination
+  getCities: async (page: number = 1, limit: number = 10, search?: string): Promise<ApiResponse<City[]>> => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...(search && { search })
+    });
+    const response = await api.get(`/locations/cities?${params}`);
+    // The API returns cities array directly, wrap it in ApiResponse format
+    return {
+      success: true,
+      data: response.data,
+      message: 'Cities retrieved successfully'
+    };
   },
 
-  // Get cities by state ID
-  getCitiesByStateId: async (stateId: string): Promise<ApiResponse<City[]>> => {
-    const response = await api.get(`/locations/states/${stateId}/cities`);
-    return response.data;
+  // Get cities by state ID with pagination
+  getCitiesByStateId: async (stateId: string, page: number = 1, limit: number = 10, search?: string): Promise<ApiResponse<City[]>> => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...(search && { search })
+    });
+    const response = await api.get(`/locations/states/${stateId}/cities?${params}`);
+    // The API returns cities array directly, wrap it in ApiResponse format
+    return {
+      success: true,
+      data: response.data,
+      message: 'Cities retrieved successfully'
+    };
   },
 
   // Get city by ID
