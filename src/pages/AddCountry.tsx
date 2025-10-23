@@ -91,13 +91,10 @@ export default function AddCountry() {
           <form onSubmit={handleSubmit} className="p-6">
             <div className="space-y-6">
               <h1 className="text-xl font-semibold text-gray-900 mb-6">Add New Country</h1>
-              <h1 className="text-xl font-semibold text-gray-900 mb-6">Add New Country</h1>
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Country Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Country Name *
                     Country Name *
                   </label>
                   <input
