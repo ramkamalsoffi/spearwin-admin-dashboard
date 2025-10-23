@@ -22,29 +22,46 @@ export default function EditJob() {
   });
 
   // Fetch job data by ID
-  const { data: jobData, isLoading: jobLoading, error: jobError } = useQuery({
+  const { data: jobResponse, isLoading: jobLoading, error: jobError } = useQuery({
     queryKey: ['job', id],
-    queryFn: () => jobService.getJobById(id!),
+    queryFn: async () => {
+      if (!id) throw new Error('Job ID is required');
+      const response = await jobService.getJobById(id);
+      return response;
+    },
     enabled: !!id,
   });
+
+  // Extract job data from response
+  let job = null;
+  if (jobResponse && typeof jobResponse === 'object') {
+    const responseObj = jobResponse as any;
+    if (responseObj.job) {
+      job = responseObj.job;
+    } else if (responseObj.data) {
+      job = responseObj.data;
+    } else {
+      job = responseObj;
+    }
+  }
 
   // Use the mutation from the hook
   const { updateJobMutation } = useJobMutations();
 
   // Update form data when job data is loaded
   useEffect(() => {
-    if (jobData?.data) {
+    if (job) {
       setFormData({
-        title: jobData.data.title,
-        companyId: jobData.data.companyId,
-        description: jobData.data.description,
-        jobType: jobData.data.jobType,
-        workMode: jobData.data.workMode,
-        experienceLevel: jobData.data.experienceLevel,
-        status: jobData.data.status
+        title: job.title || "",
+        companyId: job.companyId || "",
+        description: job.description || "",
+        jobType: job.jobType || "FULL_TIME",
+        workMode: job.workMode || "REMOTE",
+        experienceLevel: job.experienceLevel || "MID_LEVEL",
+        status: job.status || "DRAFT"
       });
     }
-  }, [jobData]);
+  }, [job]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -90,42 +107,30 @@ export default function EditJob() {
   // Loading state
   if (jobLoading) {
     return (
-      <>
-        <PageMeta title="Edit Job | spearwin-admin" description="Edit Job" />
-        <div className="px-4 sm:px-6 lg:px-30 py-4">
-          <div className="bg-white rounded-[10px] shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-brand-500"></div>
-            </div>
-          </div>
+      <div className="flex items-center justify-center py-12">
+        <div className="flex items-center space-x-2">
+          <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span className="text-gray-600">Loading job...</span>
         </div>
-      </>
+      </div>
     );
   }
 
   // Error state
   if (jobError) {
     return (
-      <>
-        <PageMeta title="Edit Job | spearwin-admin" description="Edit Job" />
-        <div className="px-4 sm:px-6 lg:px-30 py-4">
-          <div className="bg-white rounded-[10px] shadow-sm border border-gray-200 p-6">
-            <div className="flex flex-col items-center justify-center py-12">
-              <svg className="w-16 h-16 text-red-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to load job</h3>
-              <p className="text-gray-500 mb-4">There was an error loading the job data.</p>
-              <button 
-                onClick={() => navigate('/jobs')}
-                className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Back to Jobs
-              </button>
-            </div>
-          </div>
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <svg className="mx-auto h-12 w-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">Failed to load job</h3>
+          <p className="mt-1 text-sm text-gray-500">{(jobError as any).message || "An unknown error occurred."}</p>
         </div>
-      </>
+      </div>
     );
   }
 
