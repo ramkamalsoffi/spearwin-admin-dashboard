@@ -31,13 +31,13 @@ const AppHeader: React.FC = () => {
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 flex w-full bg-white shadow-sm border-b border-gray-200 dark:bg-gray-900 dark:border-gray-800">
+    <header className="sticky top-0 z-40 flex w-full bg-white shadow-sm border-b border-gray-200">
       <div className="flex items-center justify-between w-full px-4 py-3 lg:px-6">
         {/* Left side - Hamburger Menu */}
         <div className="flex items-center">
           <button
             onClick={handleToggle}
-            className="flex items-center justify-center w-10 h-10 text-gray-600 rounded-lg hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+            className="flex items-center justify-center w-10 h-10 text-gray-600 rounded-lg hover:bg-gray-100"
             aria-label="Toggle Sidebar"
           >
             <svg
@@ -84,7 +84,7 @@ const AppHeader: React.FC = () => {
                   ref={inputRef}
                   type="text"
                   placeholder="Search"
-                  className="h-10 w-[280px] rounded-full border border-gray-200 bg-gray-50 py-2.5 pl-12 pr-4 text-sm text-gray-700 placeholder:text-gray-400 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-blue-500"
+                  className="h-10 w-[280px] rounded-full border border-gray-200 bg-gray-50 py-2.5 pl-12 pr-4 text-sm text-gray-700 placeholder:text-gray-400 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100"
                 />
               </div>
             </form>

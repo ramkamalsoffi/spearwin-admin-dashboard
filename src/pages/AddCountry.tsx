@@ -8,12 +8,29 @@ import { CreateCountryRequest } from "../services/types";
 export default function AddCountry() {
   const navigate = useNavigate();
   const { createCountryMutation } = useCountryMutations();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CreateCountryRequest>({
     name: "",
+    iso3: "",
+    iso2: "",
+    numeric_code: "",
+    phonecode: "",
+    capital: "",
+    currency: "",
+    currency_name: "",
+    currency_symbol: "",
+    tld: "",
+    native: "",
+    region: "",
+    region_id: null,
+    subregion: "",
+    subregion_id: null,
+    nationality: "",
+    latitude: "",
+    longitude: "",
     isActive: true
   });
 
-  const handleInputChange = (field: string, value: string | boolean | number) => {
+  const handleInputChange = (field: keyof CreateCountryRequest, value: string | boolean | number) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -74,11 +91,13 @@ export default function AddCountry() {
           <form onSubmit={handleSubmit} className="p-6">
             <div className="space-y-6">
               <h1 className="text-xl font-semibold text-gray-900 mb-6">Add New Country</h1>
+              <h1 className="text-xl font-semibold text-gray-900 mb-6">Add New Country</h1>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Country Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Country Name *
                     Country Name *
                   </label>
                   <input
