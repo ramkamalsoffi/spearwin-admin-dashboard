@@ -31,6 +31,7 @@ import UserProfilesManagement from "./pages/UserProfilesManagement";
 import AddProfile from "./pages/AddProfile";
 import FAQs from "./pages/FAQs";
 import AddFAQ from "./pages/AddFAQ";
+import EditFAQ from "./pages/EditFAQ";
 import Testimonials from "./pages/Testimonials";
 import AddTestimonial from "./pages/AddTestimonial";
 import CVSearch from "./pages/CVSearch";
@@ -111,6 +112,7 @@ export default function App() {
             {/* FAQs Pages */}
             <Route path="/faqs" element={<FAQs />} />
             <Route path="/add-faq" element={<AddFAQ />} />
+            <Route path="/edit-faq/:id" element={<EditFAQ />} />
 
             {/* Testimonials Pages */}
             <Route path="/testimonial" element={<Testimonials />} />
