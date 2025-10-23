@@ -7,10 +7,12 @@ import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../components/ui/table";
 import StatusBadge from "../components/ui/status-badge/StatusBadge";
 import { statesService, countryService } from "../services";
+import { useStateMutations } from "../hooks/useStateMutations";
 import { State } from "../services/types";
 
 export default function States() {
   const navigate = useNavigate();
+  const { deleteStateMutation } = useStateMutations();
   const [currentPage, setCurrentPage] = useState(1);
   const [filterBy, setFilterBy] = useState("Region");
   const [selectedCountry, setSelectedCountry] = useState("");
@@ -47,8 +49,11 @@ export default function States() {
     ? (statesResponse as unknown as State[])
     : (statesResponse?.data || []);
 
+    console.log("States:", states);
+    
+
   // Filter and sort states
-  const filteredStates = states.filter(state => {
+  const filteredStates = states?.states?.filter(state => {
     if (selectedCountry && state.countryId?.toString() !== selectedCountry) return false;
     return true;
   }).sort((a, b) => {
@@ -62,7 +67,7 @@ export default function States() {
     }
   });
 
-  const totalStates = filteredStates.length;
+  const totalStates = states.total;
   const statesPerPage = 10;
   const totalPages = Math.ceil(totalStates / statesPerPage);
 
@@ -77,11 +82,8 @@ export default function States() {
   };
 
   const handleDelete = (state: State) => {
-    console.log("Delete State:", state);
-    // Show confirmation modal or delete directly
     if (window.confirm(`Are you sure you want to delete ${state.name}?`)) {
-      // Handle delete logic here
-      console.log("State deleted:", state.id);
+      deleteStateMutation.mutate(state.id);
     }
   };
 
@@ -94,7 +96,7 @@ export default function States() {
       />
       
       {/* Title Bar */}
-      <div className="px-4">
+      <div className="px-4 sm:px-6 lg:px-30 ">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2">
           <PageBreadcrumb 
             items={[
@@ -102,12 +104,12 @@ export default function States() {
               { label: "States" }
             ]}
             showAdmin={true}
-          />
-        </div>
+            />
+          </div>
       </div>
 
       {/* Main Content */}
-      <div className="px-4 py-4">
+      <div className="px-4 sm:px-6 lg:px-30 py-4">
         <div className="bg-white rounded-[10px] shadow-sm border border-gray-200">
           <div className="px-6 py-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
@@ -191,17 +193,17 @@ export default function States() {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
-                </button>
+            </button>
               </div>
 
-              <button 
+            <button
                 onClick={() => navigate("/add-states")}
                 className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Add States
-              </button>
-            </div>
+            >
+              Add States
+            </button>
           </div>
+        </div>
 
           <div className="overflow-x-auto">
             {statesLoading ? (
@@ -246,32 +248,41 @@ export default function States() {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="bg-white divide-y divide-gray-200">
-                  {filteredStates.map((state: State) => (
-                    <tr key={state.id} className="hover:bg-gray-50">
-                      <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm text-gray-900 font-medium">{state.name}</td>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{state.code}</td>
-                      <td className="px-3 py-3 whitespace-nowrap">
-                        <StatusBadge status={state.isActive ? "active" : "inactive"} />
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(state.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex items-center gap-2">
-                          <button className="p-1 text-blue-600 hover:text-blue-800" onClick={() => handleEdit(state)}>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button className="p-1 text-red-600 hover:text-red-800" onClick={() => handleDelete(state)}>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {(() => {
+                    console.log("Rendering states:", filteredStates.slice((currentPage - 1) * statesPerPage, currentPage * statesPerPage));
+                    return null;
+                  })()}
+                  {filteredStates
+                    .slice((currentPage - 1) * statesPerPage, currentPage * statesPerPage)
+                    .map((state: State) => {
+                      console.log("Rendering state:", state);
+                      return (
+                        <tr key={state.id} className="hover:bg-gray-50">
+                          <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm text-gray-900 font-medium">{state.name}</td>
+                          <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{state.code}</td>
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            <StatusBadge status={state.isActive ? "active" : "inactive"} />
+                          </td>
+                          <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(state.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
+                            <div className="flex items-center gap-2">
+                              <button className="p-1 text-blue-600 hover:text-blue-800" onClick={() => handleEdit(state)}>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </button>
+                              <button className="p-1 text-red-600 hover:text-red-800" onClick={() => handleDelete(state)}>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                 </TableBody>
               </Table>
             )}
@@ -285,24 +296,24 @@ export default function States() {
                   Showing {((currentPage - 1) * statesPerPage) + 1}-{Math.min(currentPage * statesPerPage, totalStates)} of {totalStates}
                 </div>
                 <div className="flex items-center gap-2">
-                  <button 
+                    <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
+                      disabled={currentPage === 1}
                     className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
-                  >
+                    >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
-                  </button>
-                  <button 
+                    </button>
+                    <button
                     onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
+                      disabled={currentPage === totalPages}
                     className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
-                  >
+                    >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
-                  </button>
+                    </button>
                 </div>
               </div>
             </div>

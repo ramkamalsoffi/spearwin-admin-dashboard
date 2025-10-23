@@ -239,6 +239,25 @@ export interface UserProfile {
   };
 }
 
+// FAQ related types
+export interface FAQ {
+  id: number;
+  question: string;
+  answer: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateFAQRequest {
+  question: string;
+  answer: string;
+}
+
+export interface UpdateFAQRequest extends Partial<CreateFAQRequest> {
+  id: string;
+}
+
 // Error types
 export interface ApiError {
   message: string;

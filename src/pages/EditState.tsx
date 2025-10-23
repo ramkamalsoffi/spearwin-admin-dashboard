@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { statesService, countryService } from "../services";
+import { useStateMutations } from "../hooks/useStateMutations";
 import { UpdateStateRequest } from "../services/types";
 
 // Dropdown Input Component
@@ -45,6 +46,7 @@ const DropdownInput = ({
 export default function EditState() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { updateStateMutation } = useStateMutations();
   const [formData, setFormData] = useState({
     name: "",
     code: "",
@@ -65,19 +67,6 @@ export default function EditState() {
     queryFn: () => countryService.getCountries(),
   });
 
-  // Update state mutation
-  const updateStateMutation = useMutation({
-    mutationFn: (stateData: UpdateStateRequest) => statesService.updateState(stateData),
-    onSuccess: () => {
-      toast.success("State updated successfully!");
-      navigate('/states');
-    },
-    onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || "Failed to update state";
-      toast.error(errorMessage);
-      console.error("Error updating state:", error);
-    },
-  });
 
   // Update form data when state data is loaded
   useEffect(() => {
