@@ -1,8 +1,19 @@
+import { useQuery } from "@tanstack/react-query";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../../components/ui/table";
+import { dashboardService } from "../../services/dashboardService";
 
 export default function Home() {
+  // Fetch dashboard data from API
+  const { data: dashboardData, isLoading, error } = useQuery({
+    queryKey: ['dashboardData'],
+    queryFn: dashboardService.getDashboardData,
+  });
+
+  const stats = dashboardData?.stats;
+  const recentUsers = dashboardData?.users || [];
+
   return (
     <>
       <PageMeta
@@ -32,7 +43,7 @@ export default function Home() {
             <div className="flex items-start">
               <div className="flex-1 w-3/4">
                 <p className="text-sm font-medium text-gray-600 mb-1">Today User</p>
-                <p className="text-2xl font-bold text-gray-900 mb-2">15645</p>
+                <p className="text-2xl font-bold text-gray-900 mb-2">{stats?.todayUsers?.toLocaleString() || '0'}</p>
                 
               </div>
                 <div className="w-12 flex justify-end">
@@ -42,7 +53,9 @@ export default function Home() {
                 </div>
             </div>
             <div className="flex items-center ">
-                  <span className="text-xs text-green-600 font-medium">↗ 8.5% Up from yesterday</span>
+                  <span className={`text-xs font-medium ${(stats?.todayUsersChange ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {(stats?.todayUsersChange ?? 0) >= 0 ? '↗' : '↘'} {Math.abs(stats?.todayUsersChange ?? 0)}% {(stats?.todayUsersChange ?? 0) >= 0 ? 'Up' : 'Down'} from yesterday
+                  </span>
                 </div>
           </div>
 
@@ -51,7 +64,7 @@ export default function Home() {
             <div className="flex items-start">
               <div className="flex-1 w-3/4">
                 <p className="text-sm font-medium text-gray-600 mb-1">Active User</p>
-                <p className="text-2xl font-bold text-gray-900 mb-2">10293</p>
+                <p className="text-2xl font-bold text-gray-900 mb-2">{stats?.activeUsers?.toLocaleString() || '0'}</p>
                 
               </div>
                 <div className="w-12 flex justify-end">
@@ -61,7 +74,9 @@ export default function Home() {
                 </div>
             </div>
             <div className="flex items-center">
-                  <span className="text-xs text-green-600 font-medium">↗ 1.3% Up from past week</span>
+                  <span className={`text-xs font-medium ${(stats?.activeUsersChange ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {(stats?.activeUsersChange ?? 0) >= 0 ? '↗' : '↘'} {Math.abs(stats?.activeUsersChange ?? 0)}% {(stats?.activeUsersChange ?? 0) >= 0 ? 'Up' : 'Down'} from past week
+                  </span>
                 </div>
           </div>
 
@@ -70,7 +85,7 @@ export default function Home() {
             <div className="flex items-start">
               <div className="flex-1 w-3/4">
                 <p className="text-sm font-medium text-gray-600 mb-1">Verified Users</p>
-                <p className="text-2xl font-bold text-gray-900 mb-2">$89,000</p>
+                <p className="text-2xl font-bold text-gray-900 mb-2">{stats?.verifiedUsers?.toLocaleString() || '0'}</p>
                
               </div>
                 <div className="w-12 flex justify-end">
@@ -80,7 +95,9 @@ export default function Home() {
                 </div>
             </div>
             <div className="flex items-center">
-                  <span className="text-xs text-red-600 font-medium">↘ 4.3% Down from yesterday</span>
+                  <span className={`text-xs font-medium ${(stats?.verifiedUsersChange ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {(stats?.verifiedUsersChange ?? 0) >= 0 ? '↗' : '↘'} {Math.abs(stats?.verifiedUsersChange ?? 0)}% {(stats?.verifiedUsersChange ?? 0) >= 0 ? 'Up' : 'Down'} from yesterday
+                  </span>
                 </div>
           </div>
 
@@ -89,7 +106,7 @@ export default function Home() {
             <div className="flex items-start">
               <div className="flex-1 w-3/4">
                 <p className="text-sm font-medium text-gray-600 mb-1">Todays Job</p>
-                <p className="text-2xl font-bold text-gray-900 mb-2">2040</p>
+                <p className="text-2xl font-bold text-gray-900 mb-2">{stats?.todayJobs?.toLocaleString() || '0'}</p>
                 
               </div>
                 <div className="w-12 flex justify-end">
@@ -99,7 +116,9 @@ export default function Home() {
                 </div>
             </div>
             <div className="flex items-center">
-                  <span className="text-xs text-green-600 font-medium">↗ 1.8% Up from yesterday</span>
+                  <span className={`text-xs font-medium ${(stats?.todayJobsChange ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {(stats?.todayJobsChange ?? 0) >= 0 ? '↗' : '↘'} {Math.abs(stats?.todayJobsChange ?? 0)}% {(stats?.todayJobsChange ?? 0) >= 0 ? 'Up' : 'Down'} from yesterday
+                  </span>
                 </div>
           </div>
 
@@ -108,7 +127,7 @@ export default function Home() {
             <div className="flex items-start">
               <div className="flex-1 w-3/4">
                 <p className="text-sm font-medium text-gray-600 mb-1">Active Jobs</p>
-                <p className="text-2xl font-bold text-gray-900 mb-2">2040</p>
+                <p className="text-2xl font-bold text-gray-900 mb-2">{stats?.activeJobs?.toLocaleString() || '0'}</p>
                 
               </div>
                 <div className="w-12 flex justify-end">
@@ -118,7 +137,9 @@ export default function Home() {
                 </div>
             </div>
             <div className="flex items-center">
-                  <span className="text-xs text-green-600 font-medium">↗ 1.8% Up from yesterday</span>
+                  <span className={`text-xs font-medium ${(stats?.activeJobsChange ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {(stats?.activeJobsChange ?? 0) >= 0 ? '↗' : '↘'} {Math.abs(stats?.activeJobsChange ?? 0)}% {(stats?.activeJobsChange ?? 0) >= 0 ? 'Up' : 'Down'} from yesterday
+                  </span>
                 </div>
           </div>
         </div>
@@ -137,54 +158,73 @@ export default function Home() {
                     <TableCell isHeader className="rounded-l-xl px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
                       <div className="flex items-center">
                         <div className="w-6 h-6 sm:w-8 sm:h-4 mr-2 sm:mr-3" />
-                        <span>User Name</span>
+                        <span>Email</span>
                       </div>
                     </TableCell>
-                    <TableCell isHeader className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Email</TableCell>
-                    <TableCell isHeader className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Phone</TableCell>
+                    <TableCell isHeader className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Role</TableCell>
+                    <TableCell isHeader className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Status</TableCell>
                     <TableCell isHeader className="rounded-r-xl px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Date</TableCell>
                   </TableRow>
                 </TableHeader>
                 <TableBody className="bg-white divide-y divide-gray-200">
-                  <tr>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-300 rounded-full mr-2 sm:mr-3">
-                        <img src="/images/dashboard/profile-1.png" alt="todays job" className="w-6 h-6 sm:w-8 sm:h-8" />
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={4} className="px-3 sm:px-6 py-8 text-center">
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                          <span className="ml-2 text-gray-500">Loading users...</span>
                         </div>
-                        <span className="text-sm font-medium text-gray-900">Alfredo Vetrovs</span>
-                      </div>
-                    </td>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">sample@gmail.com</td>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">+91 9876543210</td>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">12.09.2025</td>
-                  </tr>
-                  <tr>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-300 rounded-full mr-2 sm:mr-3">
-                        <img src="/images/dashboard/profile-1.png" alt="todays job" className="w-6 h-6 sm:w-8 sm:h-8" />
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">Charlie Ekstrom</span>
-                      </div>
-                    </td>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">sample@gmail.com</td>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">+91 9876543210</td>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">12.09.2025</td>
-                  </tr>
-                  <tr>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-300 rounded-full mr-2 sm:mr-3">
-                        <img src="/images/dashboard/profile-1.png" alt="todays job" className="w-6 h-6 sm:w-8 sm:h-8" />
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">Carla Westervelt</span>
-                      </div>
-                    </td>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">sample@gmail.com</td>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">+91 9876543210</td>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">12.09.2025</td>
-                  </tr>
+                      </td>
+                    </tr>
+                  ) : error ? (
+                    <tr>
+                      <td colSpan={4} className="px-3 sm:px-6 py-8 text-center text-red-500">
+                        Error loading users. Please try again.
+                      </td>
+                    </tr>
+                  ) : recentUsers.length > 0 ? (
+                    recentUsers.map((user) => (
+                      <tr key={user.id}>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-300 rounded-full mr-2 sm:mr-3">
+                              <img src="/images/dashboard/profile-1.png" alt="user" className="w-6 h-6 sm:w-8 sm:h-8" />
+                            </div>
+                            <span className="text-sm font-medium text-gray-900">{user.email}</span>
+                          </div>
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            user.role === 'CANDIDATE' ? 'bg-blue-100 text-blue-800' :
+                            user.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' :
+                            user.role === 'EMPLOYER' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            user.status === 'PENDING_VERIFICATION' ? 'bg-yellow-100 text-yellow-800' :
+                            user.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
+                            user.status === 'INACTIVE' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {user.status.replace('_', ' ')}
+                          </span>
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="px-3 sm:px-6 py-8 text-center text-gray-500">
+                        No recent users found
+                      </td>
+                    </tr>
+                  )}
                 </TableBody>
               </Table>
             </div>
