@@ -4,6 +4,7 @@ import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../components/ui/table";
 import { useQuery } from "@tanstack/react-query";
+import api from "../utils/axios";
 
 export default function AdminUsers() {
   const navigate = useNavigate();
@@ -17,18 +18,8 @@ export default function AdminUsers() {
   const { data: adminUsers = [], isLoading, error } = useQuery({
     queryKey: ['adminUsers', currentPage, filterBy, orderType, orderStatus, searchTerm],
     queryFn: async () => {
-      const response = await fetch('http://localhost:5000/api/admin/admins', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch admin users');
-      }
-
-      return response.json();
+      const response = await api.get('/api/admin/admins');
+      return response.data;
     },
   });
 
