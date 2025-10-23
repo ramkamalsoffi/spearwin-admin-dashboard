@@ -15,13 +15,110 @@ export default function AdminUsers() {
   const [searchTerm, setSearchTerm] = useState("");
 
   // Fetch admin users data from API
-  const { data: adminUsers = [], isLoading, error } = useQuery({
+  const { data: adminUsersResponse, isLoading, error } = useQuery({
     queryKey: ['adminUsers', currentPage, filterBy, orderType, orderStatus, searchTerm],
     queryFn: async () => {
       const response = await api.get('/api/admin/admins');
       return response.data;
     },
   });
+
+  // Handle different response structures
+  let adminUsers: any[] = [];
+  
+  console.log("Raw API Response:", adminUsersResponse);
+  console.log("Response Type:", typeof adminUsersResponse);
+  console.log("Is Array:", Array.isArray(adminUsersResponse));
+  
+  // Check if response is directly an array
+  if (Array.isArray(adminUsersResponse)) {
+    adminUsers = adminUsersResponse;
+    console.log("Using direct array");
+  }
+  // Check if response has data property
+  else if (adminUsersResponse?.data) {
+    console.log("Response has data property:", adminUsersResponse.data);
+    console.log("Data type:", typeof adminUsersResponse.data);
+    console.log("Data is array:", Array.isArray(adminUsersResponse.data));
+    
+    // If data is an array, use it directly
+    if (Array.isArray(adminUsersResponse.data)) {
+      adminUsers = adminUsersResponse.data;
+      console.log("Using data array");
+    }
+    // If data has a nested array (e.g., { data: { users: [...] } })
+    else if ((adminUsersResponse.data as any).users && Array.isArray((adminUsersResponse.data as any).users)) {
+      adminUsers = (adminUsersResponse.data as any).users;
+      console.log("Using nested users array");
+    }
+    // If data has a results array
+    else if ((adminUsersResponse.data as any).results && Array.isArray((adminUsersResponse.data as any).results)) {
+      adminUsers = (adminUsersResponse.data as any).results;
+      console.log("Using results array");
+    }
+    // Check for admins array
+    else if ((adminUsersResponse.data as any).admins && Array.isArray((adminUsersResponse.data as any).admins)) {
+      adminUsers = (adminUsersResponse.data as any).admins;
+      console.log("Using admins array");
+    }
+    // Check for adminUsers array
+    else if ((adminUsersResponse.data as any).adminUsers && Array.isArray((adminUsersResponse.data as any).adminUsers)) {
+      adminUsers = (adminUsersResponse.data as any).adminUsers;
+      console.log("Using adminUsers array");
+    }
+    // Check for any array property in data
+    else {
+      console.log("Available keys in data:", Object.keys(adminUsersResponse.data || {}));
+      
+      // Try to find any array property
+      const dataObj = adminUsersResponse.data as any;
+      for (const key in dataObj) {
+        if (Array.isArray(dataObj[key])) {
+          console.log(`Found array property '${key}':`, dataObj[key]);
+          adminUsers = dataObj[key];
+          console.log(`Using ${key} array`);
+          break;
+        }
+      }
+    }
+  }
+  // If no data property, check if response itself has array properties
+  else {
+    console.log("No data property found, checking response for array properties");
+    console.log("Available keys in response:", Object.keys(adminUsersResponse || {}));
+    
+    const responseObj = adminUsersResponse as any;
+    for (const key in responseObj) {
+      if (Array.isArray(responseObj[key])) {
+        console.log(`Found array property '${key}':`, responseObj[key]);
+        adminUsers = responseObj[key];
+        console.log(`Using ${key} array`);
+        break;
+      }
+    }
+  }
+
+  console.log("Final Admin Users:", adminUsers);
+  console.log("Admin Users Length:", adminUsers.length);
+
+  // Debug: Let's see what we actually got from the API
+  if (adminUsers.length === 0 && !isLoading && !error) {
+    console.log("=== DEBUGGING API RESPONSE ===");
+    console.log("adminUsersResponse:", adminUsersResponse);
+    console.log("adminUsersResponse type:", typeof adminUsersResponse);
+    console.log("adminUsersResponse keys:", Object.keys(adminUsersResponse || {}));
+    
+    if (adminUsersResponse?.data) {
+      console.log("adminUsersResponse.data:", adminUsersResponse.data);
+      console.log("adminUsersResponse.data type:", typeof adminUsersResponse.data);
+      console.log("adminUsersResponse.data keys:", Object.keys(adminUsersResponse.data || {}));
+    }
+    
+    console.log("=== END DEBUGGING ===");
+    
+    // Don't show sample data - let's see the real API response first
+    console.log("No admin users found in expected structure. Check console logs above for actual API response.");
+  }
 
   const usersPerPage = 10;
   const totalUsers = adminUsers.length;
@@ -33,14 +130,14 @@ export default function AdminUsers() {
       if (searchTerm) {
         return user.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                user.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+               user.user?.email?.toLowerCase().includes(searchTerm.toLowerCase());
       }
       return true;
     })
     .filter((user: any) => {
-      if (orderStatus === "Active") return user.status === "Active";
-      if (orderStatus === "Pending") return user.status === "Pending";
-      if (orderStatus === "Inactive") return user.status === "Inactive";
+      if (orderStatus === "Active") return user.user?.status === "ACTIVE";
+      if (orderStatus === "Pending") return user.user?.status === "PENDING";
+      if (orderStatus === "Inactive") return user.user?.status === "INACTIVE";
       return true;
     })
     .sort((a: any, b: any) => {
@@ -50,12 +147,14 @@ export default function AdminUsers() {
         return orderType === "Ascending" ? aName.localeCompare(bName) : bName.localeCompare(aName);
       }
       if (filterBy === "Role") {
-        return orderType === "Ascending" ? a.role.localeCompare(b.role) : b.role.localeCompare(a.role);
+        return orderType === "Ascending" ? 
+          (a.user?.role || '').localeCompare(b.user?.role || '') : 
+          (b.user?.role || '').localeCompare(a.user?.role || '');
       }
       if (filterBy === "Date") {
         return orderType === "Ascending" ? 
-          new Date(a.lastLogin).getTime() - new Date(b.lastLogin).getTime() :
-          new Date(b.lastLogin).getTime() - new Date(a.lastLogin).getTime();
+          new Date(a.user?.lastLoginAt || 0).getTime() - new Date(b.user?.lastLoginAt || 0).getTime() :
+          new Date(b.user?.lastLoginAt || 0).getTime() - new Date(a.user?.lastLoginAt || 0).getTime();
       }
       return 0;
     });
@@ -237,7 +336,60 @@ export default function AdminUsers() {
                     </td>
                   </tr>
                 ) : (
-                  paginatedUsers.map((user: any) => (
+                  paginatedUsers.map((user: any) => {
+                    // Debug: Log user object to see available fields
+                    console.log("=== USER DEBUG ===");
+                    console.log("User object:", user);
+                    console.log("User fields:", Object.keys(user));
+                    console.log("All user values:", Object.entries(user));
+                    console.log("User email (direct):", user.email);
+                    console.log("User phone (direct):", user.phone);
+                    console.log("User role (direct):", user.role);
+                    
+                    // Check for common variations
+                    console.log("Email variations:");
+                    console.log("- email:", user.email);
+                    console.log("- emailAddress:", user.emailAddress);
+                    console.log("- userEmail:", user.userEmail);
+                    console.log("- Email:", user.Email);
+                    console.log("- EMAIL:", user.EMAIL);
+                    
+                    console.log("Phone variations:");
+                    console.log("- phone:", user.phone);
+                    console.log("- phoneNumber:", user.phoneNumber);
+                    console.log("- mobile:", user.mobile);
+                    console.log("- contactNumber:", user.contactNumber);
+                    console.log("- Phone:", user.Phone);
+                    console.log("- PHONE:", user.PHONE);
+                    
+                    console.log("Role variations:");
+                    console.log("- role:", user.role);
+                    console.log("- userRole:", user.userRole);
+                    console.log("- adminRole:", user.adminRole);
+                    console.log("- position:", user.position);
+                    console.log("- Role:", user.Role);
+                    console.log("- ROLE:", user.ROLE);
+                    console.log("=== END USER DEBUG ===");
+                    
+                    // Dynamic field finder
+                    const findField = (possibleNames: string[], userObj: any) => {
+                      for (const name of possibleNames) {
+                        if (userObj[name] !== undefined && userObj[name] !== null && userObj[name] !== '') {
+                          console.log(`Found field '${name}' with value:`, userObj[name]);
+                          return userObj[name];
+                        }
+                      }
+                      return 'N/A';
+                    };
+                    
+                    // Use the correct nested structure from your API
+                    const userEmail = user.user?.email || 'N/A';
+                    const userPhone = user.user?.phone || 'N/A';
+                    const userRole = user.user?.role || 'N/A';
+                    
+                    console.log("Final values - Email:", userEmail, "Phone:", userPhone, "Role:", userRole);
+                    
+                    return (
                     <tr key={user.id} className="hover:bg-gray-50">
                       <td className="pl-6 pr-3 py-3 whitespace-nowrap">
                         <div className="flex items-center">
@@ -254,19 +406,27 @@ export default function AdminUsers() {
                           <span className="text-sm font-medium text-gray-500">{user.firstName} {user.lastName}</span>
                         </div>
                       </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{user.phone}</td>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{user.role}</td>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{user.lastLogin || 'Never'}</td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
+                        {userEmail}
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
+                        {userPhone}
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
+                        {userRole}
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
+                        {user.user?.lastLoginAt ? new Date(user.user.lastLoginAt).toLocaleDateString() : 'Never'}
+                      </td>
                       <td className="px-3 py-3 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                          user.status === 'Active' 
+                          user.user?.status === 'ACTIVE' 
                             ? 'bg-green-100 text-green-800' 
-                            : user.status === 'Pending'
+                            : user.user?.status === 'PENDING'
                             ? 'bg-orange-100 text-orange-800'
                             : 'bg-red-100 text-red-800'
                         }`}>
-                          {user.status}
+                          {user.user?.status || 'N/A'}
                         </span>
                       </td>
                       <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
@@ -284,7 +444,8 @@ export default function AdminUsers() {
                         </div>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
