@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { useMutation } from "@tanstack/react-query";
+import api from "../utils/axios";
 
 export default function AddAdminUsers() {
   const navigate = useNavigate();
@@ -18,19 +19,8 @@ export default function AddAdminUsers() {
   // API call to create admin
   const createAdminMutation = useMutation({
     mutationFn: async (adminData: typeof formData) => {
-      const response = await fetch('http://localhost:5000/api/admin/create-admin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(adminData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create admin');
-      }
-
-      return response.json();
+      const response = await api.post('/api/admin/create-admin', adminData);
+      return response.data;
     },
     onSuccess: () => {
       // Reset form
