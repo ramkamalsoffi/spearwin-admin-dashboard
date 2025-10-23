@@ -10,7 +10,7 @@ export default function Blank() {
       />
       
       {/* Title Bar */}
-      <div className="px-4 sm:px-6 lg:px-30 ">
+      <div className="px-4">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2">
           <PageBreadcrumb 
             items={[

@@ -26,6 +26,7 @@ import AddJob from "./pages/AddJob";
 import EditJob from "./pages/EditJob";
 import Companies from "./pages/Companies";
 import AddCompany from "./pages/AddCompany";
+import EditCompany from "./pages/EditCompany";
 import UserProfilesManagement from "./pages/UserProfilesManagement";
 import AddProfile from "./pages/AddProfile";
 import FAQs from "./pages/FAQs";
@@ -96,6 +97,7 @@ export default function App() {
             {/* Companies Pages */}
             <Route path="/companies" element={<Companies />} />
             <Route path="/add-company" element={<AddCompany />} />
+            <Route path="/edit-company/:id" element={<EditCompany />} />
 
             {/* User Profiles Pages */}
             <Route path="/user-profiles" element={<UserProfilesManagement />} />

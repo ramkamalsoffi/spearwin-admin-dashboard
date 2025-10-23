@@ -78,7 +78,7 @@ export default function AddPackage() {
       />
       
       {/* Title Bar */}
-      <div className="px-4 sm:px-6 lg:px-30 ">
+      <div className="px-4">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2">
           <PageBreadcrumb 
             items={[
@@ -91,7 +91,7 @@ export default function AddPackage() {
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 lg:px-30 py-4">
+      <div className="px-4 py-4">
         <div className="bg-white rounded-[10px] shadow-sm border border-gray-200">
           <form onSubmit={handleSubmit} className="p-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

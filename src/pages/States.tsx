@@ -94,7 +94,7 @@ export default function States() {
       />
       
       {/* Title Bar */}
-      <div className="px-4 sm:px-6 lg:px-30 ">
+      <div className="px-4">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2">
           <PageBreadcrumb 
             items={[
@@ -107,7 +107,7 @@ export default function States() {
       </div>
 
       {/* Main Content */}
-      <div className="px-4 sm:px-6 lg:px-30 py-4">
+      <div className="px-4 py-4">
         <div className="bg-white rounded-[10px] shadow-sm border border-gray-200">
           <div className="px-6 py-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
