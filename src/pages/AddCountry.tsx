@@ -9,7 +9,6 @@ export default function AddCountry() {
   const navigate = useNavigate();
   const { createCountryMutation } = useCountryMutations();
   const [formData, setFormData] = useState<CreateCountryRequest>({
-  const [formData, setFormData] = useState<CreateCountryRequest>({
     name: "",
     iso3: "",
     iso2: "",
@@ -22,16 +21,15 @@ export default function AddCountry() {
     tld: "",
     native: "",
     region: "",
-    region_id: 0,
+    region_id: null,
     subregion: "",
-    subregion_id: 0,
+    subregion_id: null,
     nationality: "",
     latitude: "",
     longitude: "",
     isActive: true
   });
 
-  const handleInputChange = (field: keyof CreateCountryRequest, value: string | boolean | number) => {
   const handleInputChange = (field: keyof CreateCountryRequest, value: string | boolean | number) => {
     setFormData(prev => ({
       ...prev,
@@ -43,7 +41,6 @@ export default function AddCountry() {
     e.preventDefault();
     createCountryMutation.mutate(formData);
   };
-
 
   return (
     <>
@@ -60,8 +57,6 @@ export default function AddCountry() {
               { label: "Dashboard", path: "/" },
               { label: "Countries", path: "/countries" },
               { label: "Add Country" }
-              { label: "Countries", path: "/countries" },
-              { label: "Add Country" }
             ]}
             showAdmin={true}
           />
@@ -75,7 +70,6 @@ export default function AddCountry() {
               <h1 className="text-xl font-semibold text-gray-900 mb-6">Add New Country</h1>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Country Name */}
                 {/* Country Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -155,7 +149,7 @@ export default function AddCountry() {
                   </label>
                   <input
                     type="text"
-                    value={formData.capital}
+                    value={formData.capital || ""}
                     onChange={(e) => handleInputChange("capital", e.target.value)}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -169,7 +163,7 @@ export default function AddCountry() {
                   </label>
                   <input
                     type="text"
-                    value={formData.currency}
+                    value={formData.currency || ""}
                     onChange={(e) => handleInputChange("currency", e.target.value)}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -183,7 +177,7 @@ export default function AddCountry() {
                   </label>
                   <input
                     type="text"
-                    value={formData.currency_name}
+                    value={formData.currency_name || ""}
                     onChange={(e) => handleInputChange("currency_name", e.target.value)}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -197,7 +191,7 @@ export default function AddCountry() {
                   </label>
                   <input
                     type="text"
-                    value={formData.currency_symbol}
+                    value={formData.currency_symbol || ""}
                     onChange={(e) => handleInputChange("currency_symbol", e.target.value)}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -211,7 +205,7 @@ export default function AddCountry() {
                   </label>
                   <input
                     type="text"
-                    value={formData.tld}
+                    value={formData.tld || ""}
                     onChange={(e) => handleInputChange("tld", e.target.value)}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -225,7 +219,7 @@ export default function AddCountry() {
                   </label>
                   <input
                     type="text"
-                    value={formData.native}
+                    value={formData.native || ""}
                     onChange={(e) => handleInputChange("native", e.target.value)}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -253,8 +247,8 @@ export default function AddCountry() {
                   </label>
                   <input
                     type="number"
-                    value={formData.region_id}
-                    onChange={(e) => handleInputChange("region_id", parseInt(e.target.value))}
+                    value={formData.region_id || ""}
+                    onChange={(e) => handleInputChange("region_id", parseInt(e.target.value) || 0)}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="e.g., 1, 2, 3"
@@ -267,7 +261,7 @@ export default function AddCountry() {
                   </label>
                   <input
                     type="text"
-                    value={formData.subregion}
+                    value={formData.subregion || ""}
                     onChange={(e) => handleInputChange("subregion", e.target.value)}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -281,8 +275,8 @@ export default function AddCountry() {
                   </label>
                   <input
                     type="number"
-                    value={formData.subregion_id}
-                    onChange={(e) => handleInputChange("subregion_id", parseInt(e.target.value))}
+                    value={formData.subregion_id || ""}
+                    onChange={(e) => handleInputChange("subregion_id", parseInt(e.target.value) || 0)}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="e.g., 1, 2, 3"
@@ -309,7 +303,7 @@ export default function AddCountry() {
                   </label>
                   <input
                     type="text"
-                    value={formData.latitude}
+                    value={formData.latitude || ""}
                     onChange={(e) => handleInputChange("latitude", e.target.value)}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -323,7 +317,7 @@ export default function AddCountry() {
                   </label>
                   <input
                     type="text"
-                    value={formData.longitude}
+                    value={formData.longitude || ""}
                     onChange={(e) => handleInputChange("longitude", e.target.value)}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -346,8 +340,6 @@ export default function AddCountry() {
 
               {/* Form Actions */}
               <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-              {/* Form Actions */}
-              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
                 <button
                   type="button"
                   onClick={() => navigate("/countries")}
@@ -358,7 +350,6 @@ export default function AddCountry() {
                 <button
                   type="submit"
                   disabled={createCountryMutation.isPending}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                 >
                   {createCountryMutation.isPending ? "Creating..." : "Create Country"}
