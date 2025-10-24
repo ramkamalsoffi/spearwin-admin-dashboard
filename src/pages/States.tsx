@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
@@ -12,12 +12,15 @@ import { State } from "../services/types";
 
 export default function States() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { deleteStateMutation } = useStateMutations();
   const [currentPage, setCurrentPage] = useState(1);
   const [filterBy, setFilterBy] = useState("Region");
   const [selectedCountry, setSelectedCountry] = useState("");
   const [orderBy, setOrderBy] = useState("name");
   const [orderDirection, setOrderDirection] = useState("asc");
+  const [statesPerPage, setStatesPerPage] = useState(10);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
 
   // Fetch countries for filter
@@ -52,8 +55,13 @@ export default function States() {
     console.log("States:", states);
     
 
+  // Extract states array from response
+  const statesArray: State[] = Array.isArray(states) 
+    ? states 
+    : (states as any)?.states || (states as any)?.data || [];
+
   // Filter and sort states
-  const filteredStates = states?.states?.filter(state => {
+  const filteredStates = statesArray.filter(state => {
     if (selectedCountry && state.countryId?.toString() !== selectedCountry) return false;
     return true;
   }).sort((a, b) => {
@@ -67,12 +75,25 @@ export default function States() {
     }
   });
 
-  const totalStates = states.total;
-  const statesPerPage = 10;
+  const totalStates = filteredStates.length;
   const totalPages = Math.ceil(totalStates / statesPerPage);
 
-  const handleRefresh = () => {
-    refetchStates();
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      // Invalidate and refetch both states and countries queries
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['states'] }),
+        queryClient.invalidateQueries({ queryKey: ['countries'] }),
+        refetchStates()
+      ]);
+      toast.success("Data refreshed successfully!");
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      toast.error("Failed to refresh data. Please try again.");
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const handleEdit = (state: State) => {
@@ -123,17 +144,15 @@ export default function States() {
 
                 <div className="flex flex-wrap items-center gap-4">
                   {/* Country Filter */}
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                    </svg>
-                    <span className="text-sm font-medium text-gray-700">Filter By Country</span>
-                  </div>
+                  
 
                   <div className="relative">
                     <select
                       value={selectedCountry}
-                      onChange={(e) => setSelectedCountry(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedCountry(e.target.value);
+                        setCurrentPage(1); // Reset to first page when changing country filter
+                      }}
                       className="appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer min-w-[150px]"
                     >
                       <option value="">All Countries</option>
@@ -162,7 +181,6 @@ export default function States() {
                       className="appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
                     >
                       <option value="name">Name</option>
-                      <option value="code">Code</option>
                       <option value="createdAt">Created Date</option>
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -187,13 +205,49 @@ export default function States() {
                       </svg>
                     </div>
                   </div>
+
+                  {/* Rows per page */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-700">Rows per page</span>
+                  </div>
+
+                  <div className="relative">
+                    {/* <select
+                      value={statesPerPage}
+                      onChange={(e) => {
+                        setStatesPerPage(Number(e.target.value));
+                        setCurrentPage(1); // Reset to first page when changing rows per page
+                      }}
+                      className="appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                    </select> */}
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
 
-                <button className="p-2 text-gray-400 hover:text-gray-600" onClick={handleRefresh}>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button 
+                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50" 
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                  title="Refresh data"
+                >
+                  <svg 
+                    className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
-            </button>
+                </button>
               </div>
 
             <button
@@ -241,7 +295,6 @@ export default function States() {
                 <TableHeader>
                   <TableRow className="bg-blue-50 mx-4">
                     <TableCell isHeader className="rounded-l-[20px] pl-6 pr-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Name</TableCell>
-                    <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Code</TableCell>
                     <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Status</TableCell>
                     <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Created</TableCell>
                     <TableCell isHeader className="rounded-r-[20px] pl-3 pr-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Action</TableCell>
@@ -259,7 +312,6 @@ export default function States() {
                       return (
                         <tr key={state.id} className="hover:bg-gray-50">
                           <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm text-gray-900 font-medium">{state.name}</td>
-                          <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{state.code}</td>
                           <td className="px-3 py-3 whitespace-nowrap">
                             <StatusBadge status={state.isActive ? "active" : "inactive"} />
                           </td>
@@ -289,31 +341,31 @@ export default function States() {
           </div>
 
           {/* Pagination */}
-          {!statesLoading && !statesError && states.length > 0 && (
+          {!statesLoading && !statesError && filteredStates.length > 0 && (
             <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-700">
-                  Showing {((currentPage - 1) * statesPerPage) + 1}-{Math.min(currentPage * statesPerPage, totalStates)} of {totalStates}
+                  Showing {((currentPage - 1) * statesPerPage) + 1}-{Math.min(currentPage * statesPerPage, filteredStates.length)} of {filteredStates.length}
                 </div>
                 <div className="flex items-center gap-2">
-                    <button
+                  <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                      disabled={currentPage === 1}
+                    disabled={currentPage === 1}
                     className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
-                    >
+                  >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
-                    </button>
-                    <button
+                  </button>
+                  <button
                     onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                      disabled={currentPage === totalPages}
+                    disabled={currentPage === totalPages}
                     className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
-                    >
+                  >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
-                    </button>
+                  </button>
                 </div>
               </div>
             </div>

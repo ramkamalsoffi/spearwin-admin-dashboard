@@ -29,34 +29,51 @@ export default function EditCompany() {
   });
 
   // Fetch company data by ID
-  const { data: companyData, isLoading: companyLoading, error: companyError } = useQuery({
+  const { data: companyResponse, isLoading: companyLoading, error: companyError } = useQuery({
     queryKey: ['company', id],
-    queryFn: () => companyService.getCompanyById(id!),
+    queryFn: async () => {
+      if (!id) throw new Error('Company ID is required');
+      const response = await companyService.getCompanyById(id);
+      return response;
+    },
     enabled: !!id,
   });
 
+  // Extract company data from response
+  let company = null;
+  if (companyResponse && typeof companyResponse === 'object') {
+    const responseObj = companyResponse as any;
+    if (responseObj.company) {
+      company = responseObj.company;
+    } else if (responseObj.data) {
+      company = responseObj.data;
+    } else {
+      company = responseObj;
+    }
+  }
+
   // Update form data when company data is loaded
   useEffect(() => {
-    if (companyData?.data) {
+    if (company) {
       setFormData({
-        name: companyData.data.name,
-        slug: companyData.data.slug,
-        description: companyData.data.description,
-        website: companyData.data.website,
-        logo: companyData.data.logo || "",
-        industry: companyData.data.industry,
-        foundedYear: companyData.data.foundedYear,
-        employeeCount: companyData.data.employeeCount,
-        headquarters: companyData.data.headquarters,
-        address: companyData.data.address,
-        linkedinUrl: companyData.data.linkedinUrl || "",
-        twitterUrl: companyData.data.twitterUrl || "",
-        facebookUrl: companyData.data.facebookUrl || "",
-        isVerified: companyData.data.isVerified,
-        isActive: companyData.data.isActive
+        name: company.name || "",
+        slug: company.slug || "",
+        description: company.description || "",
+        website: company.website || "",
+        logo: company.logo || "",
+        industry: company.industry || "",
+        foundedYear: company.foundedYear || new Date().getFullYear(),
+        employeeCount: company.employeeCount || "",
+        headquarters: company.headquarters || "",
+        address: company.address || "",
+        linkedinUrl: company.linkedinUrl || "",
+        twitterUrl: company.twitterUrl || "",
+        facebookUrl: company.facebookUrl || "",
+        isVerified: company.isVerified || false,
+        isActive: company.isActive || false
       });
     }
-  }, [companyData]);
+  }, [company]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -120,42 +137,30 @@ export default function EditCompany() {
   // Loading state
   if (companyLoading) {
     return (
-      <>
-        <PageMeta title="Edit Company | Spearwin Admin Dashboard" description="Edit Company" />
-        <div className="px-4 sm:px-6 lg:px-30 py-4">
-          <div className="bg-white rounded-[10px] shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-            </div>
-          </div>
+      <div className="flex items-center justify-center py-12">
+        <div className="flex items-center space-x-2">
+          <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span className="text-gray-600">Loading company...</span>
         </div>
-      </>
+      </div>
     );
   }
 
   // Error state
   if (companyError) {
     return (
-      <>
-        <PageMeta title="Edit Company | Spearwin Admin Dashboard" description="Edit Company" />
-        <div className="px-4 sm:px-6 lg:px-30 py-4">
-          <div className="bg-white rounded-[10px] shadow-sm border border-gray-200 p-6">
-            <div className="flex flex-col items-center justify-center py-12">
-              <svg className="w-16 h-16 text-red-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to load company</h3>
-              <p className="text-gray-500 mb-4">There was an error loading the company data.</p>
-              <button 
-                onClick={() => navigate('/companies')}
-                className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Back to Companies
-              </button>
-            </div>
-          </div>
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <svg className="mx-auto h-12 w-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">Failed to load company</h3>
+          <p className="mt-1 text-sm text-gray-500">{(companyError as any).message || "An unknown error occurred."}</p>
         </div>
-      </>
+      </div>
     );
   }
 
