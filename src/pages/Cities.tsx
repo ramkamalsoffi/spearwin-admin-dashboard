@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
@@ -12,10 +12,13 @@ import { City } from "../services/types";
 export default function Cities() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(0);
   const [orderStatus, setOrderStatus] = useState("Order Status");
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchInput, setSearchInput] = useState(""); // Separate state for input value
   const [selectedState, setSelectedState] = useState("");
+  const [totalCities, setTotalCities] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
 
   const citiesPerPage = 10;
 
@@ -24,8 +27,23 @@ export default function Cities() {
     queryKey: ['cities', selectedState, currentPage, searchTerm],
     queryFn: () => selectedState 
       ? citiesService.getCitiesByStateId(selectedState, currentPage, citiesPerPage, searchTerm || undefined)
-      : citiesService.getCities(currentPage, citiesPerPage, searchTerm || undefined),
+      : citiesService.getCities(currentPage, citiesPerPage, searchTerm || undefined, selectedState || undefined),
   });
+
+  // Update pagination state when data changes
+  useEffect(() => {
+    if (Array.isArray(citiesData?.data)) {
+      setTotalCities(citiesData.data.length);
+      setHasMore(citiesData.data.length === citiesPerPage);
+    }
+  }, [citiesData, citiesPerPage]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      // This will be handled by the debounced function's cleanup
+    };
+  }, []);
 
   // Fetch states for filter dropdown
   const { data: statesData } = useQuery({
@@ -48,32 +66,25 @@ export default function Cities() {
   });
 
   // Filter cities by status (server-side search is handled by API)
-  const filteredCities = citiesData?.data?.filter((city: City) => {
-    const matchesStatus = orderStatus === "Order Status" || 
-      (orderStatus === "Active" && city.isActive) ||
-      (orderStatus === "Inactive" && !city.isActive);
-    
-    return matchesStatus;
-  }) || [];
+  const filteredCities = Array.isArray(citiesData?.data) 
+    ? citiesData.data.filter((city: City) => {
+        const matchesStatus = orderStatus === "Order Status" || 
+          (orderStatus === "Active" && city.isActive) ||
+          (orderStatus === "Inactive" && !city.isActive);
+        
+        return matchesStatus;
+      })
+    : [];
 
-  // For server-side pagination, we need to get total count from API response
-  // For now, we'll use the current data length and assume there might be more pages
-  const totalCities = filteredCities.length;
-  const hasNextPage = filteredCities.length === citiesPerPage; // If we got exactly 10, there might be more
-  const hasPrevPage = currentPage > 1;
 
   // filters will be rendered inline in the card header
 
   const handleEdit = (city: City) => {
-    console.log("Edit City:", city);
-    // Navigate to edit page or open modal
     navigate(`/edit-city/${city.id}`);
   };
 
   const handleDelete = (city: City) => {
-    console.log("Delete City:", city);
-    // Show confirmation modal or delete directly
-    if (window.confirm(`Are you sure you want to delete ${city.name}?`)) {
+    if (window.confirm(`Are you sure you want to delete "${city.name}"? This action cannot be undone.`)) {
       deleteCityMutation.mutate(city.id);
     }
   };
@@ -85,73 +96,50 @@ export default function Cities() {
 
   const handleStateFilter = (stateId: string) => {
     setSelectedState(stateId);
-    setCurrentPage(1); // Reset to first page when filtering
+    setCurrentPage(0); // Reset to first page when filtering
   };
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-    setCurrentPage(1); // Reset to first page when searching
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    (() => {
+      let timeoutId: ReturnType<typeof setTimeout>;
+      return (value: string) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          setSearchTerm(value);
+          setCurrentPage(0); // Reset to first page when searching
+        }, 500); // 500ms delay
+      };
+    })(),
+    []
+  );
+
+  const handleSearch = (value: string) => {
+    setSearchInput(value); // Update input immediately for UI responsiveness
+    debouncedSearch(value); // Debounce the actual search
   };
 
   const handleNextPage = () => {
-    if (hasNextPage) {
+    if (hasMore && !citiesLoading) {
       setCurrentPage(prev => prev + 1);
     }
   };
 
   const handlePrevPage = () => {
-    if (hasPrevPage) {
+    if (currentPage > 0 && !citiesLoading) {
       setCurrentPage(prev => prev - 1);
     }
   };
 
   // Get state name by ID
   const getStateName = (stateId: string) => {
-    const state = statesData?.data?.find(s => s.id === stateId);
+    const state = Array.isArray(statesData?.data) 
+      ? statesData.data.find(s => s.id === stateId)
+      : null;
     return state?.name || "Unknown State";
   };
 
-  // Loading state
-  if (citiesLoading) {
-    return (
-      <>
-        <PageMeta title="Cities | spearwin-admin" description="Manage Cities" />
-        <div className="px-4 sm:px-6 lg:px-30 py-4">
-          <div className="bg-white rounded-[10px] shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-brand-500"></div>
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
 
-  // Error state
-  if (citiesError) {
-    return (
-      <>
-        <PageMeta title="Cities | spearwin-admin" description="Manage Cities" />
-        <div className="px-4 sm:px-6 lg:px-30 py-4">
-          <div className="bg-white rounded-[10px] shadow-sm border border-gray-200 p-6">
-            <div className="flex flex-col items-center justify-center py-12">
-              <svg className="w-16 h-16 text-red-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to load cities</h3>
-              <p className="text-gray-500 mb-4">There was an error loading the cities data.</p>
-              <button 
-                onClick={handleRefresh}
-                className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Try Again
-              </button>
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
 
   return (
     <>
@@ -189,8 +177,8 @@ export default function Cities() {
                   <input
                     type="text"
                     placeholder="Search cities..."
-                    value={searchTerm}
-                    onChange={handleSearch}
+                    value={searchInput}
+                    onChange={(e) => handleSearch(e.target.value)}
                     className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                   />
                 </div>
@@ -203,7 +191,7 @@ export default function Cities() {
                     className="appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
                   >
                     <option value="">All States</option>
-                    {statesData?.data?.map((state) => (
+                    {Array.isArray(statesData?.data) && statesData.data.map((state) => (
                       <option key={state.id} value={state.id}>
                         {state.name}
                       </option>
@@ -255,16 +243,47 @@ export default function Cities() {
               <TableHeader>
                 <TableRow className="bg-blue-50 mx-4">
                   <TableCell isHeader className="rounded-l-[20px] pl-6 pr-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">City Name</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Code</TableCell>
                   <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">State</TableCell>
                   <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Status</TableCell>
                   <TableCell isHeader className="rounded-r-[20px] pl-3 pr-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Action</TableCell>
                 </TableRow>
               </TableHeader>
               <TableBody className="bg-white divide-y divide-gray-200">
-                {filteredCities.length === 0 ? (
+                {citiesLoading ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center">
+                    <td colSpan={4} className="px-6 py-12 text-center">
+                      <div className="flex items-center justify-center">
+                        <div className="flex items-center space-x-2">
+                          <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span className="text-gray-600">Loading cities...</span>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ) : citiesError ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center justify-center">
+                        <svg className="w-16 h-16 text-red-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to load cities</h3>
+                        <p className="text-gray-500 mb-4">There was an error loading the cities data.</p>
+                        <button 
+                          onClick={handleRefresh}
+                          className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                        >
+                          Try Again
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : filteredCities.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center justify-center">
                         <svg className="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -292,11 +311,6 @@ export default function Cities() {
                     <tr key={city.id} className="hover:bg-gray-50">
                       <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                         {city.name}
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          {city.code}
-                        </span>
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
                         {getStateName(city.stateId)}
@@ -335,17 +349,17 @@ export default function Cities() {
           </div>
 
           {/* Pagination */}
-          {totalCities > 0 && (
+          {!citiesLoading && !citiesError && filteredCities.length > 0 && (
             <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-700">
-                  Showing {totalCities} cities on page {currentPage}
+                  Showing {totalCities} cities on page {currentPage + 1}
                   {searchTerm && ` (searching for "${searchTerm}")`}
                 </div>
                 <div className="flex items-center gap-2">
                   <button 
                     onClick={handlePrevPage}
-                    disabled={!hasPrevPage}
+                    disabled={currentPage === 0 || citiesLoading}
                     className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -353,11 +367,11 @@ export default function Cities() {
                     </svg>
                   </button>
                   <span className="text-sm text-gray-500">
-                    Page {currentPage}
+                    Page {currentPage + 1}
                   </span>
                   <button 
                     onClick={handleNextPage}
-                    disabled={!hasNextPage}
+                    disabled={!hasMore || citiesLoading}
                     className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

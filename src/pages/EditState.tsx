@@ -49,7 +49,6 @@ export default function EditState() {
   const { updateStateMutation } = useStateMutations();
   const [formData, setFormData] = useState({
     name: "",
-    code: "",
     countryId: "",
     isActive: true
   });
@@ -89,7 +88,6 @@ export default function EditState() {
     if (state) {
       setFormData({
         name: state.name || "",
-        code: state.code || "",
         countryId: state.countryId || "",
         isActive: state.isActive || false
       });
@@ -112,7 +110,7 @@ export default function EditState() {
     }
 
     // Validate form data
-    if (!formData.name || !formData.code || !formData.countryId) {
+    if (!formData.name || !formData.countryId) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -121,7 +119,6 @@ export default function EditState() {
     const updateData: UpdateStateRequest = {
       id,
       name: formData.name,
-      code: formData.code,
       countryId: parseInt(formData.countryId) || Number(formData.countryId),
       isActive: formData.isActive
     };
@@ -131,10 +128,12 @@ export default function EditState() {
   };
 
   // Prepare countries options for dropdown
-  const countryOptions = countriesData?.data?.map(country => ({
-    value: String(country.id),
-    label: country.name
-  })) || [];
+  const countryOptions = Array.isArray(countriesData?.data) 
+    ? countriesData.data.map(country => ({
+        value: String(country.id),
+        label: country.name
+      }))
+    : [];
 
   const statusOptions = [
     { value: "true", label: "Active" },
@@ -213,20 +212,6 @@ export default function EditState() {
                   />
                 </div>
 
-                {/* State Code */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    State Code <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.code}
-                    onChange={(e) => handleInputChange("code", e.target.value)}
-                    placeholder="Enter state code (e.g., CA, NY)"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
 
                 {/* Submit Button */}
                 <div className="pt-4">
