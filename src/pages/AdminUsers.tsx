@@ -20,8 +20,8 @@ export default function AdminUsers() {
     queryFn: async () => {
       const response = await api.get('/api/admin/admins');
       return response.data;
-    },
-  });
+        },
+      });
 
   // Handle different response structures
   let adminUsers: any[] = [];

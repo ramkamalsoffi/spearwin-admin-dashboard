@@ -10,11 +10,23 @@ export interface ApiResponse<T = any> {
 export interface Job {
   id: string;
   title: string;
-  companyId: string;
   description: string;
+  requirements: string;
+  responsibilities: string;
+  benefits: string;
+  companyName: string;
+  address: string;
   jobType: 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERNSHIP' | 'FREELANCE';
   workMode: 'REMOTE' | 'ONSITE' | 'HYBRID';
   experienceLevel: 'ENTRY_LEVEL' | 'MID_LEVEL' | 'SENIOR_LEVEL' | 'EXECUTIVE';
+  minExperience: number;
+  maxExperience: number;
+  minSalary: number;
+  maxSalary: number;
+  salaryNegotiable: boolean;
+  skillsRequired: string[];
+  educationLevel: 'HIGH_SCHOOL' | 'DIPLOMA' | 'BACHELOR' | 'MASTER' | 'DOCTORATE' | 'PROFESSIONAL';
+  expiresAt: string;
   status: 'DRAFT' | 'PUBLISHED' | 'CLOSED' | 'ARCHIVED';
   createdAt: string;
   updatedAt: string;
@@ -22,12 +34,11 @@ export interface Job {
 
 export interface CreateJobRequest {
   title: string;
-  companyId: string;
   description: string;
+  companyName: string;
   jobType: 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERNSHIP' | 'FREELANCE';
   workMode: 'REMOTE' | 'ONSITE' | 'HYBRID';
   experienceLevel: 'ENTRY_LEVEL' | 'MID_LEVEL' | 'SENIOR_LEVEL' | 'EXECUTIVE';
-  status: 'DRAFT' | 'PUBLISHED' | 'CLOSED' | 'ARCHIVED';
 }
 
 export interface UpdateJobRequest extends Partial<CreateJobRequest> {
