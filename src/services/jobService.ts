@@ -5,7 +5,17 @@ export const jobService = {
   // Get all jobs
   getJobs: async (): Promise<ApiResponse<Job[]>> => {
     const response = await api.get('/api/admin/jobs');
-    return response.data;
+    // The API returns { jobs: [...], total, page, limit, totalPages }
+    return {
+      success: true,
+      data: response.data.jobs || [],
+      message: 'Jobs retrieved successfully',
+      // Include pagination info
+      total: response.data.total,
+      page: response.data.page,
+      limit: response.data.limit,
+      totalPages: response.data.totalPages
+    };
   },
 
   // Get job by ID

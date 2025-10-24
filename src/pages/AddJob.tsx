@@ -14,7 +14,7 @@ export default function AddJob() {
   
   const [formData, setFormData] = useState({
     title: "",
-    companyName: "",
+    companyId: "",
     description: "",
     jobType: "",
     workMode: "",
@@ -27,6 +27,14 @@ export default function AddJob() {
     queryKey: ['companies'],
     queryFn: () => companyService.getCompanies(),
   });
+
+  // Debug: Log companies data
+  console.log('Companies Data:', companiesData);
+  if (companiesData?.data && companiesData.data.length > 0) {
+    console.log('First Company:', companiesData.data[0]);
+    console.log('First Company ID:', companiesData.data[0].id);
+    console.log('First Company Name:', companiesData.data[0].name);
+  }
 
   // TanStack Query mutation for creating job
   const createJobMutation = useMutation({
@@ -55,7 +63,7 @@ export default function AddJob() {
     e.preventDefault();
     
     // Validate form data
-    if (!formData.title || !formData.companyName || !formData.description || 
+    if (!formData.title || !formData.companyId || !formData.description || 
         !formData.jobType || !formData.workMode || !formData.experienceLevel || !formData.status) {
       toast.error("Please fill in all required fields");
       return;
@@ -81,13 +89,28 @@ export default function AddJob() {
     // Create job data object
     const jobData: CreateJobRequest = {
       title: formData.title,
-      companyId: formData.companyName, // Send company name instead of ID
+      companyId: formData.companyId,
       description: formData.description,
       jobType: formData.jobType as CreateJobRequest['jobType'],
       workMode: formData.workMode as CreateJobRequest['workMode'],
       experienceLevel: formData.experienceLevel as CreateJobRequest['experienceLevel'],
       status: formData.status as CreateJobRequest['status'],
     };
+
+    // Debug: Log the data being sent
+    console.log('Form Data:', formData);
+    console.log('Job Data being sent:', jobData);
+    console.log('Company ID:', formData.companyId);
+    console.log('Company ID type:', typeof formData.companyId);
+    console.log('Company ID length:', formData.companyId.length);
+    
+    // Check if we're sending a company name instead of ID
+    if (formData.companyId && formData.companyId.length < 10) {
+      console.error('❌ ERROR: Sending company name instead of ID:', formData.companyId);
+      console.error('This will cause a 400 error. Expected UUID format like: cmh4e5w3m0004wi93vxxa9pah');
+    } else if (formData.companyId && formData.companyId.length > 10) {
+      console.log('✅ GOOD: Sending proper company ID:', formData.companyId);
+    }
 
     // Submit the form
     createJobMutation.mutate(jobData);
@@ -140,23 +163,26 @@ export default function AddJob() {
 
                 {/* Company */}
                 <div>
-                  <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="companyId" className="block text-sm font-medium text-gray-700 mb-2">
                     Company
                   </label>
                   <select
-                    id="companyName"
-                    name="companyName"
-                    value={formData.companyName}
+                    id="companyId"
+                    name="companyId"
+                    value={formData.companyId}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   >
                     <option value="">Select a company</option>
-                    {companiesData?.data?.map((company) => (
-                      <option key={company.id} value={company.name}>
-                        {company.name}
-                      </option>
-                    ))}
+                    {companiesData?.data?.map((company) => {
+                      console.log(`Company: ${company.name}, ID: ${company.id}, Using as value: ${company.id}`);
+                      return (
+                        <option key={company.id} value={company.id}>
+                          {company.name}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 

@@ -29,9 +29,14 @@ export default function Jobs() {
   }
 
   const jobs = jobsResponse?.data || [];
-  const totalJobs = jobs.length;
+  const totalJobs = jobsResponse?.total || jobs.length;
   const jobsPerPage = 10;
   const totalPages = Math.ceil(totalJobs / jobsPerPage);
+
+  // Debug: Log jobs data
+  console.log('Jobs Response:', jobsResponse);
+  console.log('Jobs Array:', jobs);
+  console.log('Total Jobs:', totalJobs);
 
   const handleEdit = (job: Job) => {
     navigate(`/edit-job/${job.id}`);
