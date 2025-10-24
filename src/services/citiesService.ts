@@ -2,34 +2,35 @@ import api from '../utils/axios';
 import { ApiResponse, City, CreateCityRequest, UpdateCityRequest } from './types';
 
 export const citiesService = {
-  // Get all cities with pagination
-  getCities: async (page: number = 1, limit: number = 10, search?: string): Promise<ApiResponse<City[]>> => {
+  // Get all cities with pagination using offset/limit
+  getCities: async (page: number = 0, limit: number = 10, search?: string, stateId?: string): Promise<ApiResponse<City[]>> => {
     const params = new URLSearchParams({
-      page: page.toString(),
       limit: limit.toString(),
-      ...(search && { search })
+      offset: (page * limit).toString(),
+      ...(search && { search }),
+      ...(stateId && { stateId })
     });
     const response = await api.get(`/locations/cities?${params}`);
-    // The API returns cities array directly, wrap it in ApiResponse format
+    // The API returns data in format: { cities: [...], total: number, hasMore: boolean }
     return {
       success: true,
-      data: response.data,
+      data: response.data.cities || response.data, // Handle both formats
       message: 'Cities retrieved successfully'
     };
   },
 
-  // Get cities by state ID with pagination
-  getCitiesByStateId: async (stateId: string, page: number = 1, limit: number = 10, search?: string): Promise<ApiResponse<City[]>> => {
+  // Get cities by state ID with pagination using offset/limit
+  getCitiesByStateId: async (stateId: string, page: number = 0, limit: number = 10, search?: string): Promise<ApiResponse<City[]>> => {
     const params = new URLSearchParams({
-      page: page.toString(),
       limit: limit.toString(),
+      offset: (page * limit).toString(),
       ...(search && { search })
     });
     const response = await api.get(`/locations/states/${stateId}/cities?${params}`);
-    // The API returns cities array directly, wrap it in ApiResponse format
+    // The API returns data in format: { cities: [...], total: number, hasMore: boolean }
     return {
       success: true,
-      data: response.data,
+      data: response.data.cities || response.data, // Handle both formats
       message: 'Cities retrieved successfully'
     };
   },

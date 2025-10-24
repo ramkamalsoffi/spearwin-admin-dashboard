@@ -157,7 +157,7 @@ export interface City {
 
 export interface CreateCityRequest {
   name: string;
-  code: string;
+  code?: string;
   stateId: number;
   isActive?: boolean;
 }
