@@ -18,7 +18,8 @@ export default function AddJob() {
     description: "",
     jobType: "",
     workMode: "",
-    experienceLevel: ""
+    experienceLevel: "",
+    status: ""
   });
 
   // Fetch companies for dropdown
@@ -51,13 +52,12 @@ export default function AddJob() {
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+      [name]: value
     }));
   };
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,7 +86,7 @@ export default function AddJob() {
       return;
     }
 
-    // Create job data object with only required fields
+    // Create job data object
     const jobData: CreateJobRequest = {
       title: formData.title,
       companyId: formData.companyId,
@@ -147,7 +147,7 @@ export default function AddJob() {
                 {/* Job Title */}
                 <div>
                   <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                    Job Title *
+                    Job Title
                   </label>
                   <input
                     type="text"
@@ -189,14 +189,14 @@ export default function AddJob() {
                 {/* Job Type */}
                 <div>
                   <label htmlFor="jobType" className="block text-sm font-medium text-gray-700 mb-2">
-                    Job Type *
+                    Job Type
                   </label>
                   <select
                     id="jobType"
                     name="jobType"
                     value={formData.jobType}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-500"
                     required
                   >
                     <option value="">Select job type</option>
@@ -211,14 +211,14 @@ export default function AddJob() {
                 {/* Work Mode */}
                 <div>
                   <label htmlFor="workMode" className="block text-sm font-medium text-gray-700 mb-2">
-                    Work Mode *
+                    Work Mode
                   </label>
                   <select
                     id="workMode"
                     name="workMode"
                     value={formData.workMode}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-500"
                     required
                   >
                     <option value="">Select work mode</option>
@@ -231,14 +231,14 @@ export default function AddJob() {
                 {/* Experience Level */}
                 <div>
                   <label htmlFor="experienceLevel" className="block text-sm font-medium text-gray-700 mb-2">
-                    Experience Level *
+                    Experience Level
                   </label>
                   <select
                     id="experienceLevel"
                     name="experienceLevel"
                     value={formData.experienceLevel}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-500"
                     required
                   >
                     <option value="">Select experience level</option>
@@ -249,10 +249,30 @@ export default function AddJob() {
                   </select>
                 </div>
 
+                {/* Status */}
+                <div>
+                  <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                    Status
+                  </label>
+                  <select
+                    id="status"
+                    name="status"
+                    value={formData.status}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-500"
+                  >
+                    <option value="">Select status</option>
+                    <option value="DRAFT">Draft</option>
+                    <option value="PUBLISHED">Published</option>
+                    <option value="CLOSED">Closed</option>
+                    <option value="ARCHIVED">Archived</option>
+                  </select>
+                </div>
+
                 {/* Job Description */}
                 <div className="md:col-span-2">
                   <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                    Job Description *
+                    Job Description
                   </label>
                   <textarea
                     id="description"
