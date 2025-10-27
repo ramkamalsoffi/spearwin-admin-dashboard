@@ -5,7 +5,7 @@ import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { jobService } from "../services";
-import { Job } from "../services/types";
+import { Job, PaginatedApiResponse } from "../services/types";
 import { useJobMutations } from "../hooks/useJobMutations";
 
 export default function Jobs() {
@@ -16,7 +16,7 @@ export default function Jobs() {
   const [orderStatus, setOrderStatus] = useState("Order Status");
 
   // Fetch jobs from API
-  const { data: jobsResponse, isLoading, error, refetch } = useQuery({
+  const { data: jobsResponse, isLoading, error, refetch } = useQuery<PaginatedApiResponse<Job[]>>({
     queryKey: ['jobs'],
     queryFn: () => jobService.getJobs(),
   });

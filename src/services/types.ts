@@ -6,6 +6,14 @@ export interface ApiResponse<T = any> {
   errors?: string[];
 }
 
+// Paginated API response types
+export interface PaginatedApiResponse<T = any> extends ApiResponse<T> {
+  total?: number;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
+}
+
 // Job related types
 export interface Job {
   id: string;

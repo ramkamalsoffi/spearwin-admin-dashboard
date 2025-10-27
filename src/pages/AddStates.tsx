@@ -51,6 +51,7 @@ export default function AddStates() {
   
   const [formData, setFormData] = useState({
     name: "",
+    code: "",
     countryId: "",
     isActive: true
   });
@@ -86,6 +87,10 @@ export default function AddStates() {
       return;
     }
     
+    if (!formData.code.trim()) {
+      toast.error("State code is required");
+      return;
+    }
     
     if (!formData.countryId) {
       toast.error("Please select a country");
@@ -94,6 +99,7 @@ export default function AddStates() {
     
     const stateData: CreateStateRequest = {
       name: formData.name.trim(),
+      code: formData.code.trim(),
       countryId: parseInt(formData.countryId),
       isActive: formData.isActive,
     };
@@ -158,6 +164,21 @@ export default function AddStates() {
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter state name"
+                  />
+                </div>
+
+                {/* State Code */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    State Code *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.code}
+                    onChange={(e) => handleInputChange("code", e.target.value)}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter state code (e.g., CA, NY, TX)"
                   />
                 </div>
 

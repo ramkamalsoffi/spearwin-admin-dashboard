@@ -69,8 +69,11 @@ export default function AddJob() {
 
   // Fetch companies for dropdown
   const { data: companiesData } = useQuery({
-    queryKey: ['companies'],
-    queryFn: () => companyService.getCompanies(),
+    queryKey: ['companies', 'active'],
+    queryFn: async () => {
+      const response = await companyService.getCompanies({ isActive: true });
+      return response;
+    },
   });
 
   // Debug: Log companies data

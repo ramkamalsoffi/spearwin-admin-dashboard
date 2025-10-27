@@ -1,25 +1,59 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../components/ui/table";
 import { companyService } from "../services/companyService";
 import { Company } from "../services/types";
+import api from "../utils/axios";
 
 export default function Companies() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterBy, setFilterBy] = useState("Name");
   const [orderType, setOrderType] = useState("Order Type");
   const [orderStatus, setOrderStatus] = useState("Order Status");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setCurrentPage(1); // Reset to first page when searching
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // Fetch companies from API
   const { data: companiesResponse, isLoading, error, refetch } = useQuery({
-    queryKey: ['companies'],
-    queryFn: () => companyService.getCompanies(),
+    queryKey: ['companies', debouncedSearchTerm, currentPage],
+    queryFn: () => companyService.getCompanies({
+      search: debouncedSearchTerm || undefined,
+      page: currentPage,
+      limit: 10
+    }),
+  });
+
+  // Mutation for updating company status
+  const updateCompanyStatusMutation = useMutation({
+    mutationFn: async ({ companyId, isActive }: { companyId: string; isActive: boolean }) => {
+      const response = await api.put(`/companies/${companyId}/status`, { isActive });
+      return response.data;
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success(`Company ${variables.isActive ? 'activated' : 'deactivated'} successfully`);
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || 'Failed to update company status';
+      toast.error(errorMessage);
+      console.error('Error updating company status:', error);
+    },
   });
 
   // Debug logging
@@ -35,20 +69,9 @@ export default function Companies() {
   }
 
   const companies = companiesResponse?.data || [];
-  const companiesPerPage = 10;
-  const totalCompanies = companies.length;
-  const totalPages = Math.ceil(totalCompanies / companiesPerPage);
-
-  // Filter companies based on search term
-  const filteredCompanies = companies.filter((company: Company) =>
-    company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    company.industry.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Get paginated companies
-  const startIndex = (currentPage - 1) * companiesPerPage;
-  const endIndex = startIndex + companiesPerPage;
-  const paginatedCompanies = filteredCompanies.slice(startIndex, endIndex);
+  const totalCompanies = companiesResponse?.total || 0;
+  const totalPages = companiesResponse?.totalPages || 1;
+  const currentPageFromAPI = companiesResponse?.page || 1;
 
   const handleEdit = (company: Company) => {
     navigate(`/edit-company/${company.id}`);
@@ -66,56 +89,13 @@ export default function Companies() {
     refetch();
   };
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <>
-        <PageMeta
-          title="Companies | Spearwin Admin Dashboard"
-          description="Manage companies in the Spearwin admin dashboard"
-        />
-        <div className="px-4 sm:px-6 lg:px-30 py-4">
-          <div className="bg-white rounded-[10px] shadow-sm border border-gray-200 p-8">
-            <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900"></div>
-              <span className="ml-2 text-gray-600">Loading companies...</span>
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
+  const handleToggleStatus = (company: Company) => {
+    updateCompanyStatusMutation.mutate({
+      companyId: company.id,
+      isActive: !company.isActive
+    });
+  };
 
-  // Error state
-  if (error) {
-    return (
-      <>
-        <PageMeta
-          title="Companies | Spearwin Admin Dashboard"
-          description="Manage companies in the Spearwin admin dashboard"
-        />
-        <div className="px-4 sm:px-6 lg:px-30 py-4">
-          <div className="bg-white rounded-[10px] shadow-sm border border-gray-200 p-8">
-            <div className="text-center">
-              <div className="text-red-600 mb-4">
-                <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-                <p className="text-lg font-medium">Error loading companies</p>
-                <p className="text-sm text-gray-600 mt-2">Please try again later</p>
-              </div>
-              <button 
-                onClick={() => refetch()}
-                className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Retry
-              </button>
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
 
   return (
     <>
@@ -143,6 +123,22 @@ export default function Companies() {
           <div className="px-6 py-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-4">
+                {/* Search Input */}
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search companies..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="block w-64 pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  />
+                </div>
+
                 <div className="flex items-center gap-2">
                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -150,7 +146,7 @@ export default function Companies() {
                   <span className="text-sm font-medium text-gray-700">Filter By</span>
                 </div>
 
-                <div className="relative">
+                {/* <div className="relative">
                   <select 
                     value={filterBy}
                     onChange={(e) => setFilterBy(e.target.value)}
@@ -166,7 +162,7 @@ export default function Companies() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
-                </div>
+                </div> */}
 
                 <div className="relative">
                   <select 
@@ -230,14 +226,23 @@ export default function Companies() {
                 </TableRow>
               </TableHeader>
               <TableBody className="bg-white divide-y divide-gray-200">
-                {paginatedCompanies.length === 0 ? (
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center">
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-900"></div>
+                        <span className="ml-2 text-gray-600">Loading companies...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : companies.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                      No companies found
+                      {searchTerm ? 'No companies found matching your search' : 'No companies found'}
                     </td>
                   </tr>
                 ) : (
-                  paginatedCompanies.map((company: Company) => (
+                  companies.map((company: Company) => (
                     <tr key={company.id} className="hover:bg-gray-50">
                       <td className="pl-6 pr-3 py-3 whitespace-nowrap">
                         <div className="flex items-center">
@@ -257,25 +262,37 @@ export default function Companies() {
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{company.website || 'N/A'}</td>
                       <td className="px-3 py-3 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                          company.isVerified
+                          company.isActive
                             ? 'bg-green-100 text-green-800'
-                            : 'bg-yellow-100 text-yellow-800'
+                            : 'bg-red-100 text-red-800'
                         }`}>
-                          {company.isVerified ? 'Verified' : 'Pending'}
+                          {company.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </td>
                       <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                           <button className="p-1 text-blue-600 hover:text-blue-800" onClick={() => handleEdit(company)}>
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </button>
-                          <button className="p-1 text-red-600 hover:text-red-800" onClick={() => handleDelete(company)}>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
+                          
+                          {/* Toggle Switch */}
+                          <div className="flex items-center">
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={company.isActive}
+                                onChange={() => handleToggleStatus(company)}
+                                disabled={updateCompanyStatusMutation.isPending}
+                              />
+                              <div className={`relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 ${updateCompanyStatusMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
+                              <span className="ml-2 text-xs font-medium text-gray-700">
+                                {company.isActive ? 'Active' : 'Inactive'}
+                              </span>
+                            </label>
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -289,21 +306,24 @@ export default function Companies() {
           <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-700">
-                Showing {startIndex + 1}-{Math.min(endIndex, filteredCompanies.length)} of {filteredCompanies.length}
+                Showing {companies.length > 0 ? ((currentPage - 1) * 10) + 1 : 0}-{Math.min(currentPage * 10, totalCompanies)} of {totalCompanies}
               </div>
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
+                  disabled={currentPage === 1 || isLoading}
                   className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
+                <span className="text-sm text-gray-500">
+                  Page {currentPage} of {totalPages}
+                </span>
                 <button 
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
+                  disabled={currentPage === totalPages || isLoading}
                   className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

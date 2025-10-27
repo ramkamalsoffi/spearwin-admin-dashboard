@@ -1,16 +1,41 @@
 import api from '../utils/axios';
-import { ApiResponse, Company, CreateCompanyRequest, UpdateCompanyRequest } from './types';
+import { ApiResponse, PaginatedApiResponse, Company, CreateCompanyRequest, UpdateCompanyRequest } from './types';
 
 export const companyService = {
   // Get all companies
-  getCompanies: async (): Promise<ApiResponse<Company[]>> => {
-    const response = await api.get('/companies');
+  getCompanies: async (params?: { 
+    isActive?: boolean; 
+    search?: string; 
+    page?: number; 
+    limit?: number; 
+  }): Promise<PaginatedApiResponse<Company[]>> => {
+    const queryParams = new URLSearchParams();
+    if (params?.isActive !== undefined) {
+      queryParams.append('isActive', params.isActive.toString());
+    }
+    if (params?.search) {
+      queryParams.append('search', params.search);
+    }
+    if (params?.page !== undefined) {
+      queryParams.append('page', params.page.toString());
+    }
+    if (params?.limit !== undefined) {
+      queryParams.append('limit', params.limit.toString());
+    }
+    
+    const url = params ? `/companies?${queryParams.toString()}` : '/companies';
+    const response = await api.get(url);
     // The API returns { companies: [...], total, page, limit, totalPages }
     // Extract the companies array from the response
     return {
       success: true,
-      data: response.data.companies || [],
-      message: 'Companies retrieved successfully'
+      data: response.data.companies || response.data.data || [],
+      message: 'Companies retrieved successfully',
+      // Include pagination info if available
+      total: response.data.total,
+      page: response.data.page,
+      limit: response.data.limit,
+      totalPages: response.data.totalPages
     };
   },
 

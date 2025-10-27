@@ -1,9 +1,9 @@
 import api from '../utils/axios';
-import { ApiResponse, Job, CreateJobRequest, UpdateJobRequest } from './types';
+import { ApiResponse, PaginatedApiResponse, Job, CreateJobRequest, UpdateJobRequest } from './types';
 
 export const jobService = {
   // Get all jobs
-  getJobs: async (): Promise<ApiResponse<Job[]>> => {
+  getJobs: async (): Promise<PaginatedApiResponse<Job[]>> => {
     const response = await api.get('/api/admin/jobs');
     // The API returns { jobs: [...], total, page, limit, totalPages }
     return {
