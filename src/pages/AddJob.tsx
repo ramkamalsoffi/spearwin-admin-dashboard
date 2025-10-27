@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
@@ -7,6 +7,44 @@ import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { jobService, companyService } from "../services";
 import { CreateJobRequest } from "../services/types";
 import { useCreateJob } from "../hooks/useJobs";
+import api from "../utils/axios";
+
+// Types for job attributes
+interface Attribute {
+  id: string;
+  name: string;
+  categoryId: string;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  displayName: string;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+  attributes: Attribute[];
+  _count: {
+    attributes: number;
+  };
+}
+
+interface CategoriesResponse {
+  success: boolean;
+  message: string;
+  data: Category[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
 
 export default function AddJob() {
   const navigate = useNavigate();
@@ -22,6 +60,13 @@ export default function AddJob() {
     status: ""
   });
 
+  // Job attributes state
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedAttributes, setSelectedAttributes] = useState<{[categoryId: string]: string}>({});
+  const [showAttributeModal, setShowAttributeModal] = useState(false);
+  const [loadingAttributes, setLoadingAttributes] = useState(false);
+
   // Fetch companies for dropdown
   const { data: companiesData } = useQuery({
     queryKey: ['companies'],
@@ -35,6 +80,25 @@ export default function AddJob() {
     console.log('First Company ID:', companiesData.data[0].id);
     console.log('First Company Name:', companiesData.data[0].name);
   }
+
+  // Fetch job attributes categories
+  const fetchJobAttributes = async () => {
+    try {
+      setLoadingAttributes(true);
+      const response = await api.get<CategoriesResponse>('/job-attributes/categories');
+      setCategories(response.data.data);
+    } catch (error: any) {
+      console.error('Error fetching job attributes:', error);
+      toast.error('Failed to load job attributes');
+    } finally {
+      setLoadingAttributes(false);
+    }
+  };
+
+  // Load job attributes on component mount
+  useEffect(() => {
+    fetchJobAttributes();
+  }, []);
 
   // TanStack Query mutation for creating job
   const createJobMutation = useMutation({
@@ -57,6 +121,41 @@ export default function AddJob() {
       ...prev,
       [name]: value
     }));
+  };
+
+  // Handle category selection
+  const handleCategoryToggle = (categoryId: string) => {
+    setSelectedCategories(prev => {
+      if (prev.includes(categoryId)) {
+        // Remove category and its selected attribute
+        const newSelected = prev.filter(id => id !== categoryId);
+        setSelectedAttributes(prevAttrs => {
+          const newAttrs = { ...prevAttrs };
+          delete newAttrs[categoryId];
+          return newAttrs;
+        });
+        return newSelected;
+      } else {
+        // Add category
+        return [...prev, categoryId];
+      }
+    });
+  };
+
+  // Handle attribute selection
+  const handleAttributeChange = (categoryId: string, attributeId: string) => {
+    setSelectedAttributes(prev => ({
+      ...prev,
+      [categoryId]: attributeId
+    }));
+  };
+
+  // Get selected category details
+  const getSelectedCategoryDetails = () => {
+    return selectedCategories.map(categoryId => {
+      const category = categories.find(cat => cat.id === categoryId);
+      return category;
+    }).filter(Boolean) as Category[];
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -269,6 +368,20 @@ export default function AddJob() {
                   </select>
                 </div>
 
+                {/* Add Job Attributes Button */}
+                <div className="md:col-span-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAttributeModal(true)}
+                    className="flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add New Job Attribute
+                  </button>
+                </div>
+
                 {/* Job Description */}
                 <div className="md:col-span-2">
                   <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
@@ -285,6 +398,28 @@ export default function AddJob() {
                     required
                   />
                 </div>
+
+                {/* Selected Job Attributes */}
+                {getSelectedCategoryDetails().map((category) => (
+                  <div key={category.id} className="md:col-span-2">
+                    <label htmlFor={`attribute-${category.id}`} className="block text-sm font-medium text-gray-700 mb-2">
+                      {category.displayName}
+                    </label>
+                    <select
+                      id={`attribute-${category.id}`}
+                      value={selectedAttributes[category.id] || ""}
+                      onChange={(e) => handleAttributeChange(category.id, e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Select {category.displayName.toLowerCase()}</option>
+                      {category.attributes.map((attribute) => (
+                        <option key={attribute.id} value={attribute.id}>
+                          {attribute.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
               </div>
 
               {/* Submit Button */}
@@ -315,6 +450,88 @@ export default function AddJob() {
           </div>
         </div>
       </div>
+
+      {/* Job Attributes Modal */}
+      {showAttributeModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Select Job Attribute Categories
+                </h3>
+                <button
+                  onClick={() => setShowAttributeModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              {loadingAttributes ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900"></div>
+                  <span className="ml-2 text-gray-600">Loading categories...</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+                  {categories.map((category) => (
+                    <div
+                      key={category.id}
+                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                        selectedCategories.includes(category.id)
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      onClick={() => handleCategoryToggle(category.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium text-gray-900">{category.displayName}</h4>
+                          <p className="text-sm text-gray-500">
+                            {category._count.attributes} attributes available
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          className={`p-2 rounded-full transition-colors ${
+                            selectedCategories.includes(category.id)
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                          }`}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAttributeModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAttributeModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-900 border border-transparent rounded-md hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
