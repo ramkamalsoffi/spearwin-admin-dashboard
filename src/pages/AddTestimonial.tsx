@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
+import PageBreadcrumb from "../components/common/PageBreadCrumb";
+import { useTestimonialMutations } from "../hooks/useTestimonialMutations";
 
 // Interactive Star Rating Component
 const StarRating = ({ 
@@ -75,13 +78,15 @@ const FileUpload = ({
 
 export default function AddTestimonial() {
   const navigate = useNavigate();
+  const { createTestimonialMutation } = useTestimonialMutations();
   const [formData, setFormData] = useState({
     userName: "",
-    roleCompany: "",
+    userAvatar: "",
+    role: "",
+    company: "",
     feedback: "",
-    status: "",
-    rating: 0,
-    profilePicture: null as File | null
+    rating: 5,
+    status: "ACTIVE" as "ACTIVE" | "INACTIVE"
   });
 
   const handleInputChange = (field: string, value: string | number) => {
@@ -100,17 +105,50 @@ export default function AddTestimonial() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Testimonial form submitted:", formData);
-    // Handle form submission logic here
-    // For now, just navigate back to testimonials page
-    navigate("/testimonial");
+    
+    // Validate required fields
+    if (!formData.userName.trim()) {
+      toast.error("User name is required");
+      return;
+    }
+    
+    if (!formData.role.trim()) {
+      toast.error("Role is required");
+      return;
+    }
+    
+    if (!formData.company.trim()) {
+      toast.error("Company is required");
+      return;
+    }
+    
+    if (!formData.feedback.trim()) {
+      toast.error("Feedback is required");
+      return;
+    }
+    
+    if (formData.rating < 1 || formData.rating > 5) {
+      toast.error("Rating must be between 1 and 5");
+      return;
+    }
+
+    const testimonialData = {
+      userName: formData.userName.trim(),
+      userAvatar: formData.userAvatar.trim() || "/images/user/default-avatar.jpg",
+      role: formData.role.trim(),
+      company: formData.company.trim(),
+      feedback: formData.feedback.trim(),
+      rating: formData.rating,
+      status: formData.status
+    };
+
+    console.log('📤 Submitting testimonial data:', testimonialData);
+    createTestimonialMutation.mutate(testimonialData);
   };
 
   const statusOptions = [
-    { value: "", label: "Select status" },
-    { value: "Active", label: "Active" },
-    { value: "Inactive", label: "Inactive" },
-    { value: "Pending", label: "Pending" }
+    { value: "ACTIVE", label: "Active" },
+    { value: "INACTIVE", label: "Inactive" }
   ];
 
   return (
@@ -123,7 +161,14 @@ export default function AddTestimonial() {
       {/* Title Bar */}
       <div className="px-4 sm:px-6 lg:px-30 ">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2">
-          <h1 className="text-lg font-semibold text-gray-900">Add Testimonial</h1>
+          <PageBreadcrumb 
+            items={[
+              { label: "Dashboard", path: "/" },
+              { label: "Testimonials", path: "/testimonial" },
+              { label: "Add Testimonial" }
+            ]}
+            showAdmin={true}
+          />
         </div>
       </div>
 
@@ -133,26 +178,67 @@ export default function AddTestimonial() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Left Column */}
               <div className="space-y-6">
-                {/* Profile Picture */}
+                {/* User Avatar URL */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Profile Picture
+                    User Avatar URL
                   </label>
-                  <FileUpload onFileSelect={handleFileSelect} />
+                  <input
+                    type="url"
+                    value={formData.userAvatar}
+                    onChange={(e) => handleInputChange("userAvatar", e.target.value)}
+                    placeholder="https://example.com/avatar.jpg"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
                 </div>
 
-                {/* Role/Company */}
+                {/* Role */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Role/Company
+                    Role <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    value={formData.roleCompany}
-                    onChange={(e) => handleInputChange("roleCompany", e.target.value)}
-                    placeholder="Enter role/company"
+                    value={formData.role}
+                    onChange={(e) => handleInputChange("role", e.target.value)}
+                    placeholder="e.g., Job Seeker, Software Engineer"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
                   />
+                </div>
+
+                {/* Company */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Company <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.company}
+                    onChange={(e) => handleInputChange("company", e.target.value)}
+                    placeholder="e.g., Tech Corp, Design Studio"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
+                </div>
+
+                {/* Status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Status <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => handleInputChange("status", e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  >
+                    {statusOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Rating */}
@@ -170,9 +256,10 @@ export default function AddTestimonial() {
                 <div className="pt-4">
                 <button
                   type="submit"
-                  className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  disabled={createTestimonialMutation.isPending}
+                  className="bg-blue-900 hover:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                 >
-                  Submit
+                  {createTestimonialMutation.isPending ? "Creating..." : "Create Testimonial"}
                 </button>
                 </div>
               </div>

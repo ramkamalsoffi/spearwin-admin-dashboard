@@ -71,7 +71,7 @@ export default function AddJob() {
   const { data: companiesData } = useQuery({
     queryKey: ['companies', 'active'],
     queryFn: async () => {
-      const response = await companyService.getCompanies({ isActive: true });
+      const response = await companyService.getActiveCompanies();
       return response;
     },
   });

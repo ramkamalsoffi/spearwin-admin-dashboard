@@ -15,8 +15,8 @@ export default function Companies() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterBy, setFilterBy] = useState("Name");
-  const [orderType, setOrderType] = useState("Order Type");
-  const [orderStatus, setOrderStatus] = useState("Order Status");
+  const [orderType, setOrderType] = useState("asc");
+  const [orderStatus, setOrderStatus] = useState("All");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 
   // Debounce search term
@@ -29,14 +29,57 @@ export default function Companies() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
+  // Reset page when order status or order type changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [orderStatus, orderType]);
+
   // Fetch companies from API
   const { data: companiesResponse, isLoading, error, refetch } = useQuery({
-    queryKey: ['companies', debouncedSearchTerm, currentPage],
-    queryFn: () => companyService.getCompanies({
-      search: debouncedSearchTerm || undefined,
-      page: currentPage,
-      limit: 10
-    }),
+    queryKey: ['companies', debouncedSearchTerm, currentPage, orderStatus, orderType],
+    queryFn: async () => {
+      console.log('Making API call with orderStatus:', orderStatus, 'orderType:', orderType);
+      console.log('orderStatus type:', typeof orderStatus);
+      console.log('orderStatus === "Active":', orderStatus === "Active");
+      console.log('orderStatus === "inactive":', orderStatus === "inactive");
+      
+      // Use specific endpoints based on order status
+      let result;
+      if (orderStatus === "Active") {
+        console.log('Calling API for ACTIVE companies');
+        result = await companyService.getActiveCompanies({
+          search: debouncedSearchTerm || undefined,
+          page: currentPage,
+          limit: 10,
+          sortBy: 'name',
+          sortOrder: orderType
+        });
+      } else if (orderStatus === "inactive") {
+        console.log('Calling API for INACTIVE companies');
+        result = await companyService.getInactiveCompanies({
+          search: debouncedSearchTerm || undefined,
+          page: currentPage,
+          limit: 10,
+          sortBy: 'name',
+          sortOrder: orderType
+        });
+      } else {
+        console.log('Calling API for ALL companies');
+        result = await companyService.getCompanies({
+          search: debouncedSearchTerm || undefined,
+          page: currentPage,
+          limit: 10,
+          sortBy: 'name',
+          sortOrder: orderType
+        });
+      }
+      
+      console.log('API Response:', result);
+      console.log('API Response Data:', result?.data);
+      console.log('Number of companies returned:', result?.data?.length);
+      
+      return result;
+    },
   });
 
   // Mutation for updating company status
@@ -68,9 +111,20 @@ export default function Companies() {
     console.error("Error fetching companies:", error);
   }
 
+  // Use the companies directly from API response
   const companies = companiesResponse?.data || [];
-  const totalCompanies = companiesResponse?.total || 0;
-  const totalPages = companiesResponse?.totalPages || 1;
+  
+  console.log('Order Status:', orderStatus);
+  console.log('Companies from API:', companies);
+  console.log('Company details:', companies.map(c => ({ 
+    id: c.id, 
+    name: c.name, 
+    isActive: c.isActive,
+    isVerified: c.isVerified
+  })));
+  
+  const totalCompanies = companies.length;
+  const totalPages = Math.ceil(totalCompanies / 10);
   const currentPageFromAPI = companiesResponse?.page || 1;
 
   const handleEdit = (company: Company) => {
@@ -84,9 +138,24 @@ export default function Companies() {
     }
   };
 
-  const handleRefresh = () => {
-    console.log("Refresh Companies data");
-    refetch();
+  const handleRefresh = async () => {
+    console.log("Refresh Companies data - using GET /companies");
+    try {
+      // Force refresh using the general companies endpoint
+      const result = await companyService.getCompanies({
+        search: debouncedSearchTerm || undefined,
+        page: currentPage,
+        limit: 10,
+        sortBy: 'name',
+        sortOrder: orderType
+      });
+      console.log('Refresh API Response:', result);
+      // Invalidate and refetch the query to update the UI
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+    } catch (error) {
+      console.error('Error refreshing companies:', error);
+      toast.error('Failed to refresh companies data');
+    }
   };
 
   const handleToggleStatus = (company: Company) => {
@@ -170,9 +239,8 @@ export default function Companies() {
                     onChange={(e) => setOrderType(e.target.value)}
                     className="appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
                   >
-                    <option>Order Type</option>
-                    <option>Ascending</option>
-                    <option>Descending</option>
+                    <option value="asc">Ascending (A-Z)</option>
+                    <option value="desc">Descending (Z-A)</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -187,9 +255,9 @@ export default function Companies() {
                     onChange={(e) => setOrderStatus(e.target.value)}
                     className="appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
                   >
-                    <option>Order Status</option>
-                    <option>Verified</option>
-                    <option>Pending</option>
+                    <option value="All">All Companies</option>
+                    <option value="Active">Active</option>
+                    <option value="inactive">Inactive</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

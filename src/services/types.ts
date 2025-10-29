@@ -197,6 +197,9 @@ export interface CreateCompanyRequest {
   employeeCount: string;
   headquarters: string;
   address: string;
+  country?: string;
+  state?: string;
+  city?: string;
   linkedinUrl?: string;
   twitterUrl?: string;
   facebookUrl?: string;
@@ -214,17 +217,21 @@ export interface User {
   email: string;
   emailVerified: boolean;
   emailVerifiedAt: string | null;
-  phone: string;
+  phone: string | null;
   phoneVerified: boolean;
   phoneVerifiedAt: string | null;
   password: string;
-  role: 'CANDIDATE' | 'ADMIN' | 'EMPLOYER';
+  role: 'CANDIDATE' | 'ADMIN' | 'EMPLOYER' | 'SUPER_ADMIN';
   status: 'PENDING_VERIFICATION' | 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   lastLoginAt: string | null;
   profileCompleted: boolean;
   twoFactorEnabled: boolean;
   createdAt: string;
   updatedAt: string;
+  candidate?: {
+    firstName: string;
+    lastName: string;
+  } | null;
 }
 
 // User Profile types for profile components
@@ -263,6 +270,34 @@ export interface CreateFAQRequest {
 }
 
 export interface UpdateFAQRequest extends Partial<CreateFAQRequest> {
+  id: string;
+}
+
+// Testimonial types
+export interface Testimonial {
+  id: string;
+  userName: string;
+  userAvatar: string;
+  role: string;
+  company: string;
+  feedback: string;
+  rating: number;
+  status: 'ACTIVE' | 'INACTIVE';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTestimonialRequest {
+  userName: string;
+  userAvatar: string;
+  role: string;
+  company: string;
+  feedback: string;
+  rating: number;
+  status: 'ACTIVE' | 'INACTIVE';
+}
+
+export interface UpdateTestimonialRequest extends Partial<CreateTestimonialRequest> {
   id: string;
 }
 

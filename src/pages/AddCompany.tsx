@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { companyService } from "../services";
+import { locationService, Country, State, City } from "../services/locationService";
 import { CreateCompanyRequest } from "../services/types";
 
 export default function AddCompany() {
@@ -21,6 +22,9 @@ export default function AddCompany() {
     employeeCount: "",
     headquarters: "",
     address: "",
+    country: "",
+    state: "",
+    city: "",
     linkedinUrl: "",
     twitterUrl: "",
     facebookUrl: "",
@@ -28,6 +32,51 @@ export default function AddCompany() {
     isActive: true
   });
 
+  // Fetch countries
+  const { data: countriesData, isLoading: countriesLoading, error: countriesError } = useQuery({
+    queryKey: ['countries'],
+    queryFn: () => locationService.getCountries(),
+  });
+
+  // Debug logging
+  console.log('🌍 Countries data:', countriesData);
+  console.log('🌍 Countries loading:', countriesLoading);
+  console.log('🌍 Countries error:', countriesError);
+
+  // Get selected country ID for states query
+  const selectedCountry = countriesData?.data?.find((country: Country) => country.name === formData.country);
+  const selectedCountryId = selectedCountry?.id;
+
+  // Fetch states when country is selected
+  const { data: statesData } = useQuery({
+    queryKey: ['states', selectedCountryId],
+    queryFn: () => locationService.getStatesByCountry(selectedCountryId!),
+    enabled: !!selectedCountryId,
+  });
+
+  // Get selected state ID for cities query
+  const selectedState = statesData?.data?.find((state: State) => state.name === formData.state);
+  const selectedStateId = selectedState?.id;
+
+  // Fetch cities when state is selected
+  const { data: citiesData } = useQuery({
+    queryKey: ['cities', selectedStateId],
+    queryFn: () => locationService.getCitiesByState(selectedStateId!),
+    enabled: !!selectedStateId,
+  });
+
+  // Reset dependent fields when parent selection changes
+  useEffect(() => {
+    if (formData.country) {
+      setFormData(prev => ({ ...prev, state: "", city: "" }));
+    }
+  }, [formData.country]);
+
+  useEffect(() => {
+    if (formData.state) {
+      setFormData(prev => ({ ...prev, city: "" }));
+    }
+  }, [formData.state]);
 
   // TanStack Query mutation for creating company
   const createCompanyMutation = useMutation({
@@ -97,6 +146,11 @@ export default function AddCompany() {
       return;
     }
     
+    if (!formData.country) {
+      toast.error("Please select a country");
+      return;
+    }
+    
     const companyData: CreateCompanyRequest = {
       name: formData.name.trim(),
       slug: formData.slug.trim(),
@@ -108,6 +162,9 @@ export default function AddCompany() {
       employeeCount: formData.employeeCount,
       headquarters: formData.headquarters.trim(),
       address: formData.address.trim(),
+      country: formData.country || undefined,
+      state: formData.state || undefined,
+      city: formData.city || undefined,
       linkedinUrl: formData.linkedinUrl || undefined,
       twitterUrl: formData.twitterUrl || undefined,
       facebookUrl: formData.facebookUrl || undefined,
@@ -316,6 +373,84 @@ export default function AddCompany() {
                   />
                 </div>
 
+                {/* Location Fields */}
+                <div className="md:col-span-2">
+                  <h3 className="text-lg font-medium text-gray-700 mb-4">Location</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Country */}
+                    <div>
+                      <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-2">
+                        Country <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        id="country"
+                        name="country"
+                        value={formData.country}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                        disabled={countriesLoading}
+                      >
+                        <option value="">
+                          {countriesLoading ? "Loading countries..." : "Select Country"}
+                        </option>
+                        {countriesError ? (
+                          <option value="" disabled>Error loading countries</option>
+                        ) : (
+                          countriesData?.data?.map((country: Country) => (
+                            <option key={country.id} value={country.name}>
+                              {country.name}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
+
+                    {/* State */}
+                    <div>
+                      <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2">
+                        State/Province
+                      </label>
+                      <select
+                        id="state"
+                        name="state"
+                        value={formData.state}
+                        onChange={handleInputChange}
+                        disabled={!formData.country}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      >
+                        <option value="">Select State/Province</option>
+                        {statesData?.data?.map((state: State) => (
+                          <option key={state.id} value={state.name}>
+                            {state.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* City */}
+                    <div>
+                      <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                        City
+                      </label>
+                      <select
+                        id="city"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleInputChange}
+                        disabled={!formData.state}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      >
+                        <option value="">Select City</option>
+                        {citiesData?.data?.map((city: City) => (
+                          <option key={city.id} value={city.name}>
+                            {city.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Address */}
                 <div className="md:col-span-2">

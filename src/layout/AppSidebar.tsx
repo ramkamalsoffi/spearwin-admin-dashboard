@@ -15,7 +15,7 @@ const AdminIcon = () => <img src="/images/sidebar-icons/admin-icon.png" alt="Adm
 const JobIcon = () => <img src="/images/sidebar-icons/job-icon.png" alt="Jobs" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
 const CompaniesIcon = () => <img src="/images/sidebar-icons/companies-icon.png" alt="Companies" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
 const UserProfileIcon = () => <img src="/images/sidebar-icons/userprofile-icon.png" alt="User Profiles" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
-const CMSIcon = () => <img src="/images/sidebar-icons/cms-icon.png" alt="CMS" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
+// const CMSIcon = () => <img src="/images/sidebar-icons/cms-icon.png" alt="CMS" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
 const FAQIcon = () => <img src="/images/sidebar-icons/faq-icon.png" alt="FAQs" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
 const TestimonialIcon = () => <img src="/images/sidebar-icons/testimonial-icon.png" alt="Testimonial" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
 const CVSearchIcon = () => <img src="/images/sidebar-icons/cv -search-icon.png" alt="CV Search" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} />;
@@ -67,11 +67,11 @@ const moduleItems: NavItem[] = [
     name: "User Profiles",
     path: "/user-profiles",
   },
-  {
-    icon: <CMSIcon />,
-    name: "CMS",
-    path: "/cms",
-  },
+  // {
+  //   icon: <CMSIcon />,
+  //   name: "CMS",
+  //   path: "/cms",
+  // },
   {
     icon: <FAQIcon />,
     name: "FAQs",
@@ -95,11 +95,11 @@ const moduleItems: NavItem[] = [
 ];
 
 const translationItems: NavItem[] = [
-  {
-    icon: <LanguageIcon />,
-    name: "Languages",
-    path: "/languages",
-  },
+  // {
+  //   icon: <LanguageIcon />,
+  //   name: "Languages",
+  //   path: "/languages",
+  // },
 ];
 
 const locationItems: NavItem[] = [
@@ -121,11 +121,11 @@ const locationItems: NavItem[] = [
 ];
 
 const packageItems: NavItem[] = [
-  {
-    icon: <PackageIcon />,
-    name: "Packages",
-    path: "/packages",
-  },
+  // {
+  //   icon: <PackageIcon />,
+  //   name: "Packages",
+  //   path: "/packages",
+  // },
 ];
 
 const attributeItems: NavItem[] = [
@@ -137,11 +137,11 @@ const attributeItems: NavItem[] = [
 ];
 
 const manageItems: NavItem[] = [
-  {
-    icon: <SettingsIcon />,
-    name: "Site Settings",
-    path: "/site-settings",
-  },
+  // {
+  //   icon: <SettingsIcon />,
+  //   name: "Site Settings",
+  //   path: "/site-settings",
+  // },
   {
     icon: <ManagePasswordIcon />,
     name: "Manage Password",
@@ -159,7 +159,7 @@ const othersItems: NavItem[] = [
     ],
   },
   {
-    icon: <CMSIcon />, // Using CMS icon for UI Elements
+    icon: <div className="w-5 h-5 bg-gray-400 rounded"></div>, // Generic icon for UI Elements
     name: "UI Elements",
     subItems: [
       { name: "Alerts", path: "/alerts", pro: false },
@@ -466,7 +466,7 @@ const AppSidebar: React.FC = () => {
               </h2>
               {renderMenuItems(moduleItems, "modules")}
             </div>
-            <div className="mt-4">
+            {/* <div className="mt-4">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-blue-900 font-semibold ${
                   !isExpanded && !isHovered
@@ -481,7 +481,7 @@ const AppSidebar: React.FC = () => {
                 )}
               </h2>
               {renderMenuItems(translationItems, "translation")}
-            </div>
+            </div> */}
             <div className="mt-4">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-blue-900 font-semibold ${
@@ -498,7 +498,7 @@ const AppSidebar: React.FC = () => {
               </h2>
               {renderMenuItems(locationItems, "location")}
             </div>
-            <div className="mt-4">
+            {/* <div className="mt-4">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-blue-900 font-semibold ${
                   !isExpanded && !isHovered
@@ -513,7 +513,7 @@ const AppSidebar: React.FC = () => {
                 )}
               </h2>
               {renderMenuItems(packageItems, "packages")}
-            </div>
+            </div> */}
             <div className="mt-4">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-blue-900 font-semibold ${

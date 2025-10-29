@@ -34,11 +34,12 @@ import AddFAQ from "./pages/AddFAQ";
 import EditFAQ from "./pages/EditFAQ";
 import Testimonials from "./pages/Testimonials";
 import AddTestimonial from "./pages/AddTestimonial";
+import EditTestimonial from "./pages/EditTestimonial";
 import CVSearch from "./pages/CVSearch";
 import CVStatusMaintenance from "./pages/CVStatusMaintenance";
 import AddCVStatus from "./pages/AddCVStatus";
-import Languages from "./pages/Languages";
-import AddLanguage from "./pages/AddLanguage";
+// import Languages from "./pages/Languages";
+// import AddLanguage from "./pages/AddLanguage";
 import Countries from "./pages/Countries";
 import AddCountry from "./pages/AddCountry";
 import EditCountry from "./pages/EditCountry";
@@ -48,13 +49,13 @@ import EditState from "./pages/EditState";
 import Cities from "./pages/Cities";
 import AddCities from "./pages/AddCities";
 import EditCity from "./pages/EditCity";
-import Packages from "./pages/Packages";
-import AddPackage from "./pages/AddPackage";
+// import Packages from "./pages/Packages";
+// import AddPackage from "./pages/AddPackage";
 import JobAttributes from "./pages/JobAttributes";
 import ManagePassword from "./pages/ManagePassword";
-import SiteSettings from "./pages/SiteSettings";
-import CMS from "./pages/CMS";
-import AddCMS from "./pages/AddCMS";
+// import SiteSettings from "./pages/SiteSettings";
+// import CMS from "./pages/CMS";
+// import AddCMS from "./pages/AddCMS";
 import AddTranslatedPage from "./pages/AddTranslatedPage";
 
 // Component to handle root route redirection
@@ -105,8 +106,8 @@ export default function App() {
             <Route path="/add-profile" element={<AddProfile />} />
 
             {/* CMS Pages */}
-            <Route path="/cms" element={<CMS />} />
-            <Route path="/add-cms" element={<AddCMS />} />
+            {/* <Route path="/cms" element={<CMS />} /> */}
+            {/* <Route path="/add-cms" element={<AddCMS />} /> */}
             <Route path="/add-translated-page" element={<AddTranslatedPage />} />
 
             {/* FAQs Pages */}
@@ -114,9 +115,10 @@ export default function App() {
             <Route path="/add-faq" element={<AddFAQ />} />
             <Route path="/edit-faq/:id" element={<EditFAQ />} />
 
-            {/* Testimonials Pages */}
-            <Route path="/testimonial" element={<Testimonials />} />
-            <Route path="/add-testimonial" element={<AddTestimonial />} />
+              {/* Testimonials Pages */}
+              <Route path="/testimonial" element={<Testimonials />} />
+              <Route path="/add-testimonial" element={<AddTestimonial />} />
+              <Route path="/edit-testimonial/:id" element={<EditTestimonial />} />
 
             {/* CV Search Pages */}
             <Route path="/cv-search" element={<CVSearch />} />
@@ -126,8 +128,8 @@ export default function App() {
             <Route path="/add-cv-status" element={<AddCVStatus />} />
 
             {/* Languages Pages */}
-            <Route path="/languages" element={<Languages />} />
-            <Route path="/add-language" element={<AddLanguage />} />
+            {/* <Route path="/languages" element={<Languages />} />
+            <Route path="/add-language" element={<AddLanguage />} /> */}
 
             {/* Countries Pages */}
             <Route path="/countries" element={<Countries />} />
@@ -145,15 +147,15 @@ export default function App() {
             <Route path="/edit-state/:id" element={<EditState />} />
 
             {/* Packages Pages */}
-            <Route path="/packages" element={<Packages />} />
-            <Route path="/add-package" element={<AddPackage />} />
+            {/* <Route path="/packages" element={<Packages />} />
+            <Route path="/add-package" element={<AddPackage />} /> */}
 
             {/* Job Attributes Pages */}
             <Route path="/job-attributes" element={<JobAttributes />} />
 
             {/* Manage Pages */}
             <Route path="/manage-password" element={<ManagePassword />} />
-            <Route path="/site-settings" element={<SiteSettings />} />
+            {/* <Route path="/site-settings" element={<SiteSettings />} /> */}
 
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />

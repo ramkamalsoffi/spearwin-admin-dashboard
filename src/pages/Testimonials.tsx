@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { useQuery } from "@tanstack/react-query";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../components/ui/table";
 import StatusBadge from "../components/ui/status-badge/StatusBadge";
+import { testimonialService } from "../services/testimonialService";
+import { useTestimonialMutations } from "../hooks/useTestimonialMutations";
+import { Testimonial } from "../services/types";
 
 // Star Rating Component
 const StarRating = ({ rating }: { rating: number }) => {
@@ -39,129 +43,81 @@ const UserInfo = ({ name, avatar }: { name: string; avatar: string }) => {
 
 export default function Testimonials() {
   const navigate = useNavigate();
+  const { deleteTestimonialMutation } = useTestimonialMutations();
   const [currentPage, setCurrentPage] = useState(1);
   const [filterBy, setFilterBy] = useState("User Name");
   const [orderType, setOrderType] = useState("Order Type");
   const [orderStatus, setOrderStatus] = useState("Order Status");
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Sample testimonial data matching the image
-  const testimonials = [
-    {
-      id: 1,
-      userName: "Alfredo Vetrovs",
-      userAvatar: "/images/user/user-01.jpg",
-      role: "Job Seeker",
-      company: "Tech Corp",
-      feedback: "I got my dream job within 2 weeks of using this platform. The process was smooth and the support team was incredibly helpful throughout my journey.",
-      rating: 5,
-      status: "Active"
+  // Fetch testimonials data from API
+  const { data: testimonialsResponse, isLoading, error, refetch } = useQuery({
+    queryKey: ['testimonials', currentPage, filterBy, orderType, orderStatus, searchTerm],
+    queryFn: async () => {
+      const response = await testimonialService.getTestimonials();
+      return response;
     },
-    {
-      id: 2,
-      userName: "Charlie Ekstrom",
-      userAvatar: "/images/user/user-02.jpg",
-      role: "Job Seeker",
-      company: "Design Studio",
-      feedback: "I got my dream job within 2 weeks of using this platform. The process was smooth and the support team was incredibly helpful throughout my journey.",
-      rating: 5,
-      status: "Inactive"
-    },
-    {
-      id: 3,
-      userName: "Carla Westervelt",
-      userAvatar: "/images/user/user-03.jpg",
-      role: "Job Seeker",
-      company: "Marketing Agency",
-      feedback: "I got my dream job within 2 weeks of using this platform. The process was smooth and the support team was incredibly helpful throughout my journey.",
-      rating: 5,
-      status: "Active"
-    },
-    {
-      id: 4,
-      userName: "Sarah Johnson",
-      userAvatar: "/images/user/user-04.jpg",
-      role: "Job Seeker",
-      company: "Finance Corp",
-      feedback: "I got my dream job within 2 weeks of using this platform. The process was smooth and the support team was incredibly helpful throughout my journey.",
-      rating: 5,
-      status: "Active"
-    },
-    {
-      id: 5,
-      userName: "Michael Brown",
-      userAvatar: "/images/user/user-05.jpg",
-      role: "Job Seeker",
-      company: "Tech Solutions",
-      feedback: "I got my dream job within 2 weeks of using this platform. The process was smooth and the support team was incredibly helpful throughout my journey.",
-      rating: 5,
-      status: "Active"
-    },
-    {
-      id: 6,
-      userName: "Emily Davis",
-      userAvatar: "/images/user/user-06.jpg",
-      role: "Job Seeker",
-      company: "Creative Agency",
-      feedback: "I got my dream job within 2 weeks of using this platform. The process was smooth and the support team was incredibly helpful throughout my journey.",
-      rating: 5,
-      status: "Active"
-    },
-    {
-      id: 7,
-      userName: "David Wilson",
-      userAvatar: "/images/user/user-07.jpg",
-      role: "Job Seeker",
-      company: "Consulting Firm",
-      feedback: "I got my dream job within 2 weeks of using this platform. The process was smooth and the support team was incredibly helpful throughout my journey.",
-      rating: 5,
-      status: "Active"
-    },
-    {
-      id: 8,
-      userName: "Lisa Anderson",
-      userAvatar: "/images/user/user-08.jpg",
-      role: "Job Seeker",
-      company: "Healthcare Corp",
-      feedback: "I got my dream job within 2 weeks of using this platform. The process was smooth and the support team was incredibly helpful throughout my journey.",
-      rating: 5,
-      status: "Active"
-    },
-    {
-      id: 9,
-      userName: "James Taylor",
-      userAvatar: "/images/user/user-09.jpg",
-      role: "Job Seeker",
-      company: "Engineering Co",
-      feedback: "I got my dream job within 2 weeks of using this platform. The process was smooth and the support team was incredibly helpful throughout my journey.",
-      rating: 5,
-      status: "Active"
+  });
+
+  // Extract testimonials from response - handle the specific API structure
+  let testimonials: Testimonial[] = [];
+  
+  if (testimonialsResponse && typeof testimonialsResponse === 'object') {
+    const responseObj = testimonialsResponse as any;
+    if (responseObj.testimonials && Array.isArray(responseObj.testimonials)) {
+      testimonials = responseObj.testimonials;
+    } else if (Array.isArray(responseObj.data)) {
+      testimonials = responseObj.data;
+    } else if (Array.isArray(responseObj)) {
+      testimonials = responseObj;
     }
-  ];
+  } else if (Array.isArray(testimonialsResponse)) {
+    testimonials = testimonialsResponse;
+  }
 
-  const totalTestimonials = 78;
+  // Filter and sort testimonials
+  const filteredTestimonials = testimonials
+    .filter((testimonial: Testimonial) => {
+      if (searchTerm) {
+        return testimonial.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               testimonial.role?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               testimonial.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               testimonial.feedback?.toLowerCase().includes(searchTerm.toLowerCase());
+      }
+      return true;
+    })
+    .filter((testimonial: Testimonial) => {
+      if (orderStatus === "Active") return testimonial.status === "ACTIVE";
+      if (orderStatus === "Inactive") return testimonial.status === "INACTIVE";
+      return true;
+    });
+
+  const totalTestimonials = filteredTestimonials.length;
   const testimonialsPerPage = 10;
   const totalPages = Math.ceil(totalTestimonials / testimonialsPerPage);
 
+  // Get paginated testimonials
+  const startIndex = (currentPage - 1) * testimonialsPerPage;
+  const endIndex = startIndex + testimonialsPerPage;
+  const paginatedTestimonials = filteredTestimonials.slice(startIndex, endIndex);
+
   // render filters inline to match standardized layout
 
-  const handleEdit = (testimonial: any) => {
+  const handleEdit = (testimonial: Testimonial) => {
     console.log("Edit Testimonial:", testimonial);
-    // Navigate to edit page or open modal
     navigate(`/edit-testimonial/${testimonial.id}`);
   };
 
-  const handleDelete = (testimonial: any) => {
+  const handleDelete = (testimonial: Testimonial) => {
     console.log("Delete Testimonial:", testimonial);
-    // Show confirmation modal or delete directly
     if (window.confirm(`Are you sure you want to delete this testimonial?`)) {
-      // Handle delete logic here
-      console.log("Testimonial deleted:", testimonial.id);
+      deleteTestimonialMutation.mutate(testimonial.id);
     }
   };
 
   const handleRefresh = () => {
     console.log("Refresh Testimonials data");
-    // Reload data from API
+    refetch();
   };
 
   return (
@@ -190,6 +146,21 @@ export default function Testimonials() {
           <div className="px-6 py-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-4">
+                {/* Search Input */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search testimonials..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-64 px-4 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                </div>
                 <div className="flex items-center gap-2">
                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -280,38 +251,67 @@ export default function Testimonials() {
                 </TableRow>
               </TableHeader>
               <TableBody className="bg-white divide-y divide-gray-200">
-                {testimonials.map((t) => (
-                  <tr key={t.id} className="hover:bg-gray-50">
-                    <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm font-medium text-gray-500">
-                      <UserInfo name={t.userName} avatar={t.userAvatar} />
-                    </td>
-                    <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
-                      <div>
-                        <div className="text-sm font-medium text-gray-500">{t.role}</div>
-                        <div className="text-sm text-gray-500">{t.company}</div>
-                      </div>
-                    </td>
-                    <td className="px-3 py-3 whitespace-normal text-sm text-gray-700 leading-relaxed">{t.feedback}</td>
-                    <td className="px-3 py-3 whitespace-nowrap"><StarRating rating={t.rating} /></td>
-                    <td className="px-3 py-3 whitespace-nowrap">
-                      <StatusBadge status={t.status.toLowerCase() as "active" | "inactive"} />
-                    </td>
-                    <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center gap-2">
-                        <button className="p-1 text-blue-600 hover:text-blue-800" onClick={() => handleEdit(t)}>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button className="p-1 text-red-600 hover:text-red-800" onClick={() => handleDelete(t)}>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-                        </button>
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center">
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900"></div>
+                        <span className="ml-2 text-gray-600">Loading testimonials...</span>
                       </div>
                     </td>
                   </tr>
-                ))}
+                ) : error ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center">
+                      <div className="text-red-600">
+                        <p className="text-lg font-medium">Error loading testimonials</p>
+                        <p className="text-sm mt-1">Please try again later</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : paginatedTestimonials.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center">
+                      <div className="text-gray-500">
+                        <p className="text-lg font-medium">No testimonials found</p>
+                        <p className="text-sm mt-1">Try adjusting your search or filters</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedTestimonials.map((t) => (
+                    <tr key={t.id} className="hover:bg-gray-50">
+                      <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm font-medium text-gray-500">
+                        <UserInfo name={t.userName} avatar={t.userAvatar} />
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
+                        <div>
+                          <div className="text-sm font-medium text-gray-500">{t.role}</div>
+                          <div className="text-sm text-gray-500">{t.company}</div>
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 whitespace-normal text-sm text-gray-700 leading-relaxed">{t.feedback}</td>
+                      <td className="px-3 py-3 whitespace-nowrap"><StarRating rating={t.rating} /></td>
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        <StatusBadge status={t.status.toLowerCase() as "active" | "inactive"} />
+                      </td>
+                      <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex items-center gap-2">
+                          <button className="p-1 text-blue-600 hover:text-blue-800" onClick={() => handleEdit(t)}>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button className="p-1 text-red-600 hover:text-red-800" onClick={() => handleDelete(t)}>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
@@ -320,7 +320,7 @@ export default function Testimonials() {
           <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-700">
-                Showing 1-{testimonialsPerPage} of {totalTestimonials}
+                Showing {startIndex + 1}-{Math.min(endIndex, totalTestimonials)} of {totalTestimonials}
               </div>
               <div className="flex items-center gap-2">
                 <button 
