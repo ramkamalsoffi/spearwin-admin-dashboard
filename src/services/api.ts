@@ -2,8 +2,8 @@ import axios from 'axios';
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/',
-  // baseURL: import.meta.env.VITE_API_URL || 'https://backend.spearwin.com', // API running on port 5173
+  // baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/',
+  baseURL: import.meta.env.VITE_API_URL || 'https://backend.spearwin.com', // API running on port 5173
   headers: {
     'Content-Type': 'application/json',
   },
