@@ -89,7 +89,7 @@ export default function AddTestimonial() {
     isActive: true
   });
 
-  const handleInputChange = (field: string, value: string | number) => {
+  const handleInputChange = (field: string, value: string | number | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
