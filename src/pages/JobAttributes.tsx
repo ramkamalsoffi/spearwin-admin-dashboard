@@ -11,7 +11,8 @@ const JobAttributeCard = ({
   onAddNew,
   showPopup,
   onClosePopup,
-  onSaveAttribute
+  onSaveAttribute,
+  onToggleAttribute
 }: { 
   title: string; 
   options: { id: number; name: string; checked: boolean }[]; 
@@ -19,6 +20,7 @@ const JobAttributeCard = ({
   showPopup: boolean;
   onClosePopup: () => void;
   onSaveAttribute: (name: string, isActive: boolean) => void;
+  onToggleAttribute: (attributeId: number, isActive: boolean) => void;
 }) => {
   const [name, setName] = useState('');
   const [isActive, setIsActive] = useState(true);
@@ -54,11 +56,12 @@ const JobAttributeCard = ({
                 type="checkbox"
                 id={`${title}-${option.id}`}
                 checked={option.checked}
-                className="h-4 w-4 text-blue-800 focus:ring-blue-800 border-gray-300 rounded accent-blue-800"
+                onChange={(e) => onToggleAttribute(option.id, e.target.checked)}
+                className="h-4 w-4 text-blue-800 focus:ring-blue-800 border-gray-300 rounded accent-blue-800 cursor-pointer"
               />
               <label 
                 htmlFor={`${title}-${option.id}`}
-                className="ml-2 text-sm text-gray-700"
+                className="ml-2 text-sm text-gray-700 cursor-pointer"
               >
                 {option.name}
               </label>
@@ -278,6 +281,48 @@ export default function JobAttributes() {
     }
   };
 
+  // Toggle Attribute Function
+  const toggleAttribute = async (attributeId: number, isActive: boolean) => {
+    try {
+      // Find the attribute in our categories
+      let targetAttribute: Attribute | null = null;
+      let targetCategory: Category | null = null;
+      
+      for (const category of categories) {
+        const attribute = category.attributes.find(attr => 
+          parseInt(attr.id.replace(/-/g, '').substring(0, 8), 16) === attributeId
+        );
+        if (attribute) {
+          targetAttribute = attribute;
+          targetCategory = category;
+          break;
+        }
+      }
+
+      if (!targetAttribute || !targetCategory) {
+        throw new Error('Attribute not found');
+      }
+
+      // Call PUT /job-attributes/{id} to update the attribute
+      const response = await api.put(`/job-attributes/${targetAttribute.id}`, {
+        isActive: isActive
+      });
+      
+      toast.success(`Successfully ${isActive ? 'activated' : 'deactivated'} "${targetAttribute.name}"`);
+      console.log('Attribute updated successfully:', response.data);
+      
+      // Refresh categories data to show the updated attribute
+      await fetchCategories();
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Error toggling attribute:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to update attribute';
+      toast.error(errorMessage);
+      throw error;
+    }
+  };
+
   const handleAddNew = (category: string) => {
     setActivePopup(category);
   };
@@ -352,6 +397,7 @@ export default function JobAttributes() {
             showPopup={activePopup === "Language Level"}
             onClosePopup={handleClosePopup}
             onSaveAttribute={handleSaveAttribute}
+            onToggleAttribute={toggleAttribute}
           />
           
           <JobAttributeCard
@@ -361,6 +407,7 @@ export default function JobAttributes() {
             showPopup={activePopup === "Career Level"}
             onClosePopup={handleClosePopup}
             onSaveAttribute={handleSaveAttribute}
+            onToggleAttribute={toggleAttribute}
           />
           
           <JobAttributeCard
@@ -370,6 +417,7 @@ export default function JobAttributes() {
             showPopup={activePopup === "Functional Area"}
             onClosePopup={handleClosePopup}
             onSaveAttribute={handleSaveAttribute}
+            onToggleAttribute={toggleAttribute}
           />
           
           <JobAttributeCard
@@ -379,6 +427,7 @@ export default function JobAttributes() {
             showPopup={activePopup === "Gender"}
             onClosePopup={handleClosePopup}
             onSaveAttribute={handleSaveAttribute}
+            onToggleAttribute={toggleAttribute}
           />
 
           {/* Row 2 */}
@@ -389,6 +438,7 @@ export default function JobAttributes() {
             showPopup={activePopup === "Industry"}
             onClosePopup={handleClosePopup}
             onSaveAttribute={handleSaveAttribute}
+            onToggleAttribute={toggleAttribute}
           />
           
           <JobAttributeCard
@@ -398,6 +448,7 @@ export default function JobAttributes() {
             showPopup={activePopup === "Job Experience"}
             onClosePopup={handleClosePopup}
             onSaveAttribute={handleSaveAttribute}
+            onToggleAttribute={toggleAttribute}
           />
           
           <JobAttributeCard
@@ -407,6 +458,7 @@ export default function JobAttributes() {
             showPopup={activePopup === "Job Skill"}
             onClosePopup={handleClosePopup}
             onSaveAttribute={handleSaveAttribute}
+            onToggleAttribute={toggleAttribute}
           />
           
           <JobAttributeCard
@@ -416,6 +468,7 @@ export default function JobAttributes() {
             showPopup={activePopup === "Job Type"}
             onClosePopup={handleClosePopup}
             onSaveAttribute={handleSaveAttribute}
+            onToggleAttribute={toggleAttribute}
           />
 
           {/* Row 3 */}
@@ -426,6 +479,7 @@ export default function JobAttributes() {
             showPopup={activePopup === "Job Shift"}
             onClosePopup={handleClosePopup}
             onSaveAttribute={handleSaveAttribute}
+            onToggleAttribute={toggleAttribute}
           />
           
           <JobAttributeCard
@@ -435,6 +489,7 @@ export default function JobAttributes() {
             showPopup={activePopup === "Degree Level"}
             onClosePopup={handleClosePopup}
             onSaveAttribute={handleSaveAttribute}
+            onToggleAttribute={toggleAttribute}
           />
           
           <JobAttributeCard
@@ -444,6 +499,7 @@ export default function JobAttributes() {
             showPopup={activePopup === "Degree Type"}
             onClosePopup={handleClosePopup}
             onSaveAttribute={handleSaveAttribute}
+            onToggleAttribute={toggleAttribute}
           />
           
           <JobAttributeCard
@@ -453,6 +509,7 @@ export default function JobAttributes() {
             showPopup={activePopup === "Major Subject"}
             onClosePopup={handleClosePopup}
             onSaveAttribute={handleSaveAttribute}
+            onToggleAttribute={toggleAttribute}
           />
           </div>
         )}

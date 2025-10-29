@@ -275,26 +275,26 @@ export interface UpdateFAQRequest extends Partial<CreateFAQRequest> {
 
 // Testimonial types
 export interface Testimonial {
-  id: string;
-  userName: string;
-  userAvatar: string;
-  role: string;
+  id?: string;
+  name: string;
+  title: string;
   company: string;
-  feedback: string;
+  content: string;
   rating: number;
-  status: 'ACTIVE' | 'INACTIVE';
-  createdAt: string;
-  updatedAt: string;
+  imageUrl: string;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CreateTestimonialRequest {
-  userName: string;
-  userAvatar: string;
-  role: string;
+  name: string;
+  title: string;
   company: string;
-  feedback: string;
+  content: string;
   rating: number;
-  status: 'ACTIVE' | 'INACTIVE';
+  imageUrl: string;
+  isActive: boolean;
 }
 
 export interface UpdateTestimonialRequest extends Partial<CreateTestimonialRequest> {

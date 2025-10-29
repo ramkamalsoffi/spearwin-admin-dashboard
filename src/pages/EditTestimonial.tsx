@@ -14,13 +14,13 @@ export default function EditTestimonial() {
   const { updateTestimonialMutation } = useTestimonialMutations();
 
   const [formData, setFormData] = useState({
-    userName: "",
-    userAvatar: "",
-    role: "",
+    name: "",
+    imageUrl: "",
+    title: "",
     company: "",
-    feedback: "",
+    content: "",
     rating: 5,
-    status: "ACTIVE" as "ACTIVE" | "INACTIVE"
+    isActive: true
   });
 
   // Fetch testimonial data
@@ -35,13 +35,13 @@ export default function EditTestimonial() {
     if (testimonialResponse?.data) {
       const testimonial = testimonialResponse.data;
       setFormData({
-        userName: testimonial.userName || "",
-        userAvatar: testimonial.userAvatar || "",
-        role: testimonial.role || "",
+        name: testimonial.name || "",
+        imageUrl: testimonial.imageUrl || "",
+        title: testimonial.title || "",
         company: testimonial.company || "",
-        feedback: testimonial.feedback || "",
+        content: testimonial.content || "",
         rating: testimonial.rating || 5,
-        status: testimonial.status || "ACTIVE"
+        isActive: testimonial.isActive !== undefined ? testimonial.isActive : true
       });
     }
   }, [testimonialResponse]);
@@ -58,13 +58,13 @@ export default function EditTestimonial() {
     e.preventDefault();
     
     // Validate required fields
-    if (!formData.userName.trim()) {
-      toast.error("User name is required");
+    if (!formData.name.trim()) {
+      toast.error("Name is required");
       return;
     }
     
-    if (!formData.role.trim()) {
-      toast.error("Role is required");
+    if (!formData.title.trim()) {
+      toast.error("Title is required");
       return;
     }
     
@@ -73,8 +73,8 @@ export default function EditTestimonial() {
       return;
     }
     
-    if (!formData.feedback.trim()) {
-      toast.error("Feedback is required");
+    if (!formData.content.trim()) {
+      toast.error("Content is required");
       return;
     }
     
@@ -85,13 +85,13 @@ export default function EditTestimonial() {
 
     const testimonialData = {
       id: id!,
-      userName: formData.userName.trim(),
-      userAvatar: formData.userAvatar.trim() || "/images/user/default-avatar.jpg",
-      role: formData.role.trim(),
+      name: formData.name.trim(),
+      imageUrl: formData.imageUrl.trim() || "/images/user/default-avatar.jpg",
+      title: formData.title.trim(),
       company: formData.company.trim(),
-      feedback: formData.feedback.trim(),
+      content: formData.content.trim(),
       rating: formData.rating,
-      status: formData.status
+      isActive: formData.isActive
     };
 
     console.log('📤 Submitting testimonial data:', testimonialData);
@@ -151,51 +151,51 @@ export default function EditTestimonial() {
           <div className="p-6">
             <form onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* User Name */}
+                {/* Name */}
                 <div>
-                  <label htmlFor="userName" className="block text-sm font-medium text-gray-700 mb-2">
-                    User Name <span className="text-red-500">*</span>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                    Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    id="userName"
-                    name="userName"
-                    value={formData.userName}
+                    id="name"
+                    name="name"
+                    value={formData.name}
                     onChange={handleInputChange}
-                    placeholder="Enter user name"
+                    placeholder="Enter name"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
                 </div>
 
-                {/* User Avatar */}
+                {/* Image URL */}
                 <div>
-                  <label htmlFor="userAvatar" className="block text-sm font-medium text-gray-700 mb-2">
-                    User Avatar URL
+                  <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700 mb-2">
+                    Image URL
                   </label>
                   <input
                     type="url"
-                    id="userAvatar"
-                    name="userAvatar"
-                    value={formData.userAvatar}
+                    id="imageUrl"
+                    name="imageUrl"
+                    value={formData.imageUrl}
                     onChange={handleInputChange}
                     placeholder="https://example.com/avatar.jpg"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
 
-                {/* Role */}
+                {/* Title */}
                 <div>
-                  <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
-                    Role <span className="text-red-500">*</span>
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+                    Title <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    id="role"
-                    name="role"
-                    value={formData.role}
+                    id="title"
+                    name="title"
+                    value={formData.title}
                     onChange={handleInputChange}
-                    placeholder="e.g., Job Seeker, Software Engineer"
+                    placeholder="e.g., Senior Software Engineer, Job Seeker"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
@@ -241,33 +241,39 @@ export default function EditTestimonial() {
 
                 {/* Status */}
                 <div>
-                  <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="isActive" className="block text-sm font-medium text-gray-700 mb-2">
                     Status <span className="text-red-500">*</span>
                   </label>
                   <select
-                    id="status"
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
+                    id="isActive"
+                    name="isActive"
+                    value={formData.isActive.toString()}
+                    onChange={(e) => {
+                      const { name, value } = e.target;
+                      setFormData(prev => ({
+                        ...prev,
+                        [name]: value === "true"
+                      }));
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   >
-                    <option value="ACTIVE">Active</option>
-                    <option value="INACTIVE">Inactive</option>
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
                   </select>
                 </div>
 
-                {/* Feedback */}
+                {/* Content */}
                 <div className="md:col-span-2">
-                  <label htmlFor="feedback" className="block text-sm font-medium text-gray-700 mb-2">
-                    Feedback <span className="text-red-500">*</span>
+                  <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
+                    Content <span className="text-red-500">*</span>
                   </label>
                   <textarea
-                    id="feedback"
-                    name="feedback"
-                    value={formData.feedback}
+                    id="content"
+                    name="content"
+                    value={formData.content}
                     onChange={handleInputChange}
-                    placeholder="Enter testimonial feedback"
+                    placeholder="Enter testimonial content"
                     rows={4}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required

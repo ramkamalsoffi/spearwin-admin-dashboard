@@ -79,16 +79,16 @@ export default function Testimonials() {
   const filteredTestimonials = testimonials
     .filter((testimonial: Testimonial) => {
       if (searchTerm) {
-        return testimonial.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               testimonial.role?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        return testimonial.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               testimonial.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                testimonial.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               testimonial.feedback?.toLowerCase().includes(searchTerm.toLowerCase());
+               testimonial.content?.toLowerCase().includes(searchTerm.toLowerCase());
       }
       return true;
     })
     .filter((testimonial: Testimonial) => {
-      if (orderStatus === "Active") return testimonial.status === "ACTIVE";
-      if (orderStatus === "Inactive") return testimonial.status === "INACTIVE";
+      if (orderStatus === "Active") return testimonial.isActive === true;
+      if (orderStatus === "Inactive") return testimonial.isActive === false;
       return true;
     });
 
@@ -105,12 +105,14 @@ export default function Testimonials() {
 
   const handleEdit = (testimonial: Testimonial) => {
     console.log("Edit Testimonial:", testimonial);
-    navigate(`/edit-testimonial/${testimonial.id}`);
+    if (testimonial.id) {
+      navigate(`/edit-testimonial/${testimonial.id}`);
+    }
   };
 
   const handleDelete = (testimonial: Testimonial) => {
     console.log("Delete Testimonial:", testimonial);
-    if (window.confirm(`Are you sure you want to delete this testimonial?`)) {
+    if (testimonial.id && window.confirm(`Are you sure you want to delete this testimonial?`)) {
       deleteTestimonialMutation.mutate(testimonial.id);
     }
   };
@@ -282,18 +284,18 @@ export default function Testimonials() {
                   paginatedTestimonials.map((t) => (
                     <tr key={t.id} className="hover:bg-gray-50">
                       <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm font-medium text-gray-500">
-                        <UserInfo name={t.userName} avatar={t.userAvatar} />
+                        <UserInfo name={t.name} avatar={t.imageUrl} />
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
                         <div>
-                          <div className="text-sm font-medium text-gray-500">{t.role}</div>
+                          <div className="text-sm font-medium text-gray-500">{t.title}</div>
                           <div className="text-sm text-gray-500">{t.company}</div>
                         </div>
                       </td>
-                      <td className="px-3 py-3 whitespace-normal text-sm text-gray-700 leading-relaxed">{t.feedback}</td>
+                      <td className="px-3 py-3 whitespace-normal text-sm text-gray-700 leading-relaxed">{t.content}</td>
                       <td className="px-3 py-3 whitespace-nowrap"><StarRating rating={t.rating} /></td>
                       <td className="px-3 py-3 whitespace-nowrap">
-                        <StatusBadge status={t.status.toLowerCase() as "active" | "inactive"} />
+                        <StatusBadge status={t.isActive ? "active" : "inactive"} />
                       </td>
                       <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center gap-2">

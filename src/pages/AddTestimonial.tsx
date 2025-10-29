@@ -80,13 +80,13 @@ export default function AddTestimonial() {
   const navigate = useNavigate();
   const { createTestimonialMutation } = useTestimonialMutations();
   const [formData, setFormData] = useState({
-    userName: "",
-    userAvatar: "",
-    role: "",
+    name: "",
+    imageUrl: "",
+    title: "",
     company: "",
-    feedback: "",
+    content: "",
     rating: 5,
-    status: "ACTIVE" as "ACTIVE" | "INACTIVE"
+    isActive: true
   });
 
   const handleInputChange = (field: string, value: string | number) => {
@@ -107,13 +107,13 @@ export default function AddTestimonial() {
     e.preventDefault();
     
     // Validate required fields
-    if (!formData.userName.trim()) {
-      toast.error("User name is required");
+    if (!formData.name.trim()) {
+      toast.error("Name is required");
       return;
     }
     
-    if (!formData.role.trim()) {
-      toast.error("Role is required");
+    if (!formData.title.trim()) {
+      toast.error("Title is required");
       return;
     }
     
@@ -122,8 +122,8 @@ export default function AddTestimonial() {
       return;
     }
     
-    if (!formData.feedback.trim()) {
-      toast.error("Feedback is required");
+    if (!formData.content.trim()) {
+      toast.error("Content is required");
       return;
     }
     
@@ -133,13 +133,13 @@ export default function AddTestimonial() {
     }
 
     const testimonialData = {
-      userName: formData.userName.trim(),
-      userAvatar: formData.userAvatar.trim() || "/images/user/default-avatar.jpg",
-      role: formData.role.trim(),
+      name: formData.name.trim(),
+      imageUrl: formData.imageUrl.trim() || "/images/user/default-avatar.jpg",
+      title: formData.title.trim(),
       company: formData.company.trim(),
-      feedback: formData.feedback.trim(),
+      content: formData.content.trim(),
       rating: formData.rating,
-      status: formData.status
+      isActive: formData.isActive
     };
 
     console.log('📤 Submitting testimonial data:', testimonialData);
@@ -147,8 +147,8 @@ export default function AddTestimonial() {
   };
 
   const statusOptions = [
-    { value: "ACTIVE", label: "Active" },
-    { value: "INACTIVE", label: "Inactive" }
+    { value: true, label: "Active" },
+    { value: false, label: "Inactive" }
   ];
 
   return (
@@ -178,30 +178,30 @@ export default function AddTestimonial() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Left Column */}
               <div className="space-y-6">
-                {/* User Avatar URL */}
+                {/* Image URL */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    User Avatar URL
+                    Image URL
                   </label>
                   <input
                     type="url"
-                    value={formData.userAvatar}
-                    onChange={(e) => handleInputChange("userAvatar", e.target.value)}
+                    value={formData.imageUrl}
+                    onChange={(e) => handleInputChange("imageUrl", e.target.value)}
                     placeholder="https://example.com/avatar.jpg"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
 
-                {/* Role */}
+                {/* Title */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Role <span className="text-red-500">*</span>
+                    Title <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    value={formData.role}
-                    onChange={(e) => handleInputChange("role", e.target.value)}
-                    placeholder="e.g., Job Seeker, Software Engineer"
+                    value={formData.title}
+                    onChange={(e) => handleInputChange("title", e.target.value)}
+                    placeholder="e.g., Senior Software Engineer, Job Seeker"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
@@ -228,13 +228,13 @@ export default function AddTestimonial() {
                     Status <span className="text-red-500">*</span>
                   </label>
                   <select
-                    value={formData.status}
-                    onChange={(e) => handleInputChange("status", e.target.value)}
+                    value={formData.isActive.toString()}
+                    onChange={(e) => handleInputChange("isActive", e.target.value === "true")}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   >
                     {statusOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
+                      <option key={option.value.toString()} value={option.value.toString()}>
                         {option.label}
                       </option>
                     ))}
@@ -266,51 +266,36 @@ export default function AddTestimonial() {
 
               {/* Right Column */}
               <div className="space-y-6">
-                {/* User Name */}
+                {/* Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    User Name
+                    Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    value={formData.userName}
-                    onChange={(e) => handleInputChange("userName", e.target.value)}
-                    placeholder="Enter user name"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange("name", e.target.value)}
+                    placeholder="Enter name"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
                   />
                 </div>
 
-                {/* Feedback */}
+                {/* Content */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Feedback
+                    Content <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    value={formData.feedback}
-                    onChange={(e) => handleInputChange("feedback", e.target.value)}
-                    placeholder="Enter feedback"
+                  <textarea
+                    value={formData.content}
+                    onChange={(e) => handleInputChange("content", e.target.value)}
+                    placeholder="Enter testimonial content"
+                    rows={4}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
                   />
                 </div>
 
-                {/* Status */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Status
-                  </label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => handleInputChange("status", e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    {statusOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
               </div>
             </div>
           </form>
