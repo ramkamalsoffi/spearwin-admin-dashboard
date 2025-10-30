@@ -87,11 +87,11 @@ const moduleItems: NavItem[] = [
     name: "CV Search",
     path: "/cv-search",
   },
-  {
-    icon: <CVManagementIcon />,
-    name: "CV Status Maintenance",
-    path: "/cv-status-maintenance",
-  },
+  // {
+  //   icon: <CVManagementIcon />,
+  //   name: "CV Status Maintenance",
+  //   path: "/cv-status-maintenance",
+  // },
 ];
 
 const translationItems: NavItem[] = [

@@ -36,7 +36,6 @@ import Testimonials from "./pages/Testimonials";
 import AddTestimonial from "./pages/AddTestimonial";
 import EditTestimonial from "./pages/EditTestimonial";
 import CVSearch from "./pages/CVSearch";
-import CVStatusMaintenance from "./pages/CVStatusMaintenance";
 import AddCVStatus from "./pages/AddCVStatus";
 // import Languages from "./pages/Languages";
 // import AddLanguage from "./pages/AddLanguage";
@@ -123,8 +122,7 @@ export default function App() {
             {/* CV Search Pages */}
             <Route path="/cv-search" element={<CVSearch />} />
 
-            {/* CV Status Maintenance Pages */}
-            <Route path="/cv-status-maintenance" element={<CVStatusMaintenance />} />
+            {/* CV Status Maintenance Pages (inlined under CV Search) */}
             <Route path="/add-cv-status" element={<AddCVStatus />} />
 
             {/* Languages Pages */}
