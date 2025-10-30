@@ -27,6 +27,12 @@ export const testimonialService = {
     return response.data;
   },
 
+  // Toggle active status
+  toggleStatus: async (id: string): Promise<ApiResponse<Testimonial>> => {
+    const response = await api.put(`/testimonials/${id}/toggle-status`);
+    return response.data;
+  },
+
   // Delete testimonial
   deleteTestimonial: async (id: string): Promise<ApiResponse<void>> => {
     const response = await api.delete(`/testimonials/${id}`);

@@ -10,13 +10,15 @@ import { FAQ } from "../services/types";
 
 export default function FAQs() {
   const navigate = useNavigate();
-  const { deleteFaqMutation } = useFaqMutations();
+  const { deleteFaqMutation, updateFaqMutation } = useFaqMutations();
   const [currentPage, setCurrentPage] = useState(1);
   const [filterBy, setFilterBy] = useState("Question");
   const [orderType, setOrderType] = useState("Order Type");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFaq, setSelectedFaq] = useState<FAQ | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isFaqLoading, setIsFaqLoading] = useState(false);
+  const [faqLoadError, setFaqLoadError] = useState<string | null>(null);
   const faqsPerPage = 10;
 
   // Fetch FAQs data from API
@@ -71,9 +73,22 @@ export default function FAQs() {
     currentPage * faqsPerPage
   );
 
-  const handleView = (faq: FAQ) => {
-    setSelectedFaq(faq);
+  const handleView = async (faq: FAQ) => {
     setIsViewModalOpen(true);
+    setIsFaqLoading(true);
+    setFaqLoadError(null);
+    try {
+      const response = await faqService.getFAQById(String(faq.id));
+      const resp: any = response;
+      const detailed: FAQ = resp?.data || resp?.faq || resp;
+      setSelectedFaq(detailed || faq);
+    } catch (e: any) {
+      console.error('Error loading FAQ details:', e);
+      setFaqLoadError(e?.message || 'Failed to load FAQ details');
+      setSelectedFaq(faq);
+    } finally {
+      setIsFaqLoading(false);
+    }
   };
 
   const handleEdit = (faq: FAQ) => {
@@ -273,6 +288,16 @@ export default function FAQs() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                           </button>
+                          {/* Toggle Active (after Delete) */}
+                          <label className="relative inline-flex items-center cursor-pointer ml-1">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={!!faq.active}
+                              onChange={() => updateFaqMutation.mutate({ id: String(faq.id), active: !faq.active })}
+                            />
+                            <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
                         </div>
                       </td>
                     </tr>
@@ -342,11 +367,25 @@ export default function FAQs() {
 
               {/* Content */}
               <div className="p-6 space-y-6">
+                {isFaqLoading && (
+                  <div className="flex items-center justify-center py-10 text-gray-600">
+                    <svg className="animate-spin h-5 w-5 text-blue-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Loading FAQ details...
+                  </div>
+                )}
+                {faqLoadError && !isFaqLoading && (
+                  <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded">
+                    {faqLoadError}
+                  </div>
+                )}
                 {/* Question */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Question</label>
                   <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <p className="text-gray-900 leading-relaxed">{selectedFaq.question}</p>
+                    <p className="text-gray-900 leading-relaxed">{selectedFaq?.question || '—'}</p>
                   </div>
                 </div>
 
@@ -354,7 +393,7 @@ export default function FAQs() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Answer</label>
                   <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <p className="text-gray-900 leading-relaxed whitespace-pre-wrap">{selectedFaq.answer}</p>
+                    <p className="text-gray-900 leading-relaxed whitespace-pre-wrap">{selectedFaq?.answer || '—'}</p>
                   </div>
                 </div>
 
@@ -364,11 +403,11 @@ export default function FAQs() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
                     <div className="flex items-center">
                       <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
-                        selectedFaq.active 
+                        selectedFaq?.active 
                           ? 'bg-green-100 text-green-800' 
                           : 'bg-red-100 text-red-800'
                       }`}>
-                        {selectedFaq.active ? 'Active' : 'Inactive'}
+                        {selectedFaq?.active ? 'Active' : 'Inactive'}
                       </span>
                     </div>
                   </div>
@@ -376,19 +415,19 @@ export default function FAQs() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Created Date</label>
                     <div className="text-gray-900">
-                      {new Date(selectedFaq.createdAt).toLocaleDateString('en-US', {
+                      {selectedFaq?.createdAt ? new Date(selectedFaq.createdAt).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric',
                         hour: '2-digit',
                         minute: '2-digit'
-                      })}
+                      }) : '—'}
                     </div>
                   </div>
                 </div>
 
                 {/* Updated Date if available */}
-                {selectedFaq.updatedAt && (
+                {selectedFaq?.updatedAt && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Last Updated</label>
                     <div className="text-gray-900">
@@ -405,22 +444,8 @@ export default function FAQs() {
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
-                <button
-                  onClick={handleCloseModal}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={() => {
-                    handleCloseModal();
-                    handleEdit(selectedFaq);
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                >
-                  Edit FAQ
-                </button>
+              <div className="flex items-center justify-end p-6 border-t border-gray-200 bg-gray-50">
+                
               </div>
             </div>
           </div>

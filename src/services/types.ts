@@ -271,6 +271,7 @@ export interface CreateFAQRequest {
 
 export interface UpdateFAQRequest extends Partial<CreateFAQRequest> {
   id: string;
+  active?: boolean;
 }
 
 // Testimonial types

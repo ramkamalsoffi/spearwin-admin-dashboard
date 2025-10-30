@@ -52,9 +52,24 @@ export const useTestimonialMutations = () => {
     },
   });
 
+  // Toggle testimonial status mutation
+  const toggleTestimonialStatusMutation = useMutation({
+    mutationFn: (id: string) => testimonialService.toggleStatus(id),
+    onSuccess: () => {
+      toast.success("Testimonial status updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ['testimonials'] });
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || "Failed to update testimonial status";
+      toast.error(errorMessage);
+      console.error("Error toggling testimonial status:", error);
+    },
+  });
+
   return {
     createTestimonialMutation,
     updateTestimonialMutation,
     deleteTestimonialMutation,
+    toggleTestimonialStatusMutation,
   };
 };

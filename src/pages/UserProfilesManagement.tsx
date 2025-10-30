@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../components/ui/table";
@@ -15,6 +15,10 @@ export default function UserProfilesManagement() {
   const [orderType, setOrderType] = useState("asc");
   const [orderStatus, setOrderStatus] = useState("All");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [isUserLoading, setIsUserLoading] = useState(false);
+  const [userLoadError, setUserLoadError] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   // Debounce search term
   useEffect(() => {
@@ -83,6 +87,14 @@ export default function UserProfilesManagement() {
   const startIndex = (currentPage - 1) * profilesPerPage;
   const endIndex = startIndex + profilesPerPage;
   const users = filteredUsers.slice(startIndex, endIndex);
+  
+  // Toggle ACTIVE/INACTIVE status
+  const updateUserStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: User['status'] }) => userService.updateUserStatus(id, status),
+    onSuccess: () => {
+      refetch();
+    },
+  });
 
   // Debug logging
   console.log('All users from API:', allUsers);
@@ -111,6 +123,27 @@ export default function UserProfilesManagement() {
       // Handle delete logic here
       console.log("User deleted:", user.id);
     }
+  };
+
+  const handleView = async (user: User) => {
+    setIsViewModalOpen(true);
+    setIsUserLoading(true);
+    setUserLoadError(null);
+    try {
+      const detailed = await userService.getUserById(String(user.id));
+      setSelectedUser(detailed || user);
+    } catch (e: any) {
+      console.error('Error loading user details:', e);
+      setUserLoadError(e?.message || 'Failed to load user details');
+      setSelectedUser(user);
+    } finally {
+      setIsUserLoading(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsViewModalOpen(false);
+    setSelectedUser(null);
   };
 
   // Helper function to get status display
@@ -355,6 +388,12 @@ export default function UserProfilesManagement() {
                       </td>
                       <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center gap-2">
+                          <button className="p-1 text-green-600 hover:text-green-800" onClick={() => handleView(user)} title="View user">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
                           <button className="p-1 text-blue-600 hover:text-blue-800" onClick={() => handleEdit(user)}>
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -365,6 +404,16 @@ export default function UserProfilesManagement() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                           </button>
+                          {/* Toggle Active (after Delete) */}
+                          <label className="relative inline-flex items-center cursor-pointer ml-1" title="Toggle Active">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={user.status === 'ACTIVE'}
+                              onChange={() => updateUserStatusMutation.mutate({ id: String(user.id), status: user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' })}
+                            />
+                            <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
                         </div>
                       </td>
                     </tr>
@@ -405,6 +454,98 @@ export default function UserProfilesManagement() {
               </div>
             </div>
           </div>
+
+      {/* View User Modal */}
+      {isViewModalOpen && selectedUser && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center p-4">
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+              onClick={handleCloseModal}
+            ></div>
+            <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">User Details</h3>
+                <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="p-6 space-y-6">
+                {isUserLoading && (
+                  <div className="flex items-center justify-center py-10 text-gray-600">
+                    <svg className="animate-spin h-5 w-5 text-blue-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Loading user details...
+                  </div>
+                )}
+                {userLoadError && !isUserLoading && (
+                  <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded">
+                    {userLoadError}
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <p className="text-gray-900 leading-relaxed">{selectedUser?.email || '—'}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">{selectedUser?.phone || 'N/A'}</div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">{selectedUser?.role || '—'}</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email Verified</label>
+                    <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${selectedUser?.emailVerified ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      {selectedUser?.emailVerified ? 'Verified' : 'Not Verified'}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
+                      selectedUser?.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
+                      selectedUser?.status === 'PENDING_VERIFICATION' ? 'bg-orange-100 text-orange-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {selectedUser ? getStatusDisplay(selectedUser.status) : '—'}
+                    </span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Last Login</label>
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">{selectedUser?.lastLoginAt ? new Date(selectedUser.lastLoginAt).toLocaleString() : '—'}</div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Created</label>
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">{selectedUser?.createdAt ? new Date(selectedUser.createdAt).toLocaleString() : '—'}</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">{selectedUser?.candidate?.firstName || '—'}</div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">{selectedUser?.candidate?.lastName || '—'}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
         </div>
       </div>
     </>

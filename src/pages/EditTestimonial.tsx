@@ -30,27 +30,28 @@ export default function EditTestimonial() {
     enabled: !!id,
   });
 
-  // Update form data when testimonial data is loaded
+  // Update form data when testimonial data is loaded (robust to varying shapes)
   useEffect(() => {
-    if (testimonialResponse?.data) {
-      const testimonial = testimonialResponse.data;
-      setFormData({
-        name: testimonial.name || "",
-        imageUrl: testimonial.imageUrl || "",
-        title: testimonial.title || "",
-        company: testimonial.company || "",
-        content: testimonial.content || "",
-        rating: testimonial.rating || 5,
-        isActive: testimonial.isActive !== undefined ? testimonial.isActive : true
-      });
-    }
+    if (!testimonialResponse) return;
+    const resp: any = testimonialResponse;
+    const t: Partial<Testimonial> = resp?.data || resp?.testimonial || resp;
+    if (!t) return;
+    setFormData({
+      name: t.name || "",
+      imageUrl: t.imageUrl || "",
+      title: t.title || "",
+      company: t.company || "",
+      content: t.content || "",
+      rating: typeof t.rating === 'number' ? t.rating : 5,
+      isActive: typeof t.isActive === 'boolean' ? t.isActive : true,
+    });
   }, [testimonialResponse]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'number' ? parseInt(value) || 0 : value
+      [name]: name === 'rating' ? (parseInt(value, 10) || 0) : (type === 'number' ? parseInt(value) || 0 : value)
     }));
   };
 

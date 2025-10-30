@@ -14,6 +14,10 @@ export default function Jobs() {
   const [filterBy, setFilterBy] = useState("Date");
   const [orderType, setOrderType] = useState("Order Type");
   const [orderStatus, setOrderStatus] = useState("Order Status");
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isJobLoading, setIsJobLoading] = useState(false);
+  const [jobLoadError, setJobLoadError] = useState<string | null>(null);
 
   // Fetch jobs from API
   const { data: jobsResponse, isLoading, error, refetch } = useQuery<PaginatedApiResponse<Job[]>>({
@@ -42,7 +46,7 @@ export default function Jobs() {
     navigate(`/edit-job/${job.id}`);
   };
 
-  const { deleteJobMutation } = useJobMutations();
+  const { deleteJobMutation, updateJobStatusMutation } = useJobMutations();
 
   const handleDelete = (job: Job) => {
     if (window.confirm(`Are you sure you want to delete ${job.title}?`)) {
@@ -54,6 +58,29 @@ export default function Jobs() {
     console.log("Refresh Jobs data");
     refetch();
     toast.success("Jobs data refreshed!");
+  };
+
+  const handleView = async (job: Job) => {
+    setIsViewModalOpen(true);
+    setIsJobLoading(true);
+    setJobLoadError(null);
+    try {
+      const response = await jobService.getJobById(String(job.id));
+      const resp: any = response;
+      const detailed: Job = resp?.data || resp?.job || resp;
+      setSelectedJob(detailed || job);
+    } catch (e: any) {
+      console.error('Error loading job details:', e);
+      setJobLoadError(e?.message || 'Failed to load job details');
+      setSelectedJob(job);
+    } finally {
+      setIsJobLoading(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsViewModalOpen(false);
+    setSelectedJob(null);
   };
 
   return (
@@ -231,6 +258,16 @@ export default function Jobs() {
                       <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center gap-2">
                           <button 
+                            className="p-1 text-green-600 hover:text-green-800" 
+                            onClick={() => handleView(job)}
+                            title="View job"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
+                          <button 
                             className="p-1 text-blue-600 hover:text-blue-800" 
                             onClick={() => handleEdit(job)}
                             title="Edit job"
@@ -248,6 +285,16 @@ export default function Jobs() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                           </button>
+                          {/* Toggle Published/Draft after Delete */}
+                          <label className="relative inline-flex items-center cursor-pointer ml-1" title="Toggle Published">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={job.status === 'PUBLISHED'}
+                              onChange={() => updateJobStatusMutation.mutate({ id: String(job.id), status: job.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED' })}
+                            />
+                            <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
                         </div>
                       </td>
                     </tr>
@@ -283,10 +330,98 @@ export default function Jobs() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
-                </div>
+        </div>
               </div>
             </div>
           )}
+
+      {/* View Job Modal */}
+      {isViewModalOpen && selectedJob && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center p-4">
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+              onClick={handleCloseModal}
+            ></div>
+            <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Job Details</h3>
+                <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="p-6 space-y-6">
+                {isJobLoading && (
+                  <div className="flex items-center justify-center py-10 text-gray-600">
+                    <svg className="animate-spin h-5 w-5 text-blue-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Loading job details...
+                  </div>
+                )}
+                {jobLoadError && !isJobLoading && (
+                  <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded">
+                    {jobLoadError}
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <p className="text-gray-900 leading-relaxed">{selectedJob?.title || '—'}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Company ID</label>
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">{selectedJob?.companyId || '—'}</div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
+                      selectedJob?.status === 'PUBLISHED' ? 'bg-green-100 text-green-800' :
+                      selectedJob?.status === 'DRAFT' ? 'bg-yellow-100 text-yellow-800' :
+                      selectedJob?.status === 'CLOSED' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {selectedJob?.status || '—'}
+                    </span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Job Type</label>
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">{selectedJob?.jobType || '—'}</div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Work Mode</label>
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">{selectedJob?.workMode || '—'}</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Experience Level</label>
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">{selectedJob?.experienceLevel || '—'}</div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Created</label>
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">{selectedJob?.createdAt ? new Date(selectedJob.createdAt).toLocaleString() : '—'}</div>
+                  </div>
+                </div>
+                {selectedJob.description && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <p className="text-gray-900 leading-relaxed whitespace-pre-wrap">{selectedJob?.description}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
         </div>
       </div>
     </>

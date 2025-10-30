@@ -18,6 +18,10 @@ export default function Companies() {
   const [orderType, setOrderType] = useState("asc");
   const [orderStatus, setOrderStatus] = useState("All");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isCompanyLoading, setIsCompanyLoading] = useState(false);
+  const [companyLoadError, setCompanyLoadError] = useState<string | null>(null);
 
   // Debounce search term
   useEffect(() => {
@@ -163,6 +167,29 @@ export default function Companies() {
       companyId: company.id,
       isActive: !company.isActive
     });
+  };
+
+  const handleView = async (company: Company) => {
+    setIsViewModalOpen(true);
+    setIsCompanyLoading(true);
+    setCompanyLoadError(null);
+    try {
+      const response = await companyService.getCompanyById(String(company.id));
+      const resp: any = response;
+      const detailed: Company = resp?.data || resp?.company || resp;
+      setSelectedCompany(detailed || company);
+    } catch (e: any) {
+      console.error('Error loading company details:', e);
+      setCompanyLoadError(e?.message || 'Failed to load company details');
+      setSelectedCompany(company);
+    } finally {
+      setIsCompanyLoading(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsViewModalOpen(false);
+    setSelectedCompany(null);
   };
 
 
@@ -339,6 +366,12 @@ export default function Companies() {
                       </td>
                       <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center gap-3">
+                          <button className="p-1 text-green-600 hover:text-green-800" onClick={() => handleView(company)} title="View Company">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
                           <button className="p-1 text-blue-600 hover:text-blue-800" onClick={() => handleEdit(company)}>
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -401,6 +434,113 @@ export default function Companies() {
               </div>
             </div>
           </div>
+
+      {/* View Company Modal */}
+      {isViewModalOpen && selectedCompany && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center p-4">
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+              onClick={handleCloseModal}
+            ></div>
+            <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Company Details</h3>
+                <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="p-6 space-y-6">
+                {isCompanyLoading && (
+                  <div className="flex items-center justify-center py-10 text-gray-600">
+                    <svg className="animate-spin h-5 w-5 text-blue-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Loading company details...
+                  </div>
+                )}
+                {companyLoadError && !isCompanyLoading && (
+                  <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded">
+                    {companyLoadError}
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <p className="text-gray-900 leading-relaxed">{selectedCompany?.name || '—'}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Industry</label>
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">{selectedCompany?.industry || 'N/A'}</div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">{selectedCompany?.website || 'N/A'}</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${selectedCompany?.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      {selectedCompany?.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Verified</label>
+                    <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${selectedCompany?.isVerified ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                      {selectedCompany?.isVerified ? 'Verified' : 'Not Verified'}
+                    </span>
+                  </div>
+                </div>
+                {/* More details */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Slug</label>
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">{selectedCompany?.slug || 'N/A'}</div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Founded Year</label>
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">{selectedCompany?.foundedYear ?? 'N/A'}</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Employees</label>
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">{selectedCompany?.employeeCount || 'N/A'}</div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Headquarters</label>
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">{selectedCompany?.headquarters || 'N/A'}</div>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">{selectedCompany?.address || 'N/A'}</div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">LinkedIn</label>
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">{selectedCompany?.linkedinUrl || 'N/A'}</div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Twitter</label>
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">{selectedCompany?.twitterUrl || 'N/A'}</div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Facebook</label>
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">{selectedCompany?.facebookUrl || 'N/A'}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
         </div>
       </div>
     </>
