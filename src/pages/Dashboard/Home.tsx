@@ -4,6 +4,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../../components/ui/table";
 import { dashboardService } from "../../services/dashboardService";
 import { jobService } from "../../services/jobService";
+import { Job } from "../../services/types";
 
 export default function Home() {
   // Fetch dashboard data from API
@@ -15,13 +16,13 @@ export default function Home() {
   // Fetch recent jobs from API
   const { data: jobsData, isLoading: jobsLoading, error: jobsError } = useQuery({
     queryKey: ['recentJobs'],
-    queryFn: jobService.getJobs,
+    queryFn: async () => await jobService.getJobs({ limit: 5 }),
   });
 
   const stats = dashboardData?.stats;
   const recentUsers = dashboardData?.users || [];
   // Get recent jobs (limit to 5 most recent)
-  const recentJobs = jobsData?.data?.slice(0, 5) || [];
+  const recentJobs = (jobsData?.data || []).slice(0, 5);
 
   return (
     <>
@@ -270,7 +271,7 @@ export default function Home() {
                       </td>
                     </tr>
                   ) : recentJobs.length > 0 ? (
-                    recentJobs.map((job) => (
+                    recentJobs.map((job: Job) => (
                       <tr key={job.id}>
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {job.title || 'Untitled Job'}
