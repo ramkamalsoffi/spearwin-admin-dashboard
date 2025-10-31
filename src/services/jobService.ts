@@ -1,10 +1,40 @@
 import api from '../utils/axios';
 import { ApiResponse, PaginatedApiResponse, Job, CreateJobRequest, UpdateJobRequest } from './types';
 
+export interface JobQueryParams {
+  search?: string;
+  status?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+  company?: string;
+  city?: string;
+  type?: string;
+  experience?: string;
+}
+
 export const jobService = {
-  // Get all jobs
-  getJobs: async (): Promise<PaginatedApiResponse<Job[]>> => {
-    const response = await api.get('/api/admin/jobs');
+  // Get all jobs with optional filters
+  getJobs: async (params?: JobQueryParams): Promise<PaginatedApiResponse<Job[]>> => {
+    // Build query string from params
+    const queryParams = new URLSearchParams();
+    
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+    if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.company) queryParams.append('company', params.company);
+    if (params?.city) queryParams.append('city', params.city);
+    if (params?.type) queryParams.append('type', params.type);
+    if (params?.experience) queryParams.append('experience', params.experience);
+    
+    const queryString = queryParams.toString();
+    const url = `/api/admin/jobs${queryString ? `?${queryString}` : ''}`;
+    
+    const response = await api.get(url);
     // The API returns { jobs: [...], total, page, limit, totalPages }
     return {
       success: true,

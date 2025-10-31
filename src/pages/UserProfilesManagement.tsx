@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../components/ui/table";
@@ -9,12 +10,13 @@ import { User } from "../services/types";
 
 export default function UserProfilesManagement() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterBy, setFilterBy] = useState("Name");
-  const [orderType, setOrderType] = useState("asc");
-  const [orderStatus, setOrderStatus] = useState("All");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [orderType, setOrderType] = useState<"asc" | "desc">("desc");
+  const [filterStatus, setFilterStatus] = useState<string>("");
+  const profilesPerPage = 10;
 
   // Debounce search term
   useEffect(() => {
@@ -26,91 +28,68 @@ export default function UserProfilesManagement() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // Reset page when order status, order type, or search term changes
+  // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [orderStatus, orderType, debouncedSearchTerm]);
+  }, [filterStatus, orderType, debouncedSearchTerm]);
 
-  // Fetch users from API based on order status
-  const { data: allUsers = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['users', orderStatus, orderType],
-    queryFn: async () => {
-      console.log('🔍 UserProfilesManagement - Making API call with orderStatus:', orderStatus, 'orderType:', orderType);
-      
-      let result;
-      if (orderStatus === "Active") {
-        console.log('Calling API for ACTIVE users');
-        result = await userService.getActiveUsers('createdAt', orderType);
-      } else if (orderStatus === "Pending") {
-        console.log('Calling API for PENDING users');
-        result = await userService.getPendingUsers('email', orderType);
-      } else if (orderStatus === "Inactive") {
-        console.log('Calling API for INACTIVE users');
-        result = await userService.getInactiveUsers('lastLoginAt', orderType);
-      } else {
-        console.log('Calling API for ALL users');
-        result = await userService.getAllUsers();
-      }
-      
-      console.log('🔍 UserProfilesManagement - API Response:', result);
-      console.log('🔍 UserProfilesManagement - Number of users returned:', result?.length || 0);
-      
-      return result;
+  // Build query parameters
+  const queryParams = {
+    page: currentPage,
+    limit: profilesPerPage,
+    sortBy: 'createdAt',
+    sortOrder: orderType,
+    ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
+    ...(filterStatus && { 
+      status: filterStatus as 'ACTIVE' | 'PENDING_VERIFICATION' | 'INACTIVE' | 'SUSPENDED' 
+    }),
+  };
+
+  // Fetch users from API with server-side pagination and filters
+  const { data: usersResponse, isLoading, error, refetch } = useQuery({
+    queryKey: ['userProfiles', queryParams],
+    queryFn: () => userService.getUserProfiles(queryParams),
+  });
+
+  const users = usersResponse?.users || [];
+  const totalProfiles = usersResponse?.total || 0;
+  const totalPages = usersResponse?.totalPages || 1;
+
+  // Mutation for updating user status
+  const updateUserStatusMutation = useMutation({
+    mutationFn: async ({ userId, status }: { userId: string; status: User['status'] }) => {
+      return userService.updateUserStatus(userId, status);
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['userProfiles'] });
+      const statusMessages: Record<string, string> = {
+        'ACTIVE': 'activated',
+        'INACTIVE': 'deactivated',
+        'PENDING_VERIFICATION': 'set to pending',
+        'SUSPENDED': 'suspended'
+      };
+      toast.success(`User ${statusMessages[variables.status] || 'updated'} successfully`);
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || 'Failed to update user status';
+      toast.error(errorMessage);
+      console.error('Error updating user status:', error);
     },
   });
 
-  // Client-side filtering and search
-  const filteredUsers = allUsers.filter((user: User) => {
-    // Search filter
-    if (debouncedSearchTerm) {
-      const searchLower = debouncedSearchTerm.toLowerCase();
-      const matchesSearch = 
-        user.email.toLowerCase().includes(searchLower) ||
-        (user.candidate?.firstName && user.candidate.firstName.toLowerCase().includes(searchLower)) ||
-        (user.candidate?.lastName && user.candidate.lastName.toLowerCase().includes(searchLower)) ||
-        (user.phone && user.phone.includes(searchLower));
-      
-      if (!matchesSearch) return false;
-    }
+  const handleStatusChange = (user: User, newStatus: string) => {
+    if (user.status === newStatus) return; // No change needed
     
-    return true;
-  });
-
-  // Pagination
-  const profilesPerPage = 10;
-  const totalProfiles = filteredUsers.length;
-  const totalPages = Math.ceil(totalProfiles / profilesPerPage);
-  const startIndex = (currentPage - 1) * profilesPerPage;
-  const endIndex = startIndex + profilesPerPage;
-  const users = filteredUsers.slice(startIndex, endIndex);
-
-  // Debug logging
-  console.log('All users from API:', allUsers);
-  console.log('Filtered users:', filteredUsers);
-  console.log('Paginated users:', users);
-  console.log('Users length:', users.length);
-  console.log('Total profiles:', totalProfiles);
-  console.log('Total pages:', totalPages);
-  console.log('Current page:', currentPage);
-  console.log('Search term:', debouncedSearchTerm);
-  console.log('Is loading:', isLoading);
-  console.log('Error:', error);
-
-  // no external filter config; we render inline controls to match layout
-
-  const handleEdit = (user: User) => {
-    console.log("Edit user:", user);
-    // Navigate to edit page or open modal
-    navigate(`/edit-profile/${user.id}`);
+    updateUserStatusMutation.mutate({
+      userId: user.id,
+      status: newStatus as User['status']
+    });
   };
 
-  const handleDelete = (user: User) => {
-    console.log("Delete user:", user);
-    // Show confirmation modal or delete directly
-    if (window.confirm(`Are you sure you want to delete user ${user.email}?`)) {
-      // Handle delete logic here
-      console.log("User deleted:", user.id);
-    }
+  const handleEdit = (user: User) => {
+    const userId = String(user.id).trim();
+    console.log('Edit clicked for user ID:', userId);
+    navigate(`/edit-profile/${userId}`);
   };
 
   // Helper function to get status display
@@ -151,31 +130,9 @@ export default function UserProfilesManagement() {
     console.error("Error fetching users:", error);
   }
 
-  const handleRefresh = async () => {
-    console.log("Refresh profiles data - using specific API endpoints");
-    try {
-      // Force refresh using the appropriate endpoint based on current order status
-      let result;
-      if (orderStatus === "Active") {
-        console.log('Refreshing ACTIVE users');
-        result = await userService.getActiveUsers('createdAt', orderType);
-      } else if (orderStatus === "Pending") {
-        console.log('Refreshing PENDING users');
-        result = await userService.getPendingUsers('email', orderType);
-      } else if (orderStatus === "Inactive") {
-        console.log('Refreshing INACTIVE users');
-        result = await userService.getInactiveUsers('lastLoginAt', orderType);
-      } else {
-        console.log('Refreshing ALL users');
-        result = await userService.getAllUsers();
-      }
-      
-      console.log('Refresh API Response:', result);
-      // Invalidate and refetch the query to update the UI
-      refetch();
-    } catch (error) {
-      console.error('Error refreshing users:', error);
-    }
+  const handleRefresh = () => {
+    refetch();
+    toast.success("Users data refreshed!");
   };
 
   return (
@@ -203,56 +160,32 @@ export default function UserProfilesManagement() {
         <div className="bg-white rounded-[10px] shadow-sm border border-gray-200">
           <div className="px-6 py-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-1">
                 {/* Search Input */}
-                <div className="relative">
+                <div className="relative flex-1 max-w-md">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </div>
                   <input
                     type="text"
-                    placeholder="Search users..."
+                    placeholder="Search users by email, name, phone..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="block w-64 pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
                   />
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                  </svg>
-                  <span className="text-sm font-medium text-gray-700">Filter By</span>
-                </div>
-
-                {/* <div className="relative">
-                  <select 
-                    value={filterBy}
-                    onChange={(e) => setFilterBy(e.target.value)}
-                    className="appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
-                  >
-                    <option>Name</option>
-                    <option>Location</option>
-                    <option>Email</option>
-                    <option>Status</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div> */}
-
+                {/* Order Type Dropdown */}
                 <div className="relative">
                   <select 
                     value={orderType}
-                    onChange={(e) => setOrderType(e.target.value)}
-                    className="appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
+                    onChange={(e) => setOrderType(e.target.value as "asc" | "desc")}
+                    className="appearance-none rounded-md px-4 py-2 pr-8 text-sm bg-white border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
                   >
-                    <option value="asc">Ascending (A-Z)</option>
-                    <option value="desc">Descending (Z-A)</option>
+                    <option value="desc">Descending</option>
+                    <option value="asc">Ascending</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -263,14 +196,14 @@ export default function UserProfilesManagement() {
 
                 <div className="relative">
                   <select 
-                    value={orderStatus}
-                    onChange={(e) => setOrderStatus(e.target.value)}
-                    className="appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    className="appearance-none rounded-md px-4 py-2 pr-8 text-sm bg-white border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
                   >
-                    <option value="All">All Users</option>
-                    <option value="Active">Active</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Inactive">Inactive</option>
+                    <option value="">All Status</option>
+                    <option value="ACTIVE">Active</option>
+                    <option value="PENDING_VERIFICATION">Pending</option>
+                    <option value="INACTIVE">Inactive</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -354,17 +287,43 @@ export default function UserProfilesManagement() {
                         </span>
                       </td>
                       <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex items-center gap-2">
-                          <button className="p-1 text-blue-600 hover:text-blue-800" onClick={() => handleEdit(user)}>
+                        <div className="flex items-center gap-3">
+                          <button 
+                            className="p-1 text-blue-600 hover:text-blue-800" 
+                            onClick={() => handleEdit(user)}
+                            title="Edit user"
+                          >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </button>
-                          <button className="p-1 text-red-600 hover:text-red-800" onClick={() => handleDelete(user)}>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
+                          
+                          {/* Status Dropdown */}
+                          <div className="relative">
+                            <select
+                              value={user.status}
+                              onChange={(e) => handleStatusChange(user, e.target.value)}
+                              disabled={updateUserStatusMutation.isPending}
+                              className={`appearance-none rounded-md px-3 py-1.5 pr-7 text-xs font-medium bg-white border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer ${
+                                user.status === 'ACTIVE' 
+                                  ? 'text-green-800 border-green-300' 
+                                  : user.status === 'PENDING_VERIFICATION'
+                                  ? 'text-orange-800 border-orange-300'
+                                  : user.status === 'INACTIVE'
+                                  ? 'text-red-800 border-red-300'
+                                  : 'text-gray-800'
+                              } ${updateUserStatusMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                              <option value="ACTIVE">Active</option>
+                              <option value="PENDING_VERIFICATION">Pending</option>
+                              <option value="INACTIVE">Inactive</option>
+                            </select>
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                              <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -378,7 +337,7 @@ export default function UserProfilesManagement() {
           <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-700">
-                Showing {startIndex + 1}-{Math.min(endIndex, totalProfiles)} of {totalProfiles}
+                Showing {((currentPage - 1) * profilesPerPage) + 1}-{Math.min(currentPage * profilesPerPage, totalProfiles)} of {totalProfiles}
               </div>
               <div className="flex items-center gap-2">
                 <button 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
@@ -6,22 +6,43 @@ import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import JobViewDialog from "../components/JobViewDialog";
 import { jobService } from "../services";
+import type { JobQueryParams } from "../services/jobService";
 import { Job, PaginatedApiResponse } from "../services/types";
 
 export default function Jobs() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
-  const [filterBy, setFilterBy] = useState("Date");
-  const [orderType, setOrderType] = useState("Order Type");
-  const [orderStatus, setOrderStatus] = useState("Order Status");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [orderType, setOrderType] = useState<string>("desc");
+  const [orderStatus, setOrderStatus] = useState<string>("");
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 
-  // Fetch jobs from API
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Build query parameters from filters
+  const queryParams: JobQueryParams = {
+    page: currentPage,
+    limit: 10,
+    sortBy: 'createdAt',
+    sortOrder: orderType === "asc" ? 'asc' : 'desc',
+    ...(debouncedSearch && { search: debouncedSearch }),
+    ...(orderStatus && { status: orderStatus }),
+  };
+
+  // Fetch jobs from API with filters
   const { data: jobsResponse, isLoading, error, refetch } = useQuery<PaginatedApiResponse<Job[]>>({
-    queryKey: ['jobs'],
-    queryFn: () => jobService.getJobs(),
+    queryKey: ['jobs', queryParams],
+    queryFn: () => jobService.getJobs(queryParams),
   });
 
   // Handle error with useEffect
@@ -62,7 +83,12 @@ export default function Jobs() {
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
-      toast.success(`Job ${variables.status === 'PUBLISHED' ? 'published' : 'unpublished'} successfully`);
+      const statusMessages: Record<string, string> = {
+        'PUBLISHED': 'published',
+        'DRAFT': 'saved as draft',
+        'CLOSED': 'closed'
+      };
+      toast.success(`Job ${statusMessages[variables.status] || 'updated'} successfully`);
     },
     onError: (error: any) => {
       const errorMessage = error.response?.data?.message || 'Failed to update job status';
@@ -71,8 +97,9 @@ export default function Jobs() {
     },
   });
 
-  const handleToggleStatus = (job: Job) => {
-    const newStatus = job.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED';
+  const handleStatusChange = (job: Job, newStatus: string) => {
+    if (job.status === newStatus) return; // No change needed
+    
     updateJobStatusMutation.mutate({
       jobId: job.id,
       status: newStatus
@@ -84,6 +111,11 @@ export default function Jobs() {
     refetch();
     toast.success("Jobs data refreshed!");
   };
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, orderType, orderStatus]);
 
   return (
     <>
@@ -112,40 +144,32 @@ export default function Jobs() {
         <div className="bg-white rounded-[10px] shadow-sm border border-gray-200">
           <div className="px-6 py-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                  </svg>
-                  <span className="text-sm font-medium text-gray-700">Filter By</span>
-                </div>
-                
-                <div className="relative">
-                  <select 
-                    value={filterBy}
-                    onChange={(e) => setFilterBy(e.target.value)}
-                    className="appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
-                  >
-                    <option>Date</option>
-                    <option>Job Title</option>
-                    <option>Company</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <div className="flex items-center gap-4 flex-1">
+                {/* Search Input */}
+                <div className="relative flex-1 max-w-md">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search jobs by title, description..."
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  />
                 </div>
                 
+                {/* Order Type Dropdown */}
                 <div className="relative">
                   <select 
                     value={orderType}
                     onChange={(e) => setOrderType(e.target.value)}
-                    className="appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
+                    className="appearance-none rounded-md px-4 py-2 pr-8 text-sm bg-white border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
                   >
-                    <option>Order Type</option>
-                    <option>Ascending</option>
-                    <option>Descending</option>
+                    <option value="desc">Descending</option>
+                    <option value="asc">Ascending</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -154,16 +178,17 @@ export default function Jobs() {
                   </div>
                 </div>
                 
+                {/* Order Status Dropdown */}
                 <div className="relative">
                   <select 
                     value={orderStatus}
                     onChange={(e) => setOrderStatus(e.target.value)}
-                    className="appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
+                    className="appearance-none rounded-md px-4 py-2 pr-8 text-sm bg-white border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
                   >
-                    <option>Order Status</option>
-                    <option>Active</option>
-                    <option>Pending</option>
-                    <option>Inactive</option>
+                    <option value="">All Status</option>
+                    <option value="PUBLISHED">Published</option>
+                    <option value="DRAFT">Draft</option>
+                    <option value="CLOSED">Closed</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -172,6 +197,7 @@ export default function Jobs() {
                   </div>
                 </div>
 
+                {/* Refresh Button */}
                 <button 
                   className="p-2 text-gray-400 hover:text-gray-600" 
                   onClick={handleRefresh}
@@ -279,21 +305,31 @@ export default function Jobs() {
                             </svg>
                           </button>
                           
-                          {/* Toggle Switch */}
-                          <div className="flex items-center">
-                            <label className="relative inline-flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                className="sr-only peer"
-                                checked={job.status === 'PUBLISHED'}
-                                onChange={() => handleToggleStatus(job)}
-                                disabled={updateJobStatusMutation.isPending}
-                              />
-                              <div className={`relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 ${updateJobStatusMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
-                              <span className="ml-2 text-xs font-medium text-gray-700">
-                                {job.status === 'PUBLISHED' ? 'Published' : 'Draft'}
-                              </span>
-                            </label>
+                          {/* Status Dropdown */}
+                          <div className="relative">
+                            <select
+                              value={job.status}
+                              onChange={(e) => handleStatusChange(job, e.target.value)}
+                              disabled={updateJobStatusMutation.isPending}
+                              className={`appearance-none rounded-md px-3 py-1.5 pr-7 text-xs font-medium bg-white border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer ${
+                                job.status === 'PUBLISHED' 
+                                  ? 'text-green-800 border-green-300' 
+                                  : job.status === 'DRAFT'
+                                  ? 'text-yellow-800 border-yellow-300'
+                                  : job.status === 'CLOSED'
+                                  ? 'text-red-800 border-red-300'
+                                  : 'text-gray-800'
+                              } ${updateJobStatusMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                              <option value="DRAFT">Draft</option>
+                              <option value="PUBLISHED">Published</option>
+                              <option value="CLOSED">Closed</option>
+                            </select>
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                              <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
                           </div>
                         </div>
                       </td>

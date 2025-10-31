@@ -29,6 +29,7 @@ import AddCompany from "./pages/AddCompany";
 import EditCompany from "./pages/EditCompany";
 import UserProfilesManagement from "./pages/UserProfilesManagement";
 import AddProfile from "./pages/AddProfile";
+import EditProfile from "./pages/EditProfile";
 import FAQs from "./pages/FAQs";
 import AddFAQ from "./pages/AddFAQ";
 import EditFAQ from "./pages/EditFAQ";
@@ -103,6 +104,7 @@ export default function App() {
             {/* User Profiles Pages */}
             <Route path="/user-profiles" element={<UserProfilesManagement />} />
             <Route path="/add-profile" element={<AddProfile />} />
+            <Route path="/edit-profile/:id" element={<EditProfile />} />
 
             {/* CMS Pages */}
             {/* <Route path="/cms" element={<CMS />} /> */}
