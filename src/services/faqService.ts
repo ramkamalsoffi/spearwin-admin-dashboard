@@ -1,10 +1,38 @@
 import api from '../utils/axios';
 import { ApiResponse, FAQ, CreateFAQRequest, UpdateFAQRequest } from './types';
 
+export interface FaqQueryParams {
+  search?: string;
+  active?: boolean;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  limit?: number;
+  offset?: number;
+}
+
+export interface FaqListResponse {
+  faqs: FAQ[];
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}
+
 export const faqService = {
-  // Get all FAQs
-  getFAQs: async (): Promise<ApiResponse<FAQ[]>> => {
-    const response = await api.get('/api/admin/faqs');
+  // Get all FAQs with query parameters
+  getFAQs: async (params?: FaqQueryParams): Promise<FaqListResponse> => {
+    const queryParams = new URLSearchParams();
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.active !== undefined) queryParams.append('active', params.active.toString());
+    if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+    if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.offset) queryParams.append('offset', params.offset.toString());
+    
+    const queryString = queryParams.toString();
+    const url = `/api/admin/faqs${queryString ? `?${queryString}` : ''}`;
+    
+    const response = await api.get(url);
     return response.data;
   },
 
