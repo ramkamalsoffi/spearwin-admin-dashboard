@@ -20,12 +20,49 @@ export interface Job {
   title: string;
   companyId: string;
   description: string;
+  requirements?: string | null;
+  responsibilities?: string | null;
+  benefits?: string | null;
   jobType: 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERNSHIP' | 'FREELANCE';
   workMode: 'REMOTE' | 'ONSITE' | 'HYBRID';
   experienceLevel: 'ENTRY_LEVEL' | 'MID_LEVEL' | 'SENIOR_LEVEL' | 'EXECUTIVE';
   status: 'DRAFT' | 'PUBLISHED' | 'CLOSED' | 'ARCHIVED';
+  minExperience?: number | null;
+  maxExperience?: number | null;
+  minSalary?: number | null;
+  maxSalary?: number | null;
+  salaryNegotiable?: boolean;
+  skillsRequired?: string[];
+  educationLevel?: string | null;
+  applicationCount?: number;
+  viewCount?: number;
+  publishedAt?: string | null;
+  closedAt?: string | null;
+  expiresAt?: string | null;
   createdAt: string;
   updatedAt: string;
+  location?: {
+    city?: {
+      id?: string;
+      name?: string;
+      state?: {
+        id?: string;
+        name?: string;
+        code?: string;
+        country?: {
+          id?: string;
+          name?: string;
+          code?: string;
+        };
+      };
+    };
+  };
+  cityName?: string;
+  company?: {
+    id: string;
+    name: string;
+    logo?: string | null;
+  };
 }
 
 export interface CreateJobRequest {

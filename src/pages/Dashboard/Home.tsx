@@ -3,6 +3,7 @@ import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../../components/ui/table";
 import { dashboardService } from "../../services/dashboardService";
+import { jobService } from "../../services/jobService";
 
 export default function Home() {
   // Fetch dashboard data from API
@@ -11,8 +12,16 @@ export default function Home() {
     queryFn: dashboardService.getDashboardData,
   });
 
+  // Fetch recent jobs from API
+  const { data: jobsData, isLoading: jobsLoading, error: jobsError } = useQuery({
+    queryKey: ['recentJobs'],
+    queryFn: jobService.getJobs,
+  });
+
   const stats = dashboardData?.stats;
   const recentUsers = dashboardData?.users || [];
+  // Get recent jobs (limit to 5 most recent)
+  const recentJobs = jobsData?.data?.slice(0, 5) || [];
 
   return (
     <>
@@ -245,21 +254,46 @@ export default function Home() {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="bg-white divide-y divide-gray-200 ">
-                  <tr>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Technical Consultant</td>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">Banglore</td>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">12.09.2025</td>
-                  </tr>
-                  <tr>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Technical Consultant</td>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">Banglore</td>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">12.09.2025</td>
-                  </tr>
-                  <tr>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Technical Consultant</td>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">Banglore</td>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">12.09.2025</td>
-                  </tr>
+                  {jobsLoading ? (
+                    <tr>
+                      <td colSpan={3} className="px-3 sm:px-6 py-8 text-center">
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                          <span className="ml-2 text-gray-500">Loading jobs...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : jobsError ? (
+                    <tr>
+                      <td colSpan={3} className="px-3 sm:px-6 py-8 text-center text-red-500">
+                        Error loading jobs. Please try again.
+                      </td>
+                    </tr>
+                  ) : recentJobs.length > 0 ? (
+                    recentJobs.map((job) => (
+                      <tr key={job.id}>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {job.title || 'Untitled Job'}
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {(job as any).location?.city?.name || (job as any).cityName || job.workMode || 'N/A'}
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {job.createdAt ? new Date(job.createdAt).toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                          }) : 'N/A'}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={3} className="px-3 sm:px-6 py-8 text-center text-gray-500">
+                        No recent jobs found
+                      </td>
+                    </tr>
+                  )}
                 </TableBody>
               </Table>
             </div>

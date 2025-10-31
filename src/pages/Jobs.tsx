@@ -1,19 +1,22 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
+import JobViewDialog from "../components/JobViewDialog";
 import { jobService } from "../services";
 import { Job, PaginatedApiResponse } from "../services/types";
-import { useJobMutations } from "../hooks/useJobMutations";
 
 export default function Jobs() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
   const [filterBy, setFilterBy] = useState("Date");
   const [orderType, setOrderType] = useState("Order Type");
   const [orderStatus, setOrderStatus] = useState("Order Status");
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 
   // Fetch jobs from API
   const { data: jobsResponse, isLoading, error, refetch } = useQuery<PaginatedApiResponse<Job[]>>({
@@ -42,12 +45,38 @@ export default function Jobs() {
     navigate(`/edit-job/${job.id}`);
   };
 
-  const { deleteJobMutation } = useJobMutations();
+  const handleView = (job: Job) => {
+    setSelectedJobId(job.id);
+    setIsViewDialogOpen(true);
+  };
 
-  const handleDelete = (job: Job) => {
-    if (window.confirm(`Are you sure you want to delete ${job.title}?`)) {
-      deleteJobMutation.mutate(job.id);
-    }
+  const handleCloseDialog = () => {
+    setIsViewDialogOpen(false);
+    setSelectedJobId(null);
+  };
+
+  // Mutation for updating job status
+  const updateJobStatusMutation = useMutation({
+    mutationFn: async ({ jobId, status }: { jobId: string; status: string }) => {
+      return jobService.updateJobStatus(jobId, status);
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      toast.success(`Job ${variables.status === 'PUBLISHED' ? 'published' : 'unpublished'} successfully`);
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || 'Failed to update job status';
+      toast.error(errorMessage);
+      console.error('Error updating job status:', error);
+    },
+  });
+
+  const handleToggleStatus = (job: Job) => {
+    const newStatus = job.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED';
+    updateJobStatusMutation.mutate({
+      jobId: job.id,
+      status: newStatus
+    });
   };
 
   const handleRefresh = () => {
@@ -229,7 +258,17 @@ export default function Jobs() {
                         </span>
                       </td>
                       <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
+                          <button 
+                            className="p-1 text-green-600 hover:text-green-800" 
+                            onClick={() => handleView(job)}
+                            title="View job details"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
                           <button 
                             className="p-1 text-blue-600 hover:text-blue-800" 
                             onClick={() => handleEdit(job)}
@@ -239,15 +278,23 @@ export default function Jobs() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </button>
-                          <button 
-                            className="p-1 text-red-600 hover:text-red-800" 
-                            onClick={() => handleDelete(job)}
-                            title="Delete job"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
+                          
+                          {/* Toggle Switch */}
+                          <div className="flex items-center">
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={job.status === 'PUBLISHED'}
+                                onChange={() => handleToggleStatus(job)}
+                                disabled={updateJobStatusMutation.isPending}
+                              />
+                              <div className={`relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 ${updateJobStatusMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
+                              <span className="ml-2 text-xs font-medium text-gray-700">
+                                {job.status === 'PUBLISHED' ? 'Published' : 'Draft'}
+                              </span>
+                            </label>
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -289,6 +336,13 @@ export default function Jobs() {
           )}
         </div>
       </div>
+
+      {/* Job View Dialog */}
+      <JobViewDialog
+        isOpen={isViewDialogOpen}
+        onClose={handleCloseDialog}
+        jobId={selectedJobId}
+      />
     </>
   );
 }

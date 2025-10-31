@@ -45,7 +45,13 @@ export const jobService = {
 
   // Update job status
   updateJobStatus: async (id: string, status: string): Promise<ApiResponse<Job>> => {
-    const response = await api.patch(`/api/admin/jobs/${id}/status`, { status });
+    const response = await api.put(`/api/admin/jobs/${id}/status`, { status });
+    return response.data;
+  },
+
+  // Get job applications
+  getJobApplications: async (jobId: string): Promise<any> => {
+    const response = await api.get(`/api/admin/jobs/${jobId}/applications`);
     return response.data;
   },
 };
