@@ -21,6 +21,7 @@ import ScrollToTop from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import AdminUsers from "./pages/AdminUsers";
 import AddAdminUsers from "./pages/AddAdminUsers";
+import EditAdminUser from "./pages/EditAdminUser";
 import Jobs from "./pages/Jobs";
 import AddJob from "./pages/AddJob";
 import EditJob from "./pages/EditJob";
@@ -90,6 +91,7 @@ export default function App() {
             {/* Admin Pages */}
             <Route path="/admin-users" element={<AdminUsers />} />
             <Route path="/add-admin-users" element={<AddAdminUsers />} />
+            <Route path="/edit-admin-user/:id" element={<EditAdminUser />} />
 
             {/* Jobs Pages */}
             <Route path="/jobs" element={<Jobs />} />
