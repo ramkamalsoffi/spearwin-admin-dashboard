@@ -25,16 +25,32 @@ export const useTestimonialMutations = () => {
 
   // Update testimonial mutation
   const updateTestimonialMutation = useMutation({
-    mutationFn: (testimonialData: UpdateTestimonialRequest) => testimonialService.updateTestimonial(testimonialData),
+    mutationFn: async (testimonialData: UpdateTestimonialRequest) => {
+      try {
+        return await testimonialService.updateTestimonial(testimonialData);
+      } catch (error: any) {
+        // Re-throw to trigger onError handler
+        throw error;
+      }
+    },
     onSuccess: (response) => {
-      toast.success("Testimonial updated successfully!");
+      // Handle both wrapped response and direct response
+      const testimonialId = response?.data?.id || response?.id;
       queryClient.invalidateQueries({ queryKey: ['testimonials'] });
-      queryClient.invalidateQueries({ queryKey: ['testimonial', response.data.id] });
+      if (testimonialId) {
+        queryClient.invalidateQueries({ queryKey: ['testimonial', testimonialId.toString()] });
+      }
+      queryClient.invalidateQueries({ queryKey: ['testimonial'] });
+      toast.success("Testimonial updated successfully!");
+      // Navigate back to testimonials list after a short delay to show the success message
+      setTimeout(() => {
+        navigate("/testimonial");
+      }, 1000);
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || "Failed to update testimonial";
-      toast.error(errorMessage);
       console.error("Error updating testimonial:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Failed to update testimonial";
+      toast.error(errorMessage);
     },
   });
 

@@ -26,22 +26,28 @@ export default function EditTestimonial() {
   // Fetch testimonial data
   const { data: testimonialResponse, isLoading, error } = useQuery({
     queryKey: ['testimonial', id],
-    queryFn: () => testimonialService.getTestimonialById(id!),
+    queryFn: async () => {
+      if (!id) throw new Error('Testimonial ID is required');
+      return await testimonialService.getTestimonialById(id);
+    },
     enabled: !!id,
   });
 
   // Update form data when testimonial data is loaded
   useEffect(() => {
-    if (testimonialResponse?.data) {
-      const testimonial = testimonialResponse.data;
+    // Handle both wrapped response (ApiResponse) and direct response
+    const testimonial = testimonialResponse?.data || testimonialResponse;
+    
+    if (testimonial && testimonial.id) {
+      console.log('Loading testimonial data:', testimonial);
       setFormData({
         name: testimonial.name || "",
-        imageUrl: testimonial.imageUrl || "",
-        title: testimonial.title || "",
-        company: testimonial.company || "",
+        imageUrl: testimonial.imageUrl ?? "",
+        title: testimonial.title ?? "",
+        company: testimonial.company ?? "",
         content: testimonial.content || "",
-        rating: testimonial.rating || 5,
-        isActive: testimonial.isActive !== undefined ? testimonial.isActive : true
+        rating: testimonial.rating ?? 5,
+        isActive: testimonial.isActive ?? true
       });
     }
   }, [testimonialResponse]);
@@ -83,18 +89,22 @@ export default function EditTestimonial() {
       return;
     }
 
+    if (!id) {
+      toast.error("Testimonial ID is missing");
+      return;
+    }
+
     const testimonialData = {
-      id: id!,
+      id: id,
       name: formData.name.trim(),
-      imageUrl: formData.imageUrl.trim() || "/images/user/default-avatar.jpg",
-      title: formData.title.trim(),
-      company: formData.company.trim(),
+      imageUrl: formData.imageUrl.trim() || undefined,
+      title: formData.title.trim() || undefined,
+      company: formData.company.trim() || undefined,
       content: formData.content.trim(),
       rating: formData.rating,
       isActive: formData.isActive
     };
 
-    console.log('📤 Submitting testimonial data:', testimonialData);
     updateTestimonialMutation.mutate(testimonialData);
   };
 

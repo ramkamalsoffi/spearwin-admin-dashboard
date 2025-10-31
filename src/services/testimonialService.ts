@@ -9,22 +9,37 @@ export const testimonialService = {
   },
 
   // Get testimonial by ID
-  getTestimonialById: async (id: string): Promise<ApiResponse<Testimonial>> => {
+  getTestimonialById: async (id: string): Promise<any> => {
     const response = await api.get(`/testimonials/${id}`);
-    return response.data;
+    // Backend returns testimonial directly, wrap it for consistency
+    return {
+      data: response.data,
+      success: true,
+      message: 'Testimonial retrieved successfully'
+    };
   },
 
   // Create new testimonial
-  createTestimonial: async (testimonialData: CreateTestimonialRequest): Promise<ApiResponse<Testimonial>> => {
+  createTestimonial: async (testimonialData: CreateTestimonialRequest): Promise<any> => {
     const response = await api.post('/testimonials', testimonialData);
-    return response.data;
+    // Backend returns testimonial directly, wrap it for consistency
+    return {
+      data: response.data,
+      success: true,
+      message: 'Testimonial created successfully'
+    };
   },
 
   // Update testimonial
-  updateTestimonial: async (testimonialData: UpdateTestimonialRequest): Promise<ApiResponse<Testimonial>> => {
+  updateTestimonial: async (testimonialData: UpdateTestimonialRequest): Promise<any> => {
     const { id, ...updateData } = testimonialData;
     const response = await api.put(`/testimonials/${id}`, updateData);
-    return response.data;
+    // Backend returns testimonial directly, wrap it for consistency
+    return {
+      data: response.data,
+      success: true,
+      message: 'Testimonial updated successfully'
+    };
   },
 
   // Delete testimonial
