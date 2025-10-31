@@ -5,6 +5,7 @@ import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { companyService } from "../services";
+import { locationService, Country, State, City } from "../services/locationService";
 import { UpdateCompanyRequest } from "../services/types";
 
 export default function EditCompany() {
@@ -21,6 +22,9 @@ export default function EditCompany() {
     employeeCount: "",
     headquarters: "",
     address: "",
+    country: "",
+    state: "",
+    city: "",
     linkedinUrl: "",
     twitterUrl: "",
     facebookUrl: "",
@@ -52,6 +56,34 @@ export default function EditCompany() {
     }
   }
 
+  // Fetch countries
+  const { data: countriesData, isLoading: countriesLoading, error: countriesError } = useQuery({
+    queryKey: ['countries'],
+    queryFn: () => locationService.getCountries(),
+  });
+
+  // Get selected country ID for states query
+  const selectedCountry = countriesData?.data?.find((country: Country) => country.name === formData.country);
+  const selectedCountryId = selectedCountry?.id;
+
+  // Fetch states when country is selected
+  const { data: statesData } = useQuery({
+    queryKey: ['states', selectedCountryId],
+    queryFn: () => locationService.getStatesByCountry(selectedCountryId!),
+    enabled: !!selectedCountryId,
+  });
+
+  // Get selected state ID for cities query
+  const selectedState = statesData?.data?.find((state: State) => state.name === formData.state);
+  const selectedStateId = selectedState?.id;
+
+  // Fetch cities when state is selected
+  const { data: citiesData } = useQuery({
+    queryKey: ['cities', selectedStateId],
+    queryFn: () => locationService.getCitiesByState(selectedStateId!),
+    enabled: !!selectedStateId,
+  });
+
   // Update form data when company data is loaded
   useEffect(() => {
     if (company) {
@@ -66,6 +98,9 @@ export default function EditCompany() {
         employeeCount: company.employeeCount || "",
         headquarters: company.headquarters || "",
         address: company.address || "",
+        country: company.country || "",
+        state: company.state || "",
+        city: company.city || "",
         linkedinUrl: company.linkedinUrl || "",
         twitterUrl: company.twitterUrl || "",
         facebookUrl: company.facebookUrl || "",
@@ -74,6 +109,19 @@ export default function EditCompany() {
       });
     }
   }, [company]);
+
+  // Reset dependent fields when parent selection changes
+  useEffect(() => {
+    if (formData.country && company && formData.country !== company.country) {
+      setFormData(prev => ({ ...prev, state: "", city: "" }));
+    }
+  }, [formData.country, company]);
+
+  useEffect(() => {
+    if (formData.state && company && formData.state !== company.state) {
+      setFormData(prev => ({ ...prev, city: "" }));
+    }
+  }, [formData.state, company]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -114,6 +162,9 @@ export default function EditCompany() {
       employeeCount: formData.employeeCount.trim(),
       headquarters: formData.headquarters.trim(),
       address: formData.address.trim(),
+      country: formData.country || undefined,
+      state: formData.state || undefined,
+      city: formData.city || undefined,
       linkedinUrl: formData.linkedinUrl.trim(),
       twitterUrl: formData.twitterUrl.trim(),
       facebookUrl: formData.facebookUrl.trim(),
@@ -213,15 +264,25 @@ export default function EditCompany() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Industry <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
+                  <select
                     name="industry"
                     value={formData.industry}
                     onChange={handleInputChange}
-                    placeholder="Enter industry"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
-                  />
+                  >
+                    <option value="">Select industry</option>
+                    <option value="Technology">Technology</option>
+                    <option value="Software">Software</option>
+                    <option value="Research">Research</option>
+                    <option value="Consulting">Consulting</option>
+                    <option value="AI/ML">AI/ML</option>
+                    <option value="Analytics">Analytics</option>
+                    <option value="Cloud Services">Cloud Services</option>
+                    <option value="Digital Marketing">Digital Marketing</option>
+                    <option value="Cybersecurity">Cybersecurity</option>
+                    <option value="Other">Other</option>
+                  </select>
                 </div>
 
                 {/* Website */}
@@ -260,14 +321,20 @@ export default function EditCompany() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Employee Count
                   </label>
-                  <input
-                    type="text"
+                  <select
                     name="employeeCount"
                     value={formData.employeeCount}
                     onChange={handleInputChange}
-                    placeholder="e.g., 1-10, 11-50, 51-200"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Select employee count</option>
+                    <option value="1-10">1-10</option>
+                    <option value="11-50">11-50</option>
+                    <option value="51-100">51-100</option>
+                    <option value="101-500">101-500</option>
+                    <option value="501-1000">501-1000</option>
+                    <option value="1000+">1000+</option>
+                  </select>
                 </div>
 
                 {/* Headquarters */}
@@ -285,64 +352,148 @@ export default function EditCompany() {
                   />
                 </div>
 
+                {/* Location Fields */}
+                <div className="md:col-span-2">
+                  <h3 className="text-lg font-medium text-gray-700 mb-4">Location</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Country */}
+                    <div>
+                      <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-2">
+                        Country
+                      </label>
+                      <select
+                        id="country"
+                        name="country"
+                        value={formData.country}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        disabled={countriesLoading}
+                      >
+                        <option value="">
+                          {countriesLoading ? "Loading countries..." : "Select Country"}
+                        </option>
+                        {countriesError ? (
+                          <option value="" disabled>Error loading countries</option>
+                        ) : (
+                          countriesData?.data?.map((country: Country) => (
+                            <option key={country.id} value={country.name}>
+                              {country.name}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
+
+                    {/* State */}
+                    <div>
+                      <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2">
+                        State/Province
+                      </label>
+                      <select
+                        id="state"
+                        name="state"
+                        value={formData.state}
+                        onChange={handleInputChange}
+                        disabled={!formData.country}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      >
+                        <option value="">Select State/Province</option>
+                        {statesData?.data?.map((state: State) => (
+                          <option key={state.id} value={state.name}>
+                            {state.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* City */}
+                    <div>
+                      <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                        City
+                      </label>
+                      <select
+                        id="city"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleInputChange}
+                        disabled={!formData.state}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      >
+                        <option value="">Select City</option>
+                        {citiesData?.data?.map((city: City) => (
+                          <option key={city.id} value={city.name}>
+                            {city.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Address */}
-                <div>
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Address
                   </label>
-                  <input
-                    type="text"
+                  <textarea
                     name="address"
                     value={formData.address}
                     onChange={handleInputChange}
                     placeholder="Enter company address"
+                    rows={2}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
 
-                {/* LinkedIn URL */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    LinkedIn URL
-                  </label>
-                  <input
-                    type="url"
-                    name="linkedinUrl"
-                    value={formData.linkedinUrl}
-                    onChange={handleInputChange}
-                    placeholder="https://linkedin.com/company/example"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
+                {/* Social Media Links */}
+                <div className="md:col-span-2">
+                  <h3 className="text-lg font-medium text-gray-700 mb-4">Social Media Links</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* LinkedIn URL */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        LinkedIn URL
+                      </label>
+                      <input
+                        type="url"
+                        name="linkedinUrl"
+                        value={formData.linkedinUrl}
+                        onChange={handleInputChange}
+                        placeholder="https://linkedin.com/company/example"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
 
-                {/* Twitter URL */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Twitter URL
-                  </label>
-                  <input
-                    type="url"
-                    name="twitterUrl"
-                    value={formData.twitterUrl}
-                    onChange={handleInputChange}
-                    placeholder="https://twitter.com/example"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
+                    {/* Twitter URL */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Twitter URL
+                      </label>
+                      <input
+                        type="url"
+                        name="twitterUrl"
+                        value={formData.twitterUrl}
+                        onChange={handleInputChange}
+                        placeholder="https://twitter.com/example"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
 
-                {/* Facebook URL */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Facebook URL
-                  </label>
-                  <input
-                    type="url"
-                    name="facebookUrl"
-                    value={formData.facebookUrl}
-                    onChange={handleInputChange}
-                    placeholder="https://facebook.com/example"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
+                    {/* Facebook URL */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Facebook URL
+                      </label>
+                      <input
+                        type="url"
+                        name="facebookUrl"
+                        value={formData.facebookUrl}
+                        onChange={handleInputChange}
+                        placeholder="https://facebook.com/example"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Description */}

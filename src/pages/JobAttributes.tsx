@@ -183,7 +183,8 @@ export default function JobAttributes() {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get<CategoriesResponse>('/job-attributes/categories');
+      // Fetch all categories without pagination limit
+      const response = await api.get<CategoriesResponse>('/job-attributes/categories?limit=100');
       setCategories(response.data.data);
     } catch (error: any) {
       console.error('Error fetching categories:', error);
@@ -213,31 +214,31 @@ export default function JobAttributes() {
 
   const languageLevels = getAttributesForCategory("Language Level");
   const careerLevels = getAttributesForCategory("Career Level");
-  const functionalAreas = getAttributesForCategory("Functional Area");
-  const genders = getAttributesForCategory("Gender");
-  const industries = getAttributesForCategory("Industry");
+  const functionalAreas = getAttributesForCategory("Functional Areas");
+  const genders = getAttributesForCategory("Genders");
+  const industries = getAttributesForCategory("Industries");
   const jobExperience = getAttributesForCategory("Job Experience");
-  const jobSkills = getAttributesForCategory("Job Skill");
-  const jobTypes = getAttributesForCategory("Job Type");
-  const jobShifts = getAttributesForCategory("Job Shift");
-  const degreeLevels = getAttributesForCategory("Degree Level");
-  const degreeTypes = getAttributesForCategory("Degree Type");
-  const majorSubjects = getAttributesForCategory("Major Subject");
+  const jobSkills = getAttributesForCategory("Job Skills");
+  const jobTypes = getAttributesForCategory("Job Types");
+  const jobShifts = getAttributesForCategory("Job Shifts");
+  const degreeLevels = getAttributesForCategory("Degree Levels");
+  const degreeTypes = getAttributesForCategory("Degree Types");
+  const majorSubjects = getAttributesForCategory("Major Subjects");
 
   // Category name to category ID mapping
   const categoryMap: {[key: string]: string} = {
     "Language Level": "LANGUAGE_LEVEL",
     "Career Level": "CAREER_LEVEL", 
-    "Functional Area": "FUNCTIONAL_AREA",
-    "Gender": "GENDER",
-    "Industry": "INDUSTRY",
+    "Functional Areas": "FUNCTIONAL_AREA",
+    "Genders": "GENDER",
+    "Industries": "INDUSTRY",
     "Job Experience": "JOB_EXPERIENCE",
-    "Job Skill": "JOB_SKILL",
-    "Job Type": "JOB_TYPE",
-    "Job Shift": "JOB_SHIFT",
-    "Degree Level": "DEGREE_LEVEL",
-    "Degree Type": "DEGREE_TYPE",
-    "Major Subject": "MAJOR_SUBJECT"
+    "Job Skills": "JOB_SKILL",
+    "Job Types": "JOB_TYPE",
+    "Job Shifts": "JOB_SHIFT",
+    "Degree Levels": "DEGREE_LEVEL",
+    "Degree Types": "DEGREE_TYPE",
+    "Major Subjects": "MAJOR_SUBJECT"
   };
 
   // Add Attribute Function
@@ -415,20 +416,20 @@ export default function JobAttributes() {
           />
           
           <JobAttributeCard
-            title="Functional Area"
+            title="Functional Areas"
             options={functionalAreas}
-            onAddNew={() => handleAddNew("Functional Area")}
-            showPopup={activePopup === "Functional Area"}
+            onAddNew={() => handleAddNew("Functional Areas")}
+            showPopup={activePopup === "Functional Areas"}
             onClosePopup={handleClosePopup}
             onSaveAttribute={handleSaveAttribute}
             onToggleAttribute={toggleAttribute}
           />
           
           <JobAttributeCard
-            title="Gender"
+            title="Genders"
             options={genders}
-            onAddNew={() => handleAddNew("Gender")}
-            showPopup={activePopup === "Gender"}
+            onAddNew={() => handleAddNew("Genders")}
+            showPopup={activePopup === "Genders"}
             onClosePopup={handleClosePopup}
             onSaveAttribute={handleSaveAttribute}
             onToggleAttribute={toggleAttribute}
@@ -436,10 +437,10 @@ export default function JobAttributes() {
 
           {/* Row 2 */}
           <JobAttributeCard
-            title="Industry"
+            title="Industries"
             options={industries}
-            onAddNew={() => handleAddNew("Industry")}
-            showPopup={activePopup === "Industry"}
+            onAddNew={() => handleAddNew("Industries")}
+            showPopup={activePopup === "Industries"}
             onClosePopup={handleClosePopup}
             onSaveAttribute={handleSaveAttribute}
             onToggleAttribute={toggleAttribute}
@@ -456,20 +457,20 @@ export default function JobAttributes() {
           />
           
           <JobAttributeCard
-            title="Job Skill"
+            title="Job Skills"
             options={jobSkills}
-            onAddNew={() => handleAddNew("Job Skill")}
-            showPopup={activePopup === "Job Skill"}
+            onAddNew={() => handleAddNew("Job Skills")}
+            showPopup={activePopup === "Job Skills"}
             onClosePopup={handleClosePopup}
             onSaveAttribute={handleSaveAttribute}
             onToggleAttribute={toggleAttribute}
           />
           
           <JobAttributeCard
-            title="Job Type"
+            title="Job Types"
             options={jobTypes}
-            onAddNew={() => handleAddNew("Job Type")}
-            showPopup={activePopup === "Job Type"}
+            onAddNew={() => handleAddNew("Job Types")}
+            showPopup={activePopup === "Job Types"}
             onClosePopup={handleClosePopup}
             onSaveAttribute={handleSaveAttribute}
             onToggleAttribute={toggleAttribute}
@@ -477,40 +478,40 @@ export default function JobAttributes() {
 
           {/* Row 3 */}
           <JobAttributeCard
-            title="Job Shift"
+            title="Job Shifts"
             options={jobShifts}
-            onAddNew={() => handleAddNew("Job Shift")}
-            showPopup={activePopup === "Job Shift"}
+            onAddNew={() => handleAddNew("Job Shifts")}
+            showPopup={activePopup === "Job Shifts"}
             onClosePopup={handleClosePopup}
             onSaveAttribute={handleSaveAttribute}
             onToggleAttribute={toggleAttribute}
           />
           
           <JobAttributeCard
-            title="Degree Level"
+            title="Degree Levels"
             options={degreeLevels}
-            onAddNew={() => handleAddNew("Degree Level")}
-            showPopup={activePopup === "Degree Level"}
+            onAddNew={() => handleAddNew("Degree Levels")}
+            showPopup={activePopup === "Degree Levels"}
             onClosePopup={handleClosePopup}
             onSaveAttribute={handleSaveAttribute}
             onToggleAttribute={toggleAttribute}
           />
           
           <JobAttributeCard
-            title="Degree Type"
+            title="Degree Types"
             options={degreeTypes}
-            onAddNew={() => handleAddNew("Degree Type")}
-            showPopup={activePopup === "Degree Type"}
+            onAddNew={() => handleAddNew("Degree Types")}
+            showPopup={activePopup === "Degree Types"}
             onClosePopup={handleClosePopup}
             onSaveAttribute={handleSaveAttribute}
             onToggleAttribute={toggleAttribute}
           />
           
           <JobAttributeCard
-            title="Major Subject"
+            title="Major Subjects"
             options={majorSubjects}
-            onAddNew={() => handleAddNew("Major Subject")}
-            showPopup={activePopup === "Major Subject"}
+            onAddNew={() => handleAddNew("Major Subjects")}
+            showPopup={activePopup === "Major Subjects"}
             onClosePopup={handleClosePopup}
             onSaveAttribute={handleSaveAttribute}
             onToggleAttribute={toggleAttribute}
