@@ -15,12 +15,12 @@ const JobAttributeCard = ({
   onToggleAttribute
 }: { 
   title: string; 
-  options: { id: number; name: string; checked: boolean }[]; 
+  options: { id: string; name: string; checked: boolean }[]; 
   onAddNew: () => void;
   showPopup: boolean;
   onClosePopup: () => void;
   onSaveAttribute: (name: string, isActive: boolean) => void;
-  onToggleAttribute: (attributeId: number, isActive: boolean) => void;
+  onToggleAttribute: (attributeId: string, isActive: boolean) => void;
 }) => {
   const [name, setName] = useState('');
   const [isActive, setIsActive] = useState(true);
@@ -205,7 +205,7 @@ export default function JobAttributes() {
     if (!category) return [];
     
     return category.attributes.map(attr => ({
-      id: parseInt(attr.id.replace(/-/g, '').substring(0, 8), 16), // Convert UUID to number for compatibility
+      id: String(attr.id).trim(), // Ensure it's a string and trim whitespace
       name: attr.name,
       checked: attr.isActive
     }));
@@ -282,29 +282,31 @@ export default function JobAttributes() {
   };
 
   // Toggle Attribute Function
-  const toggleAttribute = async (attributeId: number, isActive: boolean) => {
+  const toggleAttribute = async (attributeId: string, isActive: boolean) => {
     try {
       // Find the attribute in our categories
       let targetAttribute: Attribute | null = null;
-      let targetCategory: Category | null = null;
       
       for (const category of categories) {
-        const attribute = category.attributes.find(attr => 
-          parseInt(attr.id.replace(/-/g, '').substring(0, 8), 16) === attributeId
-        );
+        const attribute = category.attributes.find(attr => attr.id === attributeId);
         if (attribute) {
           targetAttribute = attribute;
-          targetCategory = category;
           break;
         }
       }
 
-      if (!targetAttribute || !targetCategory) {
+      if (!targetAttribute) {
         throw new Error('Attribute not found');
       }
 
-      // Call PUT /job-attributes/{id} to update the attribute
-      const response = await api.put(`/job-attributes/${targetAttribute.id}`, {
+      // Use the exact UUID from the found attribute (ensure it's a string)
+      const uuid = String(targetAttribute.id);
+      console.log('Toggling attribute with UUID:', uuid);
+      console.log('UUID type:', typeof uuid);
+      console.log('UUID length:', uuid.length);
+
+      // Call PATCH /job-attributes/{id} to update the attribute
+      const response = await api.patch(`/job-attributes/${uuid}`, {
         isActive: isActive
       });
       
@@ -317,6 +319,8 @@ export default function JobAttributes() {
       return response.data;
     } catch (error: any) {
       console.error('Error toggling attribute:', error);
+      console.error('Attribute ID received:', attributeId);
+      console.error('Attribute ID type:', typeof attributeId);
       const errorMessage = error.response?.data?.message || 'Failed to update attribute';
       toast.error(errorMessage);
       throw error;

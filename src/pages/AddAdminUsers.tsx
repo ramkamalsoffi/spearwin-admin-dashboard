@@ -15,7 +15,7 @@ export default function AddAdminUsers() {
     password: "",
     role: ""
   });
-
+ 
   // API call to create admin
   const createAdminMutation = useMutation({
     mutationFn: async (adminData: typeof formData) => {
