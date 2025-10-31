@@ -14,6 +14,7 @@ export default function ManagePassword() {
     newPassword: false,
     confirmPassword: false
   });
+  
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
