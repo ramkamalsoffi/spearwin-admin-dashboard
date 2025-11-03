@@ -61,6 +61,11 @@ export default function EditFAQ() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Prevent duplicate submissions
+    if (updateFaqMutation.isPending) {
+      return;
+    }
+    
     if (!id) {
       alert("FAQ ID is missing");
       return;

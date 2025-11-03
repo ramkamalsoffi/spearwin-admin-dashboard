@@ -141,17 +141,9 @@ export default function Companies() {
   const handleRefresh = async () => {
     console.log("Refresh Companies data - using GET /companies");
     try {
-      // Force refresh using the general companies endpoint
-      const result = await companyService.getCompanies({
-        search: debouncedSearchTerm || undefined,
-        page: currentPage,
-        limit: 10,
-        sortBy: 'name',
-        sortOrder: orderType
-      });
-      console.log('Refresh API Response:', result);
       // Invalidate and refetch the query to update the UI
-      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      await refetch();
+      toast.success('Companies refreshed successfully');
     } catch (error) {
       console.error('Error refreshing companies:', error);
       toast.error('Failed to refresh companies data');

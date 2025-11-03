@@ -26,10 +26,15 @@ export const useFaqMutations = () => {
   // Update FAQ mutation
   const updateFaqMutation = useMutation({
     mutationFn: (faqData: UpdateFAQRequest) => faqService.updateFAQ(faqData),
-    onSuccess: (response) => {
-      toast.success("FAQ updated successfully!");
+    onSuccess: (response, variables) => {
+      // Invalidate queries first (without showing toast)
+      const faqId = response?.data?.id || response?.id || variables.id;
       queryClient.invalidateQueries({ queryKey: ['faqs'] });
-      queryClient.invalidateQueries({ queryKey: ['faq', response.data.id] });
+      if (faqId) {
+        queryClient.invalidateQueries({ queryKey: ['faq', faqId] });
+      }
+      // Show success toast only once
+      toast.success("FAQ updated successfully!");
     },
     onError: (error: any) => {
       const errorMessage = error.response?.data?.message || "Failed to update FAQ";
