@@ -69,6 +69,13 @@ export interface CreateJobRequest {
   title: string;
   companyId: string;
   description: string;
+  requirements?: string | null;
+  responsibilities?: string | null;
+  benefits?: string | null;
+  minSalary?: number | null;
+  maxSalary?: number | null;
+  cityId?: number | null;
+  skillsRequired?: string[];
   jobType: 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERNSHIP' | 'FREELANCE';
   workMode: 'REMOTE' | 'ONSITE' | 'HYBRID';
   experienceLevel: 'ENTRY_LEVEL' | 'MID_LEVEL' | 'SENIOR_LEVEL' | 'EXECUTIVE';

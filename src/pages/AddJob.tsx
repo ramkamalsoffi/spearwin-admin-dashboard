@@ -6,7 +6,7 @@ import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { jobService, companyService } from "../services";
 import { CreateJobRequest } from "../services/types";
-import { useCreateJob } from "../hooks/useJobs";
+import { locationService, Country, State, City } from "../services/locationService";
 import api from "../utils/axios";
 
 // Types for job attributes
@@ -54,6 +54,13 @@ export default function AddJob() {
     title: "",
     companyId: "",
     description: "",
+    requirements: "",
+    responsibilities: "",
+    benefits: "",
+    minSalary: "",
+    maxSalary: "",
+    cityId: "",
+    skillsRequired: "",
     jobType: "",
     workMode: "",
     experienceLevel: "",
@@ -66,6 +73,30 @@ export default function AddJob() {
   const [selectedAttributes, setSelectedAttributes] = useState<{[categoryId: string]: string}>({});
   const [showAttributeModal, setShowAttributeModal] = useState(false);
   const [loadingAttributes, setLoadingAttributes] = useState(false);
+
+  // Location state
+  const [selectedCountryId, setSelectedCountryId] = useState<number | null>(null);
+  const [selectedStateId, setSelectedStateId] = useState<number | null>(null);
+
+  // Fetch countries for location
+  const { data: countriesData } = useQuery({
+    queryKey: ['countries'],
+    queryFn: () => locationService.getCountries(),
+  });
+
+  // Fetch states when country is selected
+  const { data: statesData } = useQuery({
+    queryKey: ['states', selectedCountryId],
+    queryFn: () => locationService.getStatesByCountry(selectedCountryId!),
+    enabled: !!selectedCountryId,
+  });
+
+  // Fetch cities when state is selected
+  const { data: citiesData } = useQuery({
+    queryKey: ['cities', selectedStateId],
+    queryFn: () => locationService.getCitiesByState(selectedStateId!),
+    enabled: !!selectedStateId,
+  });
 
   // Fetch companies for dropdown
   const { data: companiesData } = useQuery({
@@ -123,6 +154,28 @@ export default function AddJob() {
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  // Handle location changes
+  const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const countryId = e.target.value ? parseInt(e.target.value) : null;
+    setSelectedCountryId(countryId);
+    setSelectedStateId(null);
+    setFormData(prev => ({ ...prev, cityId: "" }));
+  };
+
+  const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const stateId = e.target.value ? parseInt(e.target.value) : null;
+    setSelectedStateId(stateId);
+    setFormData(prev => ({ ...prev, cityId: "" }));
+  };
+
+  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const cityId = e.target.value ? parseInt(e.target.value) : null;
+    setFormData(prev => ({
+      ...prev,
+      cityId: cityId ? cityId.toString() : ""
     }));
   };
 
@@ -188,11 +241,23 @@ export default function AddJob() {
       return;
     }
 
+    // Parse skillsRequired from comma-separated string to array
+    const skillsArray = formData.skillsRequired
+      ? formData.skillsRequired.split(',').map(skill => skill.trim()).filter(skill => skill.length > 0)
+      : [];
+
     // Create job data object
     const jobData: CreateJobRequest = {
       title: formData.title,
       companyId: formData.companyId,
       description: formData.description,
+      requirements: formData.requirements || null,
+      responsibilities: formData.responsibilities || null,
+      benefits: formData.benefits || null,
+      minSalary: formData.minSalary ? parseFloat(formData.minSalary) : null,
+      maxSalary: formData.maxSalary ? parseFloat(formData.maxSalary) : null,
+      cityId: formData.cityId ? parseInt(formData.cityId) : null,
+      skillsRequired: skillsArray.length > 0 ? skillsArray : [],
       jobType: formData.jobType as CreateJobRequest['jobType'],
       workMode: formData.workMode as CreateJobRequest['workMode'],
       experienceLevel: formData.experienceLevel as CreateJobRequest['experienceLevel'],
@@ -400,6 +465,169 @@ export default function AddJob() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
+                </div>
+
+                {/* Requirements */}
+                <div className="md:col-span-2">
+                  <label htmlFor="requirements" className="block text-sm font-medium text-gray-700 mb-2">
+                    Requirements
+                  </label>
+                  <textarea
+                    id="requirements"
+                    name="requirements"
+                    value={formData.requirements}
+                    onChange={handleInputChange}
+                    placeholder="Enter job requirements"
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                {/* Responsibilities */}
+                <div className="md:col-span-2">
+                  <label htmlFor="responsibilities" className="block text-sm font-medium text-gray-700 mb-2">
+                    Responsibilities
+                  </label>
+                  <textarea
+                    id="responsibilities"
+                    name="responsibilities"
+                    value={formData.responsibilities}
+                    onChange={handleInputChange}
+                    placeholder="Enter job responsibilities"
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                {/* Benefits */}
+                <div className="md:col-span-2">
+                  <label htmlFor="benefits" className="block text-sm font-medium text-gray-700 mb-2">
+                    Benefits
+                  </label>
+                  <textarea
+                    id="benefits"
+                    name="benefits"
+                    value={formData.benefits}
+                    onChange={handleInputChange}
+                    placeholder="Enter job benefits"
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                {/* Salary Range */}
+                <div>
+                  <label htmlFor="minSalary" className="block text-sm font-medium text-gray-700 mb-2">
+                    Minimum Salary (₹)
+                  </label>
+                  <input
+                    type="number"
+                    id="minSalary"
+                    name="minSalary"
+                    value={formData.minSalary}
+                    onChange={handleInputChange}
+                    placeholder="e.g., 50000"
+                    min="0"
+                    step="1000"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="maxSalary" className="block text-sm font-medium text-gray-700 mb-2">
+                    Maximum Salary (₹)
+                  </label>
+                  <input
+                    type="number"
+                    id="maxSalary"
+                    name="maxSalary"
+                    value={formData.maxSalary}
+                    onChange={handleInputChange}
+                    placeholder="e.g., 100000"
+                    min="0"
+                    step="1000"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                {/* Location - Country */}
+                <div>
+                  <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-2">
+                    Country
+                  </label>
+                  <select
+                    id="country"
+                    value={selectedCountryId || ""}
+                    onChange={handleCountryChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Select a country</option>
+                    {countriesData?.data?.map((country: Country) => (
+                      <option key={country.id} value={country.id}>
+                        {country.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Location - State */}
+                <div>
+                  <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2">
+                    State
+                  </label>
+                  <select
+                    id="state"
+                    value={selectedStateId || ""}
+                    onChange={handleStateChange}
+                    disabled={!selectedCountryId}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">{selectedCountryId ? "Select a state" : "Select country first"}</option>
+                    {statesData?.data?.map((state: State) => (
+                      <option key={state.id} value={state.id}>
+                        {state.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Location - City */}
+                <div className="md:col-span-2">
+                  <label htmlFor="cityId" className="block text-sm font-medium text-gray-700 mb-2">
+                    City
+                  </label>
+                  <select
+                    id="cityId"
+                    name="cityId"
+                    value={formData.cityId}
+                    onChange={handleCityChange}
+                    disabled={!selectedStateId}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">{selectedStateId ? "Select a city" : "Select state first"}</option>
+                    {citiesData?.data?.map((city: City) => (
+                      <option key={city.id} value={city.id}>
+                        {city.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Skills Required */}
+                <div className="md:col-span-2">
+                  <label htmlFor="skillsRequired" className="block text-sm font-medium text-gray-700 mb-2">
+                    Skills Required (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    id="skillsRequired"
+                    name="skillsRequired"
+                    value={formData.skillsRequired}
+                    onChange={handleInputChange}
+                    placeholder="e.g., JavaScript, React, Node.js, TypeScript"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">Enter skills separated by commas</p>
                 </div>
 
                 {/* Selected Job Attributes */}
