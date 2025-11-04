@@ -28,7 +28,7 @@ export const useFaqMutations = () => {
     mutationFn: (faqData: UpdateFAQRequest) => faqService.updateFAQ(faqData),
     onSuccess: (response, variables) => {
       // Invalidate queries first (without showing toast)
-      const faqId = response?.data?.id || response?.id || variables.id;
+      const faqId = response?.data?.id || variables.id;
       queryClient.invalidateQueries({ queryKey: ['faqs'] });
       if (faqId) {
         queryClient.invalidateQueries({ queryKey: ['faq', faqId] });
