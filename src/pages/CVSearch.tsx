@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
@@ -10,6 +10,7 @@ import SearchableDropdown from "../components/ui/SearchableDropdown";
 import { candidateService, CVSearchQueryParams } from "../services/candidateService";
 import { companyService } from "../services/companyService";
 import { skillsService } from "../services/skillsService";
+import { adminService, AdminApplication } from "../services/adminService";
 
 export default function CVSearch() {
   const navigate = useNavigate();
@@ -87,9 +88,12 @@ export default function CVSearch() {
 
   // Transform candidates data
   const candidatesOptions = candidatesDropdown || [];
+  console.log('Candidates dropdown options:', candidatesOptions);
+  console.log('Candidates dropdown loading:', candidatesDropdownLoading);
 
   // Transform emails data
   const emailsOptions = emailsDropdown || [];
+  console.log('Emails dropdown options:', emailsOptions);
 
   // Transform skills data
   const skillsOptions = skillsDropdown || [];
@@ -132,7 +136,17 @@ export default function CVSearch() {
     refetch 
   } = useQuery({
     queryKey: ['cv-search', buildSearchParams()],
-    queryFn: () => candidateService.searchCandidates(buildSearchParams()),
+    queryFn: async () => {
+      try {
+        const result = await candidateService.searchCandidates(buildSearchParams());
+        console.log('CV Search result:', result);
+        console.log('Candidates count:', result?.candidates?.length);
+        return result;
+      } catch (error) {
+        console.error('Error in CV search:', error);
+        throw error;
+      }
+    },
     enabled: searchTriggered,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -153,16 +167,23 @@ export default function CVSearch() {
     }
   };
 
-  // Handle error
+  // Handle error - moved to useEffect to avoid rendering issues
+  useEffect(() => {
   if (error) {
     const errorMessage = (error as any).response?.data?.message || "Failed to search candidates";
     toast.error(errorMessage);
     console.error("Error searching candidates:", error);
   }
+  }, [error]);
 
   const searchResults = candidatesResponse?.candidates || [];
   const totalResults = candidatesResponse?.total || 0;
   const totalPages = candidatesResponse?.totalPages || 1;
+  
+  console.log('Search Results:', searchResults);
+  console.log('Total Results:', totalResults);
+  console.log('Is Loading:', isLoading);
+  console.log('Search Triggered:', searchTriggered);
 
   // Trigger search when page changes
   useEffect(() => {
@@ -179,7 +200,7 @@ export default function CVSearch() {
       />
       
       {/* Title Bar */}
-      <div className="px-4 sm:px-6 lg:px-30 ">
+      <div className="px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2">
           <PageBreadcrumb 
             items={[
@@ -191,7 +212,7 @@ export default function CVSearch() {
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 lg:px-30 py-4">
+      <div className="px-4 sm:px-6 lg:px-8 py-4">
         {/* Search Form Container */}
         <div className="bg-white rounded-[10px] shadow-sm border border-gray-200">
           <div className="p-6">
@@ -401,6 +422,21 @@ export default function CVSearch() {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900"></div>
                   <span className="ml-2 text-gray-600">Searching candidates...</span>
                 </div>
+              ) : error ? (
+                <div className="text-center py-12">
+                  <p className="text-red-600 mb-2">Error searching candidates</p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    {(error as any)?.response?.data?.message || 
+                     (error as any)?.message || 
+                     'Please check your connection and try again'}
+                  </p>
+                  <button
+                    onClick={() => refetch()}
+                    className="px-4 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-800"
+                  >
+                    Retry
+                  </button>
+                </div>
               ) : searchResults.length > 0 ? (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between mb-4">
@@ -527,237 +563,431 @@ export default function CVSearch() {
       </div>
 
       {/* CV Status Maintenance Section */}
-      <div className="px-4 sm:px-6 lg:px-30 py-4">
+      <div className="px-4 sm:px-6 lg:px-8 py-4">
         <CVStatusMaintenanceInline />
       </div>
     </>
   );
 }
 
-// Inline CV Status Maintenance Section (moved from separate page)
+// Applications List Section - Shows candidates who applied for jobs
 function CVStatusMaintenanceInline() {
   const navigate = useNavigate();
-  const [cvPage, setCvPage] = useState(1);
-  const [filterBy, setFilterBy] = useState("Language");
-  const [orderType, setOrderType] = useState("Order Type");
-  const [orderStatus, setOrderStatus] = useState("Order Status");
+  const [applicationsPage, setApplicationsPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [jobTitleFilter, setJobTitleFilter] = useState<string>("");
+  const [companyNameFilter, setCompanyNameFilter] = useState<string>("");
+  const [candidateNameFilter, setCandidateNameFilter] = useState<string>("");
 
-  // Sample CV status data matching the image
-  const cvStatusData = [
-    {
-      id: 1,
-      language: "English",
-      cvStatus: "cv - Hold",
-      assignedTo: "Role 2",
-      isDefault: true,
-      status: "Active"
-    },
-    {
-      id: 2,
-      language: "English",
-      cvStatus: "cv - Hold",
-      assignedTo: "Role 2",
-      isDefault: true,
-      status: "Inactive"
-    },
-    {
-      id: 3,
-      language: "English",
-      cvStatus: "cv - Hold",
-      assignedTo: "Role 2",
-      isDefault: true,
-      status: "Active"
-    },
-    {
-      id: 4,
-      language: "English",
-      cvStatus: "cv - Hold",
-      assignedTo: "Role 2",
-      isDefault: true,
-      status: "Active"
-    },
-    {
-      id: 5,
-      language: "English",
-      cvStatus: "cv - Hold",
-      assignedTo: "Role 2",
-      isDefault: true,
-      status: "Active"
-    },
-    {
-      id: 6,
-      language: "English",
-      cvStatus: "cv - Hold",
-      assignedTo: "Role 2",
-      isDefault: true,
-      status: "Active"
-    },
-    {
-      id: 7,
-      language: "English",
-      cvStatus: "cv - Hold",
-      assignedTo: "Role 2",
-      isDefault: true,
-      status: "Active"
-    },
-    {
-      id: 8,
-      language: "English",
-      cvStatus: "cv - Hold",
-      assignedTo: "Role 2",
-      isDefault: true,
-      status: "Active"
-    },
-    {
-      id: 9,
-      language: "English",
-      cvStatus: "cv - Hold",
-      assignedTo: "Role 2",
-      isDefault: true,
-      status: "Active"
-    }
-  ];
-
-  const totalCVStatus = 78;
-  const cvStatusPerPage = 10;
-  const totalPages = Math.ceil(totalCVStatus / cvStatusPerPage);
-
-  const handleEdit = (cvStatus: any) => {
-    navigate(`/edit-cv-status/${cvStatus.id}`);
-  };
-
-  const handleDelete = (cvStatus: any) => {
-    if (window.confirm(`Are you sure you want to delete this CV status?`)) {
-      // Handle delete logic here
-      // Placeholder
+  // Map application status to StatusBadge type
+  const mapApplicationStatus = (status: string): "active" | "inactive" | "pending" | "completed" | "cancelled" => {
+    const normalizedStatus = status?.toUpperCase() || 'APPLIED';
+    switch (normalizedStatus) {
+      case 'APPLIED':
+      case 'UNDER_REVIEW':
+        return 'pending';
+      case 'SHORTLISTED':
+      case 'INTERVIEWED':
+        return 'active';
+      case 'SELECTED':
+        return 'completed';
+      case 'REJECTED':
+        return 'cancelled';
+      default:
+        return 'pending';
     }
   };
 
-  const handleCvStatusRefresh = () => {
-    // Reload data from API (placeholder - to be implemented)
-    console.log('CV Status refresh triggered');
+  // Fetch applications with candidate details
+  const { 
+    data: applicationsData, 
+    isLoading: applicationsLoading, 
+    error: applicationsError,
+    refetch: refetchApplications 
+  } = useQuery({
+    queryKey: ['admin-applications', applicationsPage, statusFilter, jobTitleFilter, companyNameFilter, candidateNameFilter],
+    queryFn: async () => {
+      try {
+        const result = await adminService.getAllApplications({
+          page: applicationsPage.toString(),
+          limit: '10',
+          status: statusFilter || undefined,
+          jobTitle: jobTitleFilter || undefined,
+          companyName: companyNameFilter || undefined,
+          candidateName: candidateNameFilter || undefined,
+        });
+        console.log('Applications data:', result);
+        return result;
+      } catch (error) {
+        console.error('Error fetching applications:', error);
+        toast.error('Failed to load applications');
+        throw error;
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+    enabled: true, // Always enable the query
+  });
+
+  // Handle response data - ensure we extract it correctly
+  const applications = applicationsData?.applications || [];
+  const totalApplications = applicationsData?.total || 0;
+  const totalPages = applicationsData?.totalPages || 1;
+  
+  console.log('Full applications response:', applicationsData);
+  console.log('Applications array:', applications);
+  console.log('Applications count:', applications.length);
+  console.log('Total applications:', totalApplications);
+  console.log('Is Loading:', applicationsLoading);
+  console.log('Has Error:', applicationsError);
+
+  const handleViewResume = (application: AdminApplication) => {
+    // Build resume URL - check multiple sources
+    let resumeUrl: string | null = null;
+    
+    // First check if resumeFilePath is already a full URL
+    if (application.resumeFilePath) {
+      if (application.resumeFilePath.startsWith('http://') || application.resumeFilePath.startsWith('https://')) {
+        resumeUrl = application.resumeFilePath;
+      } else {
+        // It's a relative path, build full URL
+        resumeUrl = `https://spearwin.sfo3.digitaloceanspaces.com/${application.resumeFilePath}`;
+      }
+    } 
+    // If no resumeFilePath, check resume object
+    else if (application.resume) {
+      // Check if resume has filePath (document key)
+      const resume = application.resume as any;
+      if (resume.filePath) {
+        if (resume.filePath.startsWith('http://') || resume.filePath.startsWith('https://')) {
+          resumeUrl = resume.filePath;
+        } else {
+          resumeUrl = `https://spearwin.sfo3.digitaloceanspaces.com/${resume.filePath}`;
+        }
+      } else if (resume.fileName) {
+        // Fallback: try to construct from fileName
+        resumeUrl = `https://spearwin.sfo3.digitaloceanspaces.com/documents/${resume.fileName}`;
+      }
+    }
+    
+    if (resumeUrl) {
+      window.open(resumeUrl, '_blank');
+    } else {
+      toast.error('Resume not available for this application');
+    }
+  };
+
+  const handleViewCandidate = (candidateId: string) => {
+    navigate(`/candidate/${candidateId}`);
+  };
+
+  const handleRefresh = () => {
+    refetchApplications();
+    toast.success('Applications refreshed');
+  };
+
+  const queryClient = useQueryClient();
+
+  // Mutation for updating application status using candidate API
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ applicationId, status }: { applicationId: string; status: string }) => {
+      return candidateService.updateApplicationStatus(applicationId, status);
+    },
+    onSuccess: () => {
+      // Invalidate and refetch applications list
+      queryClient.invalidateQueries({ queryKey: ['admin-applications'] });
+      toast.success('Application status updated successfully');
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || 'Failed to update application status';
+      toast.error(errorMessage);
+      console.error('Error updating status:', error);
+    },
+  });
+
+  // Mutation for updating candidate/user status
+  const updateCandidateStatusMutation = useMutation({
+    mutationFn: async ({ userId, status }: { userId: string; status: string }) => {
+      return adminService.updateUserStatus(userId, status);
+    },
+    onSuccess: () => {
+      // Invalidate and refetch applications list
+      queryClient.invalidateQueries({ queryKey: ['admin-applications'] });
+      toast.success('Candidate status updated successfully');
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || 'Failed to update candidate status';
+      toast.error(errorMessage);
+      console.error('Error updating candidate status:', error);
+    },
+  });
+
+  const handleStatusChange = (application: AdminApplication, newStatus: string) => {
+    // Since API returns null IDs, we need to handle this
+    // For now, we'll show an error if ID is null
+    if (!application.id) {
+      toast.error('Cannot update status: Application ID is missing');
+      return;
+    }
+    
+    updateStatusMutation.mutate({
+      applicationId: application.id.toString(),
+      status: newStatus,
+    });
+  };
+
+  const handleCandidateStatusChange = (application: AdminApplication, newStatus: string) => {
+    // Get userId from candidate - we need to fetch it if not available
+    // The backend should include userId in the candidate response
+    const userId = application.candidate?.userId;
+    
+    if (!userId) {
+      toast.error('Cannot update candidate status: User ID is missing');
+      return;
+    }
+    
+    updateCandidateStatusMutation.mutate({
+      userId: userId,
+      status: newStatus,
+    });
+  };
+
+  // Map user status to StatusBadge type
+  const mapUserStatus = (status: string): "active" | "inactive" | "pending" | "completed" | "cancelled" => {
+    const normalizedStatus = status?.toUpperCase() || 'PENDING_VERIFICATION';
+    switch (normalizedStatus) {
+      case 'ACTIVE':
+        return 'active';
+      case 'INACTIVE':
+        return 'inactive';
+      case 'SUSPENDED':
+        return 'cancelled';
+      case 'PENDING_VERIFICATION':
+        return 'pending';
+      default:
+        return 'pending';
+    }
   };
 
   return (
     <div className="bg-white rounded-[10px] shadow-sm border border-gray-200">
       <div className="px-6 py-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-              </svg>
-              <span className="text-sm font-medium text-gray-700">Filter By</span>
-            </div>
-
-            <div className="relative">
-              <select 
-                value={filterBy}
-                onChange={(e) => setFilterBy(e.target.value)}
-                className="appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
-              >
-                <option>Language</option>
-                <option>CV Status</option>
-                <option>Assigned to</option>
-                <option>Default</option>
-                <option>Status</option>
-              </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-
-            <div className="relative">
-              <select 
-                value={orderType}
-                onChange={(e) => setOrderType(e.target.value)}
-                className="appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
-              >
-                <option>Order Type</option>
-                <option>Ascending</option>
-                <option>Descending</option>
-              </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-
-            <div className="relative">
-              <select 
-                value={orderStatus}
-                onChange={(e) => setOrderStatus(e.target.value)}
-                className="appearance-none rounded-[20px] px-4 py-2 pr-8 text-sm bg-white/30 border border-white/40 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
-              >
-                <option>Order Status</option>
-                <option>Active</option>
-                <option>Pending</option>
-                <option>Inactive</option>
-              </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-
-            <button className="p-2 text-gray-400 hover:text-gray-600" onClick={handleCvStatusRefresh}>
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Job Applications - Candidate Details</h2>
+          <button 
+            onClick={handleRefresh}
+            disabled={applicationsLoading}
+            className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+          >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </button>
-          </div>
+            </div>
 
+        {/* Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+              <select 
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setApplicationsPage(1);
+              }}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Status</option>
+              <option value="APPLIED">Applied</option>
+              <option value="UNDER_REVIEW">Under Review</option>
+              <option value="SHORTLISTED">Shortlisted</option>
+              <option value="INTERVIEWED">Interviewed</option>
+              <option value="SELECTED">Selected</option>
+              <option value="REJECTED">Rejected</option>
+              </select>
+              </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Job Title</label>
+            <input
+              type="text"
+              value={jobTitleFilter}
+              onChange={(e) => {
+                setJobTitleFilter(e.target.value);
+                setApplicationsPage(1);
+              }}
+              placeholder="Filter by job title"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Company</label>
+            <input
+              type="text"
+              value={companyNameFilter}
+              onChange={(e) => {
+                setCompanyNameFilter(e.target.value);
+                setApplicationsPage(1);
+              }}
+              placeholder="Filter by company"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+              </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Candidate Name</label>
+            <input
+              type="text"
+              value={candidateNameFilter}
+              onChange={(e) => {
+                setCandidateNameFilter(e.target.value);
+                setApplicationsPage(1);
+              }}
+              placeholder="Filter by candidate name"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            </div>
+              </div>
+            </div>
+
+      {applicationsLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900"></div>
+          <span className="ml-2 text-gray-600">Loading applications...</span>
+        </div>
+      ) : applicationsError ? (
+        <div className="text-center py-12 px-6">
+          <p className="text-red-600 mb-2 font-medium">Error loading applications</p>
+          <p className="text-sm text-gray-500 mb-4">
+            {(applicationsError as any)?.response?.data?.message || 
+             (applicationsError as any)?.message || 
+             'Please check your connection and try again'}
+          </p>
           <button 
-            onClick={() => navigate("/add-cv-status")}
-            className="bg-blue-900 hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            onClick={() => refetchApplications()}
+            className="px-4 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-800 transition-colors"
           >
-            Add Status
+            Retry
+            </button>
+          </div>
+      ) : applications.length === 0 ? (
+        <div className="text-center py-12 px-6">
+          <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <p className="text-gray-500 text-lg font-medium mb-2">No applications found</p>
+          <p className="text-gray-400 text-sm mb-4">Try adjusting your filters or check back later</p>
+          <button 
+            onClick={() => refetchApplications()}
+            className="px-4 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-800 transition-colors"
+          >
+            Refresh
           </button>
         </div>
-      </div>
-
-      <div className="overflow-x-auto">
-        <Table className="w-full min-w-[700px]">
+      ) : (
+        <>
+          <div className="overflow-x-auto px-6 pb-4">
+            <Table className="w-full min-w-[1200px]">
           <TableHeader>
-            <TableRow className="bg-blue-50 mx-4">
-              <TableCell isHeader className="rounded-l-[20px] pl-6 pr-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Language</TableCell>
-              <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">CV Status</TableCell>
-              <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Assigned to</TableCell>
-              <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Default</TableCell>
-              <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Status</TableCell>
-              <TableCell isHeader className="rounded-r-[20px] pl-3 pr-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Action</TableCell>
+                <TableRow className="bg-blue-50">
+                  <TableCell isHeader className="pl-6 pr-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Candidate Name</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Email</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Job Title</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Company</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Location</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Current Title</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Status</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Applied Date</TableCell>
+                  <TableCell isHeader className="pl-3 pr-6 py-3 text-left text-xs font-medium text-blue-900 uppercase">Actions</TableCell>
             </TableRow>
           </TableHeader>
           <TableBody className="bg-white divide-y divide-gray-200">
-            {cvStatusData.map((row) => (
-              <tr key={row.id} className="hover:bg-gray-50">
-                <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm text-gray-500">{row.language}</td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{row.cvStatus}</td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{row.assignedTo}</td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{row.isDefault ? "Yes" : "No"}</td>
+                {applications.map((application: AdminApplication, index: number) => {
+                    const candidateName = `${application.candidate?.firstName || ''} ${application.candidate?.lastName || ''}`.trim() || 'N/A';
+                    // Try candidate city first, then job location city, then fallback to N/A
+                    const location = application.candidate?.city?.name || application.job?.location?.city?.name || 'N/A';
+                    // Use index as fallback key if id is null
+                    const rowKey = application.id || `app-${index}-${application.appliedAt}`;
+                    
+                    return (
+                      <tr key={rowKey} className="hover:bg-gray-50">
+                        <td className="pl-6 pr-3 py-3 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">{candidateName}</p>
+                              {application.candidate?.currentTitle && (
+                                <p className="text-xs text-gray-500">{application.candidate.currentTitle}</p>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{application.candidate?.email || 'N/A'}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{application.job?.title || 'N/A'}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{application.job?.company?.name || 'N/A'}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{location}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
+                          {application.candidate?.currentTitle || 'N/A'}
+                        </td>
                 <td className="px-3 py-3 whitespace-nowrap">
-                  <StatusBadge status={row.status.toLowerCase() as "active" | "inactive"} />
+                          <StatusBadge status={mapApplicationStatus(application.status || 'APPLIED')} />
                 </td>
-                <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
+                          {application.appliedAt ? new Date(application.appliedAt).toLocaleDateString() : 'N/A'}
+                </td>
+                        <td className="pl-3 pr-6 py-3 whitespace-nowrap">
                   <div className="flex items-center gap-2">
-                    <button className="p-1 text-blue-600 hover:text-blue-800" onClick={() => handleEdit(row)}>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            <button
+                              onClick={() => handleViewResume(application)}
+                              className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="View Resume"
+                              disabled={!application.resume && !application.resumeFilePath}
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
                     </button>
-                    <button className="p-1 text-red-600 hover:text-red-800" onClick={() => handleDelete(row)}>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            <button
+                              onClick={() => application.candidate?.id && handleViewCandidate(application.candidate.id)}
+                              className="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="View Candidate Profile"
+                              disabled={!application.candidate?.id}
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </button>
+                            {/* Application Status Dropdown */}
+                            <select
+                              value={application.status || 'APPLIED'}
+                              onChange={(e) => handleStatusChange(application, e.target.value)}
+                              disabled={!application.id || updateStatusMutation.isPending}
+                              className="text-xs px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed bg-white min-w-[120px]"
+                              title="Change Application Status"
+                            >
+                              <option value="APPLIED">Applied</option>
+                              <option value="UNDER_REVIEW">Under Review</option>
+                              <option value="SHORTLISTED">Shortlisted</option>
+                              <option value="INTERVIEWED">Interviewed</option>
+                              <option value="SELECTED">Selected</option>
+                              <option value="REJECTED">Rejected</option>
+                            </select>
+                            {/* Candidate Status Dropdown */}
+                            <select
+                              value={application.candidate?.status || 'PENDING_VERIFICATION'}
+                              onChange={(e) => handleCandidateStatusChange(application, e.target.value)}
+                              disabled={!application.candidate?.userId || updateCandidateStatusMutation.isPending}
+                              className="text-xs px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed bg-white min-w-[140px]"
+                              title="Change Candidate Status"
+                            >
+                              <option value="ACTIVE">Active</option>
+                              <option value="INACTIVE">Inactive</option>
+                              <option value="SUSPENDED">Suspended</option>
+                              <option value="PENDING_VERIFICATION">Pending Verification</option>
+                            </select>
                   </div>
                 </td>
               </tr>
-            ))}
+                    );
+                  })}
           </TableBody>
         </Table>
       </div>
@@ -766,22 +996,25 @@ function CVStatusMaintenanceInline() {
       <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
         <div className="flex items-center justify-between">
           <div className="text-sm text-gray-700">
-            Showing 1-{cvStatusPerPage} of {totalCVStatus}
+                Showing {((applicationsPage - 1) * 10) + 1}-{Math.min(applicationsPage * 10, totalApplications)} of {totalApplications}
           </div>
           <div className="flex items-center gap-2">
             <button 
-              onClick={() => setCvPage(Math.max(1, cvPage - 1))}
-              disabled={cvPage === 1}
-              className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                  onClick={() => setApplicationsPage(Math.max(1, applicationsPage - 1))}
+                  disabled={applicationsPage === 1 || applicationsLoading}
+                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
+                <span className="text-sm text-gray-500">
+                  Page {applicationsPage} of {totalPages}
+                </span>
             <button 
-              onClick={() => setCvPage(Math.min(totalPages, cvPage + 1))}
-              disabled={cvPage === totalPages}
-              className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                  onClick={() => setApplicationsPage(Math.min(totalPages, applicationsPage + 1))}
+                  disabled={applicationsPage === totalPages || applicationsLoading}
+                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -790,6 +1023,8 @@ function CVStatusMaintenanceInline() {
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

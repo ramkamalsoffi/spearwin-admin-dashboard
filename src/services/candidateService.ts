@@ -188,27 +188,40 @@ export const candidateService = {
 
   // Get candidates list for dropdown (name and email)
   getCandidatesForDropdown: async (search?: string): Promise<Array<{ value: string; label: string }>> => {
-    const queryParams = new URLSearchParams();
-    queryParams.append('role', 'CANDIDATE');
-    queryParams.append('limit', '100'); // Get more for dropdown
-    if (search) {
-      queryParams.append('search', search);
+    try {
+      const queryParams = new URLSearchParams();
+      queryParams.append('role', 'CANDIDATE');
+      queryParams.append('limit', '100'); // Get more for dropdown
+      if (search) {
+        queryParams.append('search', search);
+      }
+      
+      const url = `/user/profiles?${queryParams.toString()}`;
+      console.log('Fetching candidates dropdown from:', url);
+      const response = await api.get(url);
+      console.log('Candidates dropdown response:', response.data);
+      
+      const users = response.data?.users || response.data?.data?.users || [];
+      console.log('Users array length:', users.length);
+      
+      const options = users
+        .filter((user: any) => user.candidate)
+        .map((user: any) => {
+          const candidate = user.candidate;
+          const fullName = `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim();
+          const label = fullName ? `${fullName} (${user.email})` : user.email || 'Unknown';
+          return {
+            value: user.email || user.id,
+            label: label,
+          };
+        });
+      
+      console.log('Transformed dropdown options count:', options.length);
+      return options;
+    } catch (error) {
+      console.error('Error fetching candidates dropdown:', error);
+      return [];
     }
-    
-    const response = await api.get(`/user/profiles?${queryParams.toString()}`);
-    const users = response.data?.users || [];
-    
-    return users
-      .filter((user: any) => user.candidate)
-      .map((user: any) => {
-        const candidate = user.candidate;
-        const fullName = `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim();
-        const label = fullName ? `${fullName} (${user.email})` : user.email || 'Unknown';
-        return {
-          value: user.email || user.id,
-          label: label,
-        };
-      });
   },
 
   // Get candidate emails for dropdown
@@ -223,12 +236,23 @@ export const candidateService = {
     const response = await api.get(`/user/profiles?${queryParams.toString()}`);
     const users = response.data?.users || [];
     
-    return users
-      .filter((user: any) => user.email)
-      .map((user: any) => ({
-        value: user.email,
-        label: user.email,
-      }));
+      return users
+        .filter((user: any) => user.email)
+        .map((user: any) => ({
+          value: user.email,
+          label: user.email,
+        }));
+  },
+
+  // Update application status using candidate API
+  updateApplicationStatus: async (applicationId: string, status: string): Promise<any> => {
+    try {
+      const response = await api.put(`/candidate/applications/${applicationId}`, { status });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating application status via candidate API:', error);
+      throw error;
+    }
   },
 };
 
