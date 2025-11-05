@@ -6,12 +6,14 @@ interface StatusBadgeProps {
   status: StatusType;
   size?: "sm" | "md";
   className?: string;
+  customLabel?: string; // Allow custom label text
 }
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ 
   status, 
   size = "md", 
-  className = "" 
+  className = "",
+  customLabel 
 }) => {
   const statusConfig = {
     active: {
@@ -42,12 +44,13 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
   };
 
   const config = statusConfig[status];
+  const displayLabel = customLabel || config.label;
   
   return (
     <span 
       className={`inline-flex items-center rounded-full font-medium ${config.classes} ${sizeClasses[size]} ${className}`}
     >
-      {config.label}
+      {displayLabel}
     </span>
   );
 };

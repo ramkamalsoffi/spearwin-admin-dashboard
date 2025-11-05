@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { faqService, FaqQueryParams } from "../services/faqService";
 import { useFaqMutations } from "../hooks/useFaqMutations";
 import { FAQ } from "../services/types";
+import { toast } from "react-hot-toast";
 
 export default function FAQs() {
   const navigate = useNavigate();
@@ -53,7 +54,6 @@ export default function FAQs() {
   const totalPages = Math.ceil(totalFAQs / faqsPerPage);
 
   const handleEdit = (faq: FAQ) => {
-    console.log("Edit FAQ:", faq);
     navigate(`/edit-faq/${faq.id}`);
   };
 
@@ -68,7 +68,11 @@ export default function FAQs() {
   };
 
   const handleRefresh = () => {
-    refetch();
+    refetch().then(() => {
+      toast.success("FAQs refreshed successfully");
+    }).catch(() => {
+      toast.error("Failed to refresh FAQs");
+    });
   };
 
   return (

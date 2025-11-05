@@ -13,10 +13,10 @@ export interface ApplicationQueryParams {
 }
 
 export interface AdminApplication {
-  id: number | null;
-  jobId: number | null;
-  candidateId: number | null;
-  resumeId?: number | null;
+  id: string | null; // cuid string
+  jobId: string | null; // cuid string
+  candidateId: string | null; // cuid string
+  resumeId?: string | null; // cuid string
   resumeFilePath?: string;
   coverLetter?: string;
   status: string;
@@ -26,12 +26,12 @@ export interface AdminApplication {
   feedback?: string;
   updatedAt: Date | string;
   job: {
-    id: number | null;
+    id: string | null; // cuid string
     title: string;
     slug: string;
     description: string;
     company: {
-      id: number | null;
+      id: string | null; // cuid string
       name: string;
       logo?: string;
     };
@@ -63,7 +63,7 @@ export interface AdminApplication {
     };
   };
   resume?: {
-    id: number | null;
+    id: string | null; // cuid string
     title: string;
     fileName: string;
     filePath?: string;
@@ -140,10 +140,18 @@ export const adminService = {
   // Update application status
   updateApplicationStatus: async (applicationId: string, status: string): Promise<AdminApplication> => {
     try {
+      console.log('Calling updateApplicationStatus API:', { applicationId, status });
       const response = await api.put(`/api/admin/applications/${applicationId}/status`, { status });
+      console.log('Update status response:', response.data);
       return response.data;
     } catch (error: any) {
       console.error('Error updating application status:', error);
+      console.error('Error details:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status,
+        statusText: error?.response?.statusText
+      });
       throw error;
     }
   },

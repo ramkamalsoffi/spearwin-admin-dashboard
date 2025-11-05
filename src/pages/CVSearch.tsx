@@ -119,7 +119,7 @@ export default function CVSearch() {
       email: searchData.email || undefined,
       currentCompany: searchData.company || searchData.currentCompany || undefined,
       currentLocation: searchData.currentLocation || undefined,
-      profileType: searchData.profileType || undefined,
+      // profileType removed - status is now handled by application status filter
       skills: searchData.selectSkill || undefined,
       page: currentPage,
       limit: 10,
@@ -212,14 +212,15 @@ export default function CVSearch() {
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 lg:px-8 py-4">
+      {/* Search Form Section - Commented Out */}
+      {/* <div className="px-4 sm:px-6 lg:px-8 py-4">
         {/* Search Form Container */}
-        <div className="bg-white rounded-[10px] shadow-sm border border-gray-200">
+        {/* <div className="bg-white rounded-[10px] shadow-sm border border-gray-200">
           <div className="p-6">
             {/* Search Form Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {/* Row 1 */}
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Company
                 </label>
@@ -272,7 +273,7 @@ export default function CVSearch() {
               </div>
 
               {/* Row 2 */}
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Select Skill
                 </label>
@@ -323,7 +324,7 @@ export default function CVSearch() {
               </div>
 
               {/* Row 3 */}
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Current Company
                 </label>
@@ -360,25 +361,11 @@ export default function CVSearch() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Profile Type
-                </label>
-                <select
-                  value={searchData.profileType}
-                  onChange={(e) => handleInputChange("profileType", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">All Profile Types</option>
-                  <option value="ACTIVE">Active</option>
-                  <option value="INACTIVE">Inactive</option>
-                  <option value="PENDING">Pending</option>
-                </select>
-              </div>
-            </div>
+              {/* Profile Type dropdown removed - using application status instead */}
+            {/* </div>
 
             {/* Search Button */}
-            <div className="flex justify-center gap-3 mb-6">
+            {/* <div className="flex justify-center gap-3 mb-6">
               <button
                 onClick={handleSearch}
                 disabled={isLoading}
@@ -416,7 +403,7 @@ export default function CVSearch() {
             </div>
 
             {/* Search Results Area */}
-            <div className="border-t border-gray-200 pt-6">
+            {/* <div className="border-t border-gray-200 pt-6">
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900"></div>
@@ -507,7 +494,7 @@ export default function CVSearch() {
                   })}
                   
                   {/* Pagination */}
-                  <div className="flex items-center justify-between border-t border-gray-200 pt-4">
+                  {/* <div className="flex items-center justify-between border-t border-gray-200 pt-4">
                     <div className="text-sm text-gray-700">
                       Showing {((currentPage - 1) * 10) + 1}-{Math.min(currentPage * 10, totalResults)} of {totalResults}
                     </div>
@@ -560,7 +547,7 @@ export default function CVSearch() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* CV Status Maintenance Section */}
       <div className="px-4 sm:px-6 lg:px-8 py-4">
@@ -579,23 +566,24 @@ function CVStatusMaintenanceInline() {
   const [companyNameFilter, setCompanyNameFilter] = useState<string>("");
   const [candidateNameFilter, setCandidateNameFilter] = useState<string>("");
 
-  // Map application status to StatusBadge type
-  const mapApplicationStatus = (status: string): "active" | "inactive" | "pending" | "completed" | "cancelled" => {
-    const normalizedStatus = status?.toUpperCase() || 'APPLIED';
-    switch (normalizedStatus) {
-      case 'APPLIED':
-      case 'UNDER_REVIEW':
-        return 'pending';
-      case 'SHORTLISTED':
-      case 'INTERVIEWED':
-        return 'active';
-      case 'SELECTED':
-        return 'completed';
-      case 'REJECTED':
-        return 'cancelled';
-      default:
-        return 'pending';
-    }
+  // Map application status to StatusBadge type and get display label
+  const getApplicationStatusDisplay = (status: string): { 
+    badgeType: "active" | "inactive" | "pending" | "completed" | "cancelled";
+    label: string;
+  } => {
+    const normalizedStatus = status?.toUpperCase() || 'UNDER_REVIEW';
+    
+    const statusMap: Record<string, { badgeType: "active" | "inactive" | "pending" | "completed" | "cancelled"; label: string }> = {
+      'APPLIED': { badgeType: 'pending', label: 'Applied' },
+      'UNDER_REVIEW': { badgeType: 'pending', label: 'Under Review' },
+      'SHORTLISTED': { badgeType: 'active', label: 'Shortlisted' },
+      'INTERVIEWED': { badgeType: 'active', label: 'Interviewed' },
+      'SELECTED': { badgeType: 'completed', label: 'Selected' },
+      'REJECTED': { badgeType: 'cancelled', label: 'Rejected' },
+      'WITHDRAWN': { badgeType: 'cancelled', label: 'Withdrawn' },
+    };
+    
+    return statusMap[normalizedStatus] || { badgeType: 'pending', label: normalizedStatus.replace(/_/g, ' ') };
   };
 
   // Fetch applications with candidate details
@@ -688,10 +676,10 @@ function CVStatusMaintenanceInline() {
 
   const queryClient = useQueryClient();
 
-  // Mutation for updating application status using candidate API
+  // Mutation for updating application status using admin API
   const updateStatusMutation = useMutation({
     mutationFn: async ({ applicationId, status }: { applicationId: string; status: string }) => {
-      return candidateService.updateApplicationStatus(applicationId, status);
+      return adminService.updateApplicationStatus(applicationId, status);
     },
     onSuccess: () => {
       // Invalidate and refetch applications list
@@ -727,8 +715,15 @@ function CVStatusMaintenanceInline() {
     // For now, we'll show an error if ID is null
     if (!application.id) {
       toast.error('Cannot update status: Application ID is missing');
+      console.error('Application ID is null:', application);
       return;
     }
+    
+    console.log('Updating application status:', {
+      applicationId: application.id,
+      currentStatus: application.status,
+      newStatus: newStatus
+    });
     
     updateStatusMutation.mutate({
       applicationId: application.id.toString(),
@@ -798,7 +793,6 @@ function CVStatusMaintenanceInline() {
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Status</option>
-              <option value="APPLIED">Applied</option>
               <option value="UNDER_REVIEW">Under Review</option>
               <option value="SHORTLISTED">Shortlisted</option>
               <option value="INTERVIEWED">Interviewed</option>
@@ -927,7 +921,15 @@ function CVStatusMaintenanceInline() {
                           {application.candidate?.currentTitle || 'N/A'}
                         </td>
                 <td className="px-3 py-3 whitespace-nowrap">
-                          <StatusBadge status={mapApplicationStatus(application.status || 'APPLIED')} />
+                          {(() => {
+                            const statusDisplay = getApplicationStatusDisplay(application.status || 'APPLIED');
+                            return (
+                              <StatusBadge 
+                                status={statusDisplay.badgeType} 
+                                customLabel={statusDisplay.label}
+                              />
+                            );
+                          })()}
                 </td>
                         <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
                           {application.appliedAt ? new Date(application.appliedAt).toLocaleDateString() : 'N/A'}
@@ -945,7 +947,7 @@ function CVStatusMaintenanceInline() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
                     </button>
-                            <button
+                            {/* <button
                               onClick={() => application.candidate?.id && handleViewCandidate(application.candidate.id)}
                               className="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               title="View Candidate Profile"
@@ -954,16 +956,15 @@ function CVStatusMaintenanceInline() {
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
-                    </button>
+                    </button> */}
                             {/* Application Status Dropdown */}
                             <select
-                              value={application.status || 'APPLIED'}
+                              value={application.status || 'UNDER_REVIEW'}
                               onChange={(e) => handleStatusChange(application, e.target.value)}
                               disabled={!application.id || updateStatusMutation.isPending}
                               className="text-xs px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed bg-white min-w-[120px]"
                               title="Change Application Status"
                             >
-                              <option value="APPLIED">Applied</option>
                               <option value="UNDER_REVIEW">Under Review</option>
                               <option value="SHORTLISTED">Shortlisted</option>
                               <option value="INTERVIEWED">Interviewed</option>
@@ -971,7 +972,7 @@ function CVStatusMaintenanceInline() {
                               <option value="REJECTED">Rejected</option>
                             </select>
                             {/* Candidate Status Dropdown */}
-                            <select
+                            {/* <select
                               value={application.candidate?.status || 'PENDING_VERIFICATION'}
                               onChange={(e) => handleCandidateStatusChange(application, e.target.value)}
                               disabled={!application.candidate?.userId || updateCandidateStatusMutation.isPending}
@@ -982,7 +983,7 @@ function CVStatusMaintenanceInline() {
                               <option value="INACTIVE">Inactive</option>
                               <option value="SUSPENDED">Suspended</option>
                               <option value="PENDING_VERIFICATION">Pending Verification</option>
-                            </select>
+                            </select> */}
                   </div>
                 </td>
               </tr>
