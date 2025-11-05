@@ -16,6 +16,8 @@ export default function AddCMS() {
     otherSeoTags: ""
   });
 
+
+  
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({

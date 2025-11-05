@@ -158,4 +158,31 @@ export const adminService = {
       throw error;
     }
   },
+
+  // Update user profile (firstName, lastName, email, phone, bio, social links, address)
+  updateUserProfile: async (userId: string, profileData: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+    bio?: string;
+    linkedinUrl?: string;
+    facebookUrl?: string;
+    twitterUrl?: string;
+    instagramUrl?: string;
+    country?: string;
+    state?: string;
+    cityName?: string;
+    address?: string;
+    streetAddress?: string;
+    cityId?: number;
+  }): Promise<any> => {
+    try {
+      const response = await api.put(`/api/admin/users/${userId}/profile`, profileData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error updating user profile:', error);
+      throw error;
+    }
+  },
 };
