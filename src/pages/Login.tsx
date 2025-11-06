@@ -115,7 +115,7 @@ export default function Login() {
                       type="email"
                       value={email}
                       onChange={handleEmailChange}
-                      placeholder="superadmin3@example.com"
+                      placeholder="Enter your email"
                       className={errors.email ? "border-red-500 focus:border-red-500 focus:ring-red-200" : ""}
                     />
                     {errors.email && (
@@ -166,36 +166,6 @@ export default function Login() {
                   </div>
                 </div>
               </form>
-
-              <div className="mt-5 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0">
-                    <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-2">
-                      Test Credentials
-                    </h3>
-                    <div className="space-y-1 text-sm text-blue-700 dark:text-blue-300">
-                      <p><strong>Email:</strong> superadmin3@example.com</p>
-                      <p><strong>Password:</strong> SuperSecurePass456!</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEmail("superadmin3@example.com");
-                        setPassword("SuperSecurePass456!");
-                        setErrors({});
-                      }}
-                      className="mt-2 text-xs bg-blue-100 hover:bg-blue-200 dark:bg-blue-800 dark:hover:bg-blue-700 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-md transition-colors"
-                    >
-                      Fill Credentials
-                    </button>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>

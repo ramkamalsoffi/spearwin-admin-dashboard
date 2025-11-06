@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "react-hot-toast";
+import { useMutation } from "@tanstack/react-query";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { useTestimonialMutations } from "../hooks/useTestimonialMutations";
+import { imageUploadService } from "../services/imageUploadService";
 
 // Interactive Star Rating Component
 const StarRating = ({ 
@@ -39,15 +41,31 @@ const StarRating = ({
 
 // File Upload Component
 const FileUpload = ({ 
-  onFileSelect 
+  onFileSelect,
+  selectedFile,
+  imagePreview,
+  isUploading
 }: { 
-  onFileSelect: (file: File | null) => void; 
+  onFileSelect: (file: File | null) => void;
+  selectedFile: File | null;
+  imagePreview: string | null;
+  isUploading: boolean;
 }) => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] || null;
-    setSelectedFile(file);
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error("Please select a valid image file");
+        return;
+      }
+      
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image size should be less than 5MB");
+        return;
+      }
+    }
     onFileSelect(file);
   };
 
@@ -59,18 +77,30 @@ const FileUpload = ({
         accept="image/*"
         onChange={handleFileChange}
         className="hidden"
+        disabled={isUploading}
       />
       <label
         htmlFor="profile-picture"
-        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 transition-colors"
+        className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 transition-colors ${
+          isUploading ? 'opacity-50 cursor-not-allowed' : ''
+        }`}
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
         </svg>
-        Upload
+        {isUploading ? "Uploading..." : "Upload Image"}
       </label>
       {selectedFile && (
         <p className="text-sm text-gray-600 mt-1">{selectedFile.name}</p>
+      )}
+      {imagePreview && (
+        <div className="mt-3">
+          <img 
+            src={imagePreview} 
+            alt="Preview" 
+            className="w-32 h-32 object-cover rounded-md border border-gray-300"
+          />
+        </div>
       )}
     </div>
   );
@@ -88,6 +118,27 @@ export default function AddTestimonial() {
     rating: 5,
     isActive: true
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  // Image upload mutation
+  const uploadImageMutation = useMutation({
+    mutationFn: async (file: File) => {
+      return await imageUploadService.uploadImage(file, 'testimonials');
+    },
+    onSuccess: (imageUrl) => {
+      setFormData(prev => ({
+        ...prev,
+        imageUrl
+      }));
+      toast.success("Image uploaded successfully");
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to upload image";
+      toast.error(errorMessage);
+      console.error("Error uploading image:", error);
+    },
+  });
 
   const handleInputChange = (field: string, value: string | number | boolean) => {
     setFormData(prev => ({
@@ -97,13 +148,28 @@ export default function AddTestimonial() {
   };
 
   const handleFileSelect = (file: File | null) => {
-    setFormData(prev => ({
-      ...prev,
-      profilePicture: file
-    }));
+    setSelectedFile(file);
+    
+    if (file) {
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload image immediately
+      uploadImageMutation.mutate(file);
+    } else {
+      setImagePreview(null);
+      setFormData(prev => ({
+        ...prev,
+        imageUrl: ""
+      }));
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate required fields
@@ -129,6 +195,18 @@ export default function AddTestimonial() {
     
     if (formData.rating < 1 || formData.rating > 5) {
       toast.error("Rating must be between 1 and 5");
+      return;
+    }
+
+    // If a file was selected but upload is still in progress, wait for it
+    if (selectedFile && uploadImageMutation.isPending) {
+      toast.error("Please wait for image upload to complete");
+      return;
+    }
+
+    // If a file was selected but no imageUrl yet, wait a bit
+    if (selectedFile && !formData.imageUrl) {
+      toast.error("Please wait for image upload to complete");
       return;
     }
 
@@ -178,10 +256,26 @@ export default function AddTestimonial() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Left Column */}
               <div className="space-y-6">
-                {/* Image URL */}
+                {/* Image Upload */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Image URL
+                    Profile Picture
+                  </label>
+                  <FileUpload 
+                    onFileSelect={handleFileSelect}
+                    selectedFile={selectedFile}
+                    imagePreview={imagePreview}
+                    isUploading={uploadImageMutation.isPending}
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Upload an image or use the URL field below
+                  </p>
+                </div>
+
+                {/* Image URL (Alternative) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Image URL (Alternative)
                   </label>
                   <input
                     type="url"
@@ -190,6 +284,9 @@ export default function AddTestimonial() {
                     placeholder="https://example.com/avatar.jpg"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    If you upload an image above, this field will be auto-filled
+                  </p>
                 </div>
 
                 {/* Title */}
@@ -256,10 +353,14 @@ export default function AddTestimonial() {
                 <div className="pt-4">
                 <button
                   type="submit"
-                  disabled={createTestimonialMutation.isPending}
+                  disabled={createTestimonialMutation.isPending || uploadImageMutation.isPending}
                   className="bg-blue-900 hover:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                 >
-                  {createTestimonialMutation.isPending ? "Creating..." : "Create Testimonial"}
+                  {createTestimonialMutation.isPending 
+                    ? "Creating..." 
+                    : uploadImageMutation.isPending
+                    ? "Uploading Image..."
+                    : "Create Testimonial"}
                 </button>
                 </div>
               </div>

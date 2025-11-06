@@ -1,12 +1,80 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { testimonialService } from "../services/testimonialService";
 import { useTestimonialMutations } from "../hooks/useTestimonialMutations";
 import { Testimonial } from "../services/types";
+import { imageUploadService } from "../services/imageUploadService";
+
+// File Upload Component
+const FileUpload = ({ 
+  onFileSelect,
+  selectedFile,
+  imagePreview,
+  isUploading
+}: { 
+  onFileSelect: (file: File | null) => void;
+  selectedFile: File | null;
+  imagePreview: string | null;
+  isUploading: boolean;
+}) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error("Please select a valid image file");
+        return;
+      }
+      
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image size should be less than 5MB");
+        return;
+      }
+    }
+    onFileSelect(file);
+  };
+
+  return (
+    <div>
+      <input
+        type="file"
+        id="profile-picture"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+        disabled={isUploading}
+      />
+      <label
+        htmlFor="profile-picture"
+        className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 transition-colors ${
+          isUploading ? 'opacity-50 cursor-not-allowed' : ''
+        }`}
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+        </svg>
+        {isUploading ? "Uploading..." : "Upload Image"}
+      </label>
+      {selectedFile && (
+        <p className="text-sm text-gray-600 mt-1">{selectedFile.name}</p>
+      )}
+      {imagePreview && (
+        <div className="mt-3">
+          <img 
+            src={imagePreview} 
+            alt="Preview" 
+            className="w-32 h-32 object-cover rounded-md border border-gray-300"
+          />
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function EditTestimonial() {
   const navigate = useNavigate();
@@ -22,6 +90,8 @@ export default function EditTestimonial() {
     rating: 5,
     isActive: true
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Fetch testimonial data
   const { data: testimonialResponse, isLoading, error } = useQuery({
@@ -33,6 +103,25 @@ export default function EditTestimonial() {
     enabled: !!id,
   });
 
+  // Image upload mutation
+  const uploadImageMutation = useMutation({
+    mutationFn: async (file: File) => {
+      return await imageUploadService.uploadImage(file, 'testimonials');
+    },
+    onSuccess: (imageUrl) => {
+      setFormData(prev => ({
+        ...prev,
+        imageUrl
+      }));
+      toast.success("Image uploaded successfully");
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to upload image";
+      toast.error(errorMessage);
+      console.error("Error uploading image:", error);
+    },
+  });
+
   // Update form data when testimonial data is loaded
   useEffect(() => {
     // Handle both wrapped response (ApiResponse) and direct response
@@ -40,15 +129,20 @@ export default function EditTestimonial() {
     
     if (testimonial && testimonial.id) {
       console.log('Loading testimonial data:', testimonial);
+      const imageUrl = testimonial.imageUrl ?? "";
       setFormData({
         name: testimonial.name || "",
-        imageUrl: testimonial.imageUrl ?? "",
+        imageUrl: imageUrl,
         title: testimonial.title ?? "",
         company: testimonial.company ?? "",
         content: testimonial.content || "",
         rating: testimonial.rating ?? 5,
         isActive: testimonial.isActive ?? true
       });
+      // Set preview if image exists
+      if (imageUrl) {
+        setImagePreview(imageUrl);
+      }
     }
   }, [testimonialResponse]);
 
@@ -60,7 +154,29 @@ export default function EditTestimonial() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleFileSelect = (file: File | null) => {
+    setSelectedFile(file);
+    
+    if (file) {
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload image immediately
+      uploadImageMutation.mutate(file);
+    } else {
+      setImagePreview(null);
+      setFormData(prev => ({
+        ...prev,
+        imageUrl: ""
+      }));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate required fields
@@ -91,6 +207,18 @@ export default function EditTestimonial() {
 
     if (!id) {
       toast.error("Testimonial ID is missing");
+      return;
+    }
+
+    // If a file was selected but upload is still in progress, wait for it
+    if (selectedFile && uploadImageMutation.isPending) {
+      toast.error("Please wait for image upload to complete");
+      return;
+    }
+
+    // If a file was selected but no imageUrl yet, wait a bit
+    if (selectedFile && !formData.imageUrl) {
+      toast.error("Please wait for image upload to complete");
       return;
     }
 
@@ -178,10 +306,26 @@ export default function EditTestimonial() {
                   />
                 </div>
 
-                {/* Image URL */}
+                {/* Image Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Profile Picture
+                  </label>
+                  <FileUpload 
+                    onFileSelect={handleFileSelect}
+                    selectedFile={selectedFile}
+                    imagePreview={imagePreview}
+                    isUploading={uploadImageMutation.isPending}
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Upload an image or use the URL field below
+                  </p>
+                </div>
+
+                {/* Image URL (Alternative) */}
                 <div>
                   <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700 mb-2">
-                    Image URL
+                    Image URL (Alternative)
                   </label>
                   <input
                     type="url"
@@ -192,6 +336,9 @@ export default function EditTestimonial() {
                     placeholder="https://example.com/avatar.jpg"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    If you upload an image above, this field will be auto-filled
+                  </p>
                 </div>
 
                 {/* Title */}
@@ -295,10 +442,14 @@ export default function EditTestimonial() {
               <div className="mt-8 flex gap-4">
                 <button
                   type="submit"
-                  disabled={updateTestimonialMutation.isPending}
+                  disabled={updateTestimonialMutation.isPending || uploadImageMutation.isPending}
                   className="bg-blue-900 hover:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                 >
-                  {updateTestimonialMutation.isPending ? "Updating..." : "Update Testimonial"}
+                  {updateTestimonialMutation.isPending 
+                    ? "Updating..." 
+                    : uploadImageMutation.isPending
+                    ? "Uploading Image..."
+                    : "Update Testimonial"}
                 </button>
                 <button
                   type="button"
