@@ -11,6 +11,7 @@ import { candidateService, CVSearchQueryParams } from "../services/candidateServ
 import { companyService } from "../services/companyService";
 import { skillsService } from "../services/skillsService";
 import { adminService, AdminApplication } from "../services/adminService";
+import { FileIcon } from "../icons";
 
 export default function CVSearch() {
   const navigate = useNavigate();
@@ -630,38 +631,78 @@ function CVStatusMaintenanceInline() {
   console.log('Has Error:', applicationsError);
 
   const handleViewResume = (application: AdminApplication) => {
+    console.log('Viewing resume for application:', application);
+    console.log('Application resumeFilePath:', application.resumeFilePath);
+    console.log('Application resume object:', application.resume);
+    console.log('Application resumeId:', application.resumeId);
+    
     // Build resume URL - check multiple sources
     let resumeUrl: string | null = null;
+    let filePath: string | null = null;
     
-    // First check if resumeFilePath is already a full URL
+    // Priority 1: Check resumeFilePath on application (direct file path from application)
     if (application.resumeFilePath) {
-      if (application.resumeFilePath.startsWith('http://') || application.resumeFilePath.startsWith('https://')) {
-        resumeUrl = application.resumeFilePath;
-      } else {
-        // It's a relative path, build full URL
-        resumeUrl = `https://spearwin.sfo3.digitaloceanspaces.com/${application.resumeFilePath}`;
-      }
+      filePath = application.resumeFilePath;
+      console.log('Found resumeFilePath:', filePath);
     } 
-    // If no resumeFilePath, check resume object
-    else if (application.resume) {
-      // Check if resume has filePath (document key)
-      const resume = application.resume as any;
-      if (resume.filePath) {
-        if (resume.filePath.startsWith('http://') || resume.filePath.startsWith('https://')) {
-          resumeUrl = resume.filePath;
-        } else {
-          resumeUrl = `https://spearwin.sfo3.digitaloceanspaces.com/${resume.filePath}`;
-        }
-      } else if (resume.fileName) {
-        // Fallback: try to construct from fileName
-        resumeUrl = `https://spearwin.sfo3.digitaloceanspaces.com/documents/${resume.fileName}`;
+    // Priority 2: Check resume object's filePath
+    else if (application.resume?.filePath) {
+      filePath = application.resume.filePath;
+      console.log('Found resume.filePath:', filePath);
+    }
+    // Priority 3: Try to construct from resume fileName (fallback)
+    else if (application.resume?.fileName) {
+      // Construct path assuming documents folder
+      filePath = `documents/${application.resume.fileName}`;
+      console.log('Constructed filePath from fileName:', filePath);
+    }
+    // Priority 4: Check if resumeId exists but resume object is missing
+    else if (application.resumeId) {
+      console.warn('Resume ID exists but resume object/filePath is missing:', application.resumeId);
+      toast.error('Resume file path not found. Please contact support.');
+      return;
+    }
+    
+    // If we have a filePath, construct the full URL
+    if (filePath) {
+      // Remove leading slash if present
+      const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
+      
+      // Check if it's already a full URL
+      if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
+        resumeUrl = cleanPath;
+        console.log('Using full URL:', resumeUrl);
+      } else {
+        // Construct DigitalOcean Spaces URL
+        // Format: https://{bucket}.{region}.digitaloceanspaces.com/{key}
+        resumeUrl = `https://spearwin.sfo3.digitaloceanspaces.com/${cleanPath}`;
+        console.log('Constructed resume URL:', resumeUrl);
       }
     }
     
+    // Open the resume URL
     if (resumeUrl) {
-      window.open(resumeUrl, '_blank');
+      console.log('Opening resume URL:', resumeUrl);
+      try {
+        // Open in new tab
+        const newWindow = window.open(resumeUrl, '_blank');
+        if (!newWindow) {
+          toast.error('Please allow popups to view the resume');
+        } else {
+          toast.success('Opening resume...');
+        }
+      } catch (error) {
+        console.error('Error opening resume:', error);
+        toast.error('Failed to open resume. Please try again.');
+      }
     } else {
-      toast.error('Resume not available for this application');
+      console.error('No resume URL could be constructed');
+      console.error('Application data:', {
+        resumeFilePath: application.resumeFilePath,
+        resume: application.resume,
+        resumeId: application.resumeId,
+      });
+      toast.error('Resume not available for this application. File path is missing.');
     }
   };
 
@@ -937,15 +978,16 @@ function CVStatusMaintenanceInline() {
                         <td className="pl-3 pr-6 py-3 whitespace-nowrap">
                   <div className="flex items-center gap-2">
                             <button
-                              onClick={() => handleViewResume(application)}
-                              className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleViewResume(application);
+                              }}
+                              className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors active:scale-95 cursor-pointer"
                               title="View Resume"
-                              disabled={!application.resume && !application.resumeFilePath}
+                              type="button"
                             >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
+                              <FileIcon className="w-5 h-5" />
                     </button>
                             {/* <button
                               onClick={() => application.candidate?.id && handleViewCandidate(application.candidate.id)}
