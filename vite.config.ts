@@ -21,6 +21,15 @@ export default defineConfig({
       usePolling: true,
     },
   },
+  preview: {
+    allowedHosts: [
+      'admin.spearwin.com',
+      'localhost',
+      '127.0.0.1',
+    ],
+    host: true, // Allow external connections
+    port: 3001,
+  },
   build: {
     chunkSizeWarningLimit: 2000,
   },
