@@ -5,13 +5,11 @@ import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import { faqService, FaqQueryParams } from "../services/faqService";
-import { useFaqMutations } from "../hooks/useFaqMutations";
 import { FAQ } from "../services/types";
 import { toast } from "react-hot-toast";
 
 export default function FAQs() {
   const navigate = useNavigate();
-  const { deleteFaqMutation } = useFaqMutations();
   const [currentPage, setCurrentPage] = useState(1);
   const [orderType, setOrderType] = useState<"asc" | "desc">("desc");
   const [searchTerm, setSearchTerm] = useState("");
@@ -55,16 +53,6 @@ export default function FAQs() {
 
   const handleEdit = (faq: FAQ) => {
     navigate(`/edit-faq/${faq.id}`);
-  };
-
-  const handleDelete = (faq: FAQ) => {
-    if (window.confirm(`Are you sure you want to delete "${faq.question}"?`)) {
-      deleteFaqMutation.mutate(faq.id.toString(), {
-        onSuccess: () => {
-          refetch();
-        },
-      });
-    }
   };
 
   const handleRefresh = () => {
@@ -233,18 +221,11 @@ export default function FAQs() {
                         {new Date(faq.createdAt).toLocaleDateString()}
                       </td>
                       <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex items-center gap-2">
-                          <button className="p-1 text-blue-600 hover:text-blue-800" onClick={() => handleEdit(faq)} title="Edit FAQ">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button className="p-1 text-red-600 hover:text-red-800" onClick={() => handleDelete(faq)} title="Delete FAQ">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
+                        <button className="p-1 text-blue-600 hover:text-blue-800" onClick={() => handleEdit(faq)} title="Edit FAQ">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
                       </td>
                     </tr>
                   ))}

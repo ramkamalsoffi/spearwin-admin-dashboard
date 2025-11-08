@@ -35,6 +35,8 @@ export const useFaqMutations = () => {
       }
       // Show success toast only once
       toast.success("FAQ updated successfully!");
+      // Navigate to FAQs list page
+      navigate("/faqs");
     },
     onError: (error: any) => {
       const errorMessage = error.response?.data?.message || "Failed to update FAQ";
