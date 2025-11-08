@@ -350,10 +350,10 @@ export default function AddCompany() {
                     Company Logo
                   </label>
                   <div className="space-y-3">
-                    <input
+                  <input
                       ref={fileInputRef}
                       type="file"
-                      id="logo"
+                    id="logo"
                       accept="image/*"
                       onChange={handleFileChange}
                       className="hidden"
