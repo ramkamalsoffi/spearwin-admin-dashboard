@@ -306,12 +306,33 @@ export default function Companies() {
                     <tr key={company.id} className="hover:bg-gray-50">
                       <td className="pl-6 pr-3 py-3 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                              <span className="text-sm font-medium text-gray-700">
-                                {company.name.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
+                          <div className="flex-shrink-0 h-10 w-10 relative">
+                            {company.logo ? (
+                              <>
+                                <img 
+                                  src={company.logo} 
+                                  alt={company.name}
+                                  className="h-10 w-10 rounded-full object-cover border border-gray-200 bg-gray-100"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    const fallback = target.nextElementSibling as HTMLElement;
+                                    if (fallback) fallback.style.display = 'flex';
+                                  }}
+                                />
+                                <div className="h-10 w-10 rounded-full bg-gray-200 items-center justify-center hidden">
+                                  <span className="text-sm font-medium text-gray-700">
+                                    {company.name.charAt(0).toUpperCase()}
+                                  </span>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                <span className="text-sm font-medium text-gray-700">
+                                  {company.name.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                            )}
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900">{company.name}</div>

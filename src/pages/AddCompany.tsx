@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
@@ -7,10 +7,12 @@ import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { companyService } from "../services";
 import { locationService, Country, State, City } from "../services/locationService";
 import { CreateCompanyRequest } from "../services/types";
+import { imageUploadService } from "../services/imageUploadService";
 
 export default function AddCompany() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -31,6 +33,9 @@ export default function AddCompany() {
     isVerified: false,
     isActive: true
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   // Fetch countries
   const { data: countriesData, isLoading: countriesLoading, error: countriesError } = useQuery({
@@ -93,12 +98,79 @@ export default function AddCompany() {
     },
   });
 
+  // Image upload mutation
+  const uploadImageMutation = useMutation({
+    mutationFn: async (file: File) => {
+      return await imageUploadService.uploadImage(file, 'company-logos');
+    },
+    onSuccess: (imageUrl) => {
+      setFormData(prev => ({
+        ...prev,
+        logo: imageUrl
+      }));
+      toast.success("Logo uploaded successfully");
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to upload logo";
+      toast.error(errorMessage);
+      console.error("Error uploading logo:", error);
+      setSelectedFile(null);
+      setImagePreview(null);
+    },
+  });
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }));
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please select a valid image file");
+      return;
+    }
+
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size should be less than 5MB");
+      return;
+    }
+
+    setSelectedFile(file);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Upload image immediately
+    setIsUploadingImage(true);
+    uploadImageMutation.mutate(file, {
+      onSettled: () => {
+        setIsUploadingImage(false);
+      }
+    });
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedFile(null);
+    setImagePreview(null);
+    setFormData(prev => ({
+      ...prev,
+      logo: ""
+    }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -272,20 +344,74 @@ export default function AddCompany() {
                   />
                 </div>
 
-                {/* Logo */}
+                {/* Logo Upload */}
                 <div>
                   <label htmlFor="logo" className="block text-sm font-medium text-gray-700 mb-2">
-                    Logo URL
+                    Company Logo
                   </label>
-                  <input
-                    type="url"
-                    id="logo"
-                    name="logo"
-                    value={formData.logo}
-                    onChange={handleInputChange}
-                    placeholder="https://cdn.example.com/logo.png"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
+                  <div className="space-y-3">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      id="logo"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      disabled={isUploadingImage}
+                    />
+                    <label
+                      htmlFor="logo"
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 transition-colors ${
+                        isUploadingImage ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      {isUploadingImage ? "Uploading..." : selectedFile ? "Change Logo" : "Upload Logo"}
+                    </label>
+                    {selectedFile && (
+                      <p className="text-sm text-gray-600">{selectedFile.name}</p>
+                    )}
+                    {imagePreview && (
+                      <div className="relative inline-block">
+                        <img 
+                          src={imagePreview} 
+                          alt="Logo preview" 
+                          className="w-32 h-32 object-contain rounded-md border border-gray-300 bg-white p-2"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRemoveImage}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                          title="Remove logo"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                    {formData.logo && !imagePreview && (
+                      <div className="relative inline-block">
+                        <img 
+                          src={formData.logo} 
+                          alt="Current logo" 
+                          className="w-32 h-32 object-contain rounded-md border border-gray-300 bg-white p-2"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRemoveImage}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                          title="Remove logo"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Industry */}

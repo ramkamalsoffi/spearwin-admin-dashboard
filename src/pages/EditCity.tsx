@@ -277,12 +277,21 @@ export default function EditCity() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Status
                   </label>
-                  <DropdownInput
-                    placeholder="Select status"
-                    value={formData.isActive.toString()}
-                    onChange={(value) => handleInputChange("isActive", value === "true")}
-                    options={statusOptions}
-                  />
+                  <div className="relative">
+                    <select
+                      value={formData.isActive ? "true" : "false"}
+                      onChange={(e) => handleInputChange("isActive", e.target.value === "true")}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
+                    >
+                      <option value="true">Active</option>
+                      <option value="false">Inactive</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
