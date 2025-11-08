@@ -70,7 +70,7 @@ export default function AddJob() {
   // Job attributes state
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedAttributes, setSelectedAttributes] = useState<{[categoryId: string]: string}>({});
+  const [selectedAttributes, setSelectedAttributes] = useState<{[categoryId: string]: string[]}>({});
   const [showAttributeModal, setShowAttributeModal] = useState(false);
   const [loadingAttributes, setLoadingAttributes] = useState(false);
 
@@ -183,7 +183,7 @@ export default function AddJob() {
   const handleCategoryToggle = (categoryId: string) => {
     setSelectedCategories(prev => {
       if (prev.includes(categoryId)) {
-        // Remove category and its selected attribute
+        // Remove category and its selected attributes
         const newSelected = prev.filter(id => id !== categoryId);
         setSelectedAttributes(prevAttrs => {
           const newAttrs = { ...prevAttrs };
@@ -198,12 +198,53 @@ export default function AddJob() {
     });
   };
 
-  // Handle attribute selection
-  const handleAttributeChange = (categoryId: string, attributeId: string) => {
-    setSelectedAttributes(prev => ({
-      ...prev,
-      [categoryId]: attributeId
-    }));
+  // Handle attribute selection (multi-select with checkboxes)
+  const handleAttributeToggle = (categoryId: string, attributeId: string) => {
+    setSelectedAttributes(prev => {
+      const currentAttributes = prev[categoryId] || [];
+      if (currentAttributes.includes(attributeId)) {
+        // Remove attribute
+        return {
+          ...prev,
+          [categoryId]: currentAttributes.filter(id => id !== attributeId)
+        };
+      } else {
+        // Add attribute
+        return {
+          ...prev,
+          [categoryId]: [...currentAttributes, attributeId]
+        };
+      }
+    });
+  };
+
+  // Check if an attribute is selected
+  const isAttributeSelected = (categoryId: string, attributeId: string): boolean => {
+    return (selectedAttributes[categoryId] || []).includes(attributeId);
+  };
+
+  // Handle select all / deselect all for a category
+  const handleSelectAllAttributes = (categoryId: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    if (!category) return;
+
+    const currentSelected = selectedAttributes[categoryId] || [];
+    const allAttributeIds = category.attributes.map(attr => attr.id);
+    const allSelected = allAttributeIds.every(id => currentSelected.includes(id));
+
+    if (allSelected) {
+      // Deselect all
+      setSelectedAttributes(prev => ({
+        ...prev,
+        [categoryId]: []
+      }));
+    } else {
+      // Select all
+      setSelectedAttributes(prev => ({
+        ...prev,
+        [categoryId]: allAttributeIds
+      }));
+    }
   };
 
   // Get selected category details
@@ -630,27 +671,58 @@ export default function AddJob() {
                   <p className="mt-1 text-xs text-gray-500">Enter skills separated by commas</p>
                 </div>
 
-                {/* Selected Job Attributes */}
-                {getSelectedCategoryDetails().map((category) => (
-                  <div key={category.id} className="md:col-span-2">
-                    <label htmlFor={`attribute-${category.id}`} className="block text-sm font-medium text-gray-700 mb-2">
-                      {category.displayName}
-                    </label>
-                    <select
-                      id={`attribute-${category.id}`}
-                      value={selectedAttributes[category.id] || ""}
-                      onChange={(e) => handleAttributeChange(category.id, e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">Select {category.displayName.toLowerCase()}</option>
-                      {category.attributes.map((attribute) => (
-                        <option key={attribute.id} value={attribute.id}>
-                          {attribute.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ))}
+                {/* Selected Job Attributes - Multi-select with checkboxes */}
+                {getSelectedCategoryDetails().map((category) => {
+                  const selectedCount = (selectedAttributes[category.id] || []).length;
+                  const totalCount = category.attributes.length;
+                  const allSelected = totalCount > 0 && selectedCount === totalCount;
+                  
+                  return (
+                    <div key={category.id} className="md:col-span-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          {category.displayName}
+                          {selectedCount > 0 && (
+                            <span className="ml-2 text-xs text-gray-500">
+                              ({selectedCount} selected)
+                            </span>
+                          )}
+                        </label>
+                        {totalCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => handleSelectAllAttributes(category.id)}
+                            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                          >
+                            {allSelected ? 'Deselect All' : 'Select All'}
+                          </button>
+                        )}
+                      </div>
+                      <div className="border border-gray-300 rounded-md shadow-sm p-3 max-h-48 overflow-y-auto bg-white">
+                        {category.attributes.length === 0 ? (
+                          <p className="text-sm text-gray-500">No attributes available for this category</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {category.attributes.map((attribute) => (
+                              <label
+                                key={attribute.id}
+                                className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isAttributeSelected(category.id, attribute.id)}
+                                  onChange={() => handleAttributeToggle(category.id, attribute.id)}
+                                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                                />
+                                <span className="text-sm text-gray-700">{attribute.name}</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Submit Button */}
@@ -723,6 +795,11 @@ export default function AddJob() {
                           <h4 className="font-medium text-gray-900">{category.displayName}</h4>
                           <p className="text-sm text-gray-500">
                             {category._count.attributes} attributes available
+                            {selectedCategories.includes(category.id) && selectedAttributes[category.id] && selectedAttributes[category.id].length > 0 && (
+                              <span className="ml-2 text-blue-600 font-medium">
+                                • {selectedAttributes[category.id].length} selected
+                              </span>
+                            )}
                           </p>
                         </div>
                         <button
