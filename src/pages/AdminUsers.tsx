@@ -4,6 +4,7 @@ import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../components/ui/table";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 import api from "../utils/axios";
 
 export default function AdminUsers() {
@@ -172,7 +173,7 @@ export default function AdminUsers() {
                     <span className="text-sm font-medium text-gray-700">Filter By</span>
                   </div>
                   
-                  <div className="relative">
+                  {/* <div className="relative">
                     <select 
                       value={filterBy}
                       onChange={(e) => setFilterBy(e.target.value)}
@@ -187,7 +188,7 @@ export default function AdminUsers() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </div>
-                  </div>
+                  </div> */}
                   
                   <div className="relative">
                     <select 
@@ -226,7 +227,14 @@ export default function AdminUsers() {
 
                   <button 
                     className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-                    onClick={() => refetch()}
+                    onClick={async () => {
+                      try {
+                        await refetch();
+                        toast.success("Data refreshed successfully!");
+                      } catch (error) {
+                        toast.error("Failed to refresh data");
+                      }
+                    }}
                     title="Refresh"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
