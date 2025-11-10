@@ -15,110 +15,81 @@ export default function AdminUsers() {
   const [orderStatus, setOrderStatus] = useState("Order Status");
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Fetch admin users data from API
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, orderStatus, orderType, filterBy]);
+
+  // Build query parameters for API
+  const buildQueryParams = () => {
+    const params: any = {
+      page: currentPage,
+      limit: 10,
+    };
+
+    if (searchTerm) {
+      params.search = searchTerm;
+    }
+
+    // Map orderStatus to backend status values
+    if (orderStatus === "Active") {
+      params.status = "ACTIVE";
+    } else if (orderStatus === "Pending") {
+      params.status = "PENDING_VERIFICATION";
+    } else if (orderStatus === "Inactive") {
+      params.status = "INACTIVE";
+    }
+    // If orderStatus is "Order Status" (default), don't send status - backend will show all
+
+    // Map orderType to sortOrder
+    if (orderType === "Ascending") {
+      params.sortOrder = 'asc';
+    } else if (orderType === "Descending") {
+      params.sortOrder = 'desc';
+    }
+    // If orderType is "Order Type" (default), don't send sortOrder - backend will use default 'desc'
+
+    // Map filterBy to sortBy
+    // Backend expects field names without 'user.' prefix for nested fields
+    if (filterBy === "Name") {
+      params.sortBy = 'firstName'; // Backend will sort by firstName
+    } else if (filterBy === "Role") {
+      params.sortBy = 'role'; // Backend will map this to user.role
+    } else if (filterBy === "Date") {
+      params.sortBy = 'lastLoginAt'; // Backend will map this to user.lastLoginAt
+    } else {
+      params.sortBy = 'createdAt'; // Default
+    }
+
+    return params;
+  };
+
+  // Fetch admin users data from API with query parameters
   const { data: adminUsersResponse, isLoading, error, refetch } = useQuery({
     queryKey: ['adminUsers', currentPage, filterBy, orderType, orderStatus, searchTerm],
     queryFn: async () => {
-      const response = await api.get('/api/admin/admins');
+      const params = buildQueryParams();
+      const queryString = new URLSearchParams(
+        Object.entries(params).reduce((acc, [key, value]) => {
+          if (value !== undefined && value !== null) {
+            acc[key] = String(value);
+          }
+          return acc;
+        }, {} as Record<string, string>)
+      ).toString();
+      
+      const url = `/api/admin/admins${queryString ? `?${queryString}` : ''}`;
+      const response = await api.get(url);
       return response.data;
     },
   });
 
-  // Handle different response structures
-  let adminUsers: any[] = [];
-  
-  // Check if response is directly an array
-  if (Array.isArray(adminUsersResponse)) {
-    adminUsers = adminUsersResponse;
-  }
-  // Check if response has data property
-  else if (adminUsersResponse?.data) {
-    // If data is an array, use it directly
-    if (Array.isArray(adminUsersResponse.data)) {
-      adminUsers = adminUsersResponse.data;
-    }
-    // If data has a nested array (e.g., { data: { users: [...] } })
-    else if ((adminUsersResponse.data as any).users && Array.isArray((adminUsersResponse.data as any).users)) {
-      adminUsers = (adminUsersResponse.data as any).users;
-    }
-    // If data has a results array
-    else if ((adminUsersResponse.data as any).results && Array.isArray((adminUsersResponse.data as any).results)) {
-      adminUsers = (adminUsersResponse.data as any).results;
-    }
-    // Check for admins array
-    else if ((adminUsersResponse.data as any).admins && Array.isArray((adminUsersResponse.data as any).admins)) {
-      adminUsers = (adminUsersResponse.data as any).admins;
-    }
-    // Check for adminUsers array
-    else if ((adminUsersResponse.data as any).adminUsers && Array.isArray((adminUsersResponse.data as any).adminUsers)) {
-      adminUsers = (adminUsersResponse.data as any).adminUsers;
-    }
-    // Check for any array property in data
-    else {
-      // Try to find any array property
-      const dataObj = adminUsersResponse.data as any;
-      for (const key in dataObj) {
-        if (Array.isArray(dataObj[key])) {
-          adminUsers = dataObj[key];
-          break;
-        }
-      }
-    }
-  }
-  // If no data property, check if response itself has array properties
-  else {
-    const responseObj = adminUsersResponse as any;
-    for (const key in responseObj) {
-      if (Array.isArray(responseObj[key])) {
-        adminUsers = responseObj[key];
-        break;
-      }
-    }
-  }
-
-  const usersPerPage = 10;
-  const totalUsers = adminUsers.length;
-  const totalPages = Math.ceil(totalUsers / usersPerPage);
-
-  // Filter and sort data
-  const filteredUsers = adminUsers
-    .filter((user: any) => {
-      if (searchTerm) {
-        return user.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               user.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               user.user?.email?.toLowerCase().includes(searchTerm.toLowerCase());
-      }
-      return true;
-    })
-    .filter((user: any) => {
-      if (orderStatus === "Active") return user.user?.status === "ACTIVE";
-      if (orderStatus === "Pending") return user.user?.status === "PENDING";
-      if (orderStatus === "Inactive") return user.user?.status === "INACTIVE";
-      return true;
-    })
-    .sort((a: any, b: any) => {
-      if (filterBy === "Name") {
-        const aName = `${a.firstName} ${a.lastName}`.toLowerCase();
-        const bName = `${b.firstName} ${b.lastName}`.toLowerCase();
-        return orderType === "Ascending" ? aName.localeCompare(bName) : bName.localeCompare(aName);
-      }
-      if (filterBy === "Role") {
-        return orderType === "Ascending" ? 
-          (a.user?.role || '').localeCompare(b.user?.role || '') : 
-          (b.user?.role || '').localeCompare(a.user?.role || '');
-      }
-      if (filterBy === "Date") {
-        return orderType === "Ascending" ? 
-          new Date(a.user?.lastLoginAt || 0).getTime() - new Date(b.user?.lastLoginAt || 0).getTime() :
-          new Date(b.user?.lastLoginAt || 0).getTime() - new Date(a.user?.lastLoginAt || 0).getTime();
-      }
-      return 0;
-    });
-
-  const paginatedUsers = filteredUsers.slice(
-    (currentPage - 1) * usersPerPage,
-    currentPage * usersPerPage
-  );
+  // Extract admins and pagination info from API response
+  const adminUsers: any[] = adminUsersResponse?.admins || [];
+  const totalUsers = adminUsersResponse?.total || 0;
+  const totalPages = adminUsersResponse?.totalPages || 0;
+  const startIndex = adminUsersResponse ? (adminUsersResponse.page - 1) * adminUsersResponse.limit : 0;
+  const endIndex = adminUsersResponse ? Math.min(startIndex + adminUsersResponse.limit, totalUsers) : 0;
 
   return (
     <>
@@ -173,22 +144,7 @@ export default function AdminUsers() {
                     <span className="text-sm font-medium text-gray-700">Filter By</span>
                   </div>
                   
-                  {/* <div className="relative">
-                    <select 
-                      value={filterBy}
-                      onChange={(e) => setFilterBy(e.target.value)}
-                      className="appearance-none rounded-md px-3 py-2 pr-8 text-sm bg-white border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
-                    >
-                      <option>Date</option>
-                      <option>Name</option>
-                      <option>Role</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div> */}
+                  
                   
                   <div className="relative">
                     <select 
@@ -290,7 +246,7 @@ export default function AdminUsers() {
                       </div>
                     </td>
                   </tr>
-                ) : paginatedUsers.length === 0 ? (
+                ) : adminUsers.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-6 py-8 text-center">
                       <div className="text-gray-500">
@@ -303,7 +259,7 @@ export default function AdminUsers() {
                     </td>
                   </tr>
                 ) : (
-                  paginatedUsers.map((user: any) => {
+                  adminUsers.map((user: any) => {
                     // Use the correct nested structure from API
                     const userEmail = user.user?.email || 'N/A';
                     const userPhone = user.user?.phone || 'N/A';
@@ -374,7 +330,7 @@ export default function AdminUsers() {
           <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-700">
-                Showing {filteredUsers.length > 0 ? (currentPage - 1) * usersPerPage + 1 : 0}-{Math.min(currentPage * usersPerPage, filteredUsers.length)} of {filteredUsers.length} users
+                Showing {startIndex + 1}-{Math.min(endIndex, totalUsers)} of {totalUsers} users
               </div>
               <div className="flex items-center gap-2">
                 <button 
@@ -387,11 +343,11 @@ export default function AdminUsers() {
                   </svg>
                 </button>
                 <span className="text-sm text-gray-500">
-                  Page {currentPage} of {Math.ceil(filteredUsers.length / usersPerPage) || 1}
+                  Page {currentPage} of {totalPages || 1}
                 </span>
                 <button 
-                  onClick={() => setCurrentPage(Math.min(Math.ceil(filteredUsers.length / usersPerPage), currentPage + 1))}
-                  disabled={currentPage >= Math.ceil(filteredUsers.length / usersPerPage)}
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage >= totalPages}
                   className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

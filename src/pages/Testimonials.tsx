@@ -82,6 +82,11 @@ export default function Testimonials() {
     }
     // If orderType is "Order Type" (default), don't send sortOrder - backend will use default 'desc'
 
+    // Debug logging
+    console.log('[Frontend] buildQueryParams - orderStatus:', orderStatus);
+    console.log('[Frontend] buildQueryParams - params.isActive:', params.isActive, 'Type:', typeof params.isActive);
+    console.log('[Frontend] buildQueryParams - Full params:', params);
+
     return params;
   };
 

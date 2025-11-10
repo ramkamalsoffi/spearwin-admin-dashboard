@@ -1,15 +1,21 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
+import { useAuth } from "../context/AuthContext";
 import api from "../utils/axios";
 
 export default function EditAdminUser() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { user: currentUser } = useAuth();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Check if current user is super admin
+  const isSuperAdmin = currentUser?.role === "SUPER_ADMIN";
   
   const [formData, setFormData] = useState({
     firstName: "",
@@ -100,6 +106,8 @@ export default function EditAdminUser() {
       return response.data;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', normalizedId] });
+      queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
       toast.success("Admin user updated successfully!");
       setTimeout(() => {
         navigate("/admin-users");
@@ -111,6 +119,44 @@ export default function EditAdminUser() {
       toast.error(errorMessage);
     },
   });
+
+  // Update admin status mutation (only for super admin)
+  const updateAdminStatusMutation = useMutation({
+    mutationFn: async (status: string) => {
+      if (!normalizedId) throw new Error('Admin ID is missing');
+      
+      // Use PUT endpoint to update admin status
+      const response = await api.put(`/api/admin/admins/${normalizedId}/status`, { status });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', normalizedId] });
+      queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+      toast.success("Admin status updated successfully!");
+    },
+    onError: (error: any) => {
+      console.error("Error updating admin status:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Failed to update admin status";
+      toast.error(errorMessage);
+    },
+  });
+
+  const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newStatus = e.target.value;
+    if (newStatus === formData.status) return; // No change
+    
+    if (!isSuperAdmin) {
+      toast.error("Only super admins can change user status");
+      return;
+    }
+
+    try {
+      await updateAdminStatusMutation.mutateAsync(newStatus);
+      setFormData(prev => ({ ...prev, status: newStatus }));
+    } catch (error) {
+      // Error is handled by onError callback
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -311,19 +357,38 @@ export default function EditAdminUser() {
                   />
                 </div>
 
-                {/* Status (Read-only) */}
+                {/* Status (Editable for Super Admin) */}
                 <div>
                   <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                    Status
+                    Status {isSuperAdmin && <span className="text-red-500">*</span>}
                   </label>
-                  <input
-                    type="text"
-                    id="status"
-                    name="status"
-                    value={formData.status}
-                    disabled
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 text-gray-500 cursor-not-allowed"
-                  />
+                  {isSuperAdmin ? (
+                    <select
+                      id="status"
+                      name="status"
+                      value={formData.status}
+                      onChange={handleStatusChange}
+                      disabled={updateAdminStatusMutation.isPending}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    >
+                      <option value="ACTIVE">Active</option>
+                      <option value="INACTIVE">Inactive</option>
+                      <option value="PENDING_VERIFICATION">Pending Verification</option>
+                      <option value="SUSPENDED">Suspended</option>
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      id="status"
+                      name="status"
+                      value={formData.status}
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 text-gray-500 cursor-not-allowed"
+                    />
+                  )}
+                  {updateAdminStatusMutation.isPending && (
+                    <p className="mt-1 text-xs text-gray-500">Updating status...</p>
+                  )}
                 </div>
               </div>
 

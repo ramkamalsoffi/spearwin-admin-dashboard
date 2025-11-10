@@ -36,7 +36,10 @@ export const testimonialService = {
     if (params?.isActive !== undefined) {
       // Convert boolean to string for URLSearchParams
       // false.toString() = "false", true.toString() = "true"
-      queryParams.append('isActive', String(params.isActive));
+      const isActiveValue = String(params.isActive);
+      console.log('[Frontend Service] isActive param value:', params.isActive, 'Type:', typeof params.isActive);
+      console.log('[Frontend Service] isActive string value:', isActiveValue);
+      queryParams.append('isActive', isActiveValue);
     }
     
     if (params?.page !== undefined) {
@@ -58,7 +61,13 @@ export const testimonialService = {
     const queryString = queryParams.toString();
     const url = `/testimonials${queryString ? `?${queryString}` : ''}`;
     
+    console.log('[Frontend Service] Final URL:', url);
+    console.log('[Frontend Service] Query string:', queryString);
+    
     const response = await api.get(url);
+    console.log('[Frontend Service] Response testimonials:', response.data?.testimonials);
+    console.log('[Frontend Service] Response testimonials isActive values:', response.data?.testimonials?.map((t: any) => ({ id: t.id, isActive: t.isActive })));
+    
     return response.data;
   },
 
