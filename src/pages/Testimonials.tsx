@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../components/ui/table";
@@ -43,7 +44,7 @@ const UserInfo = ({ name, avatar }: { name: string; avatar: string }) => {
 
 export default function Testimonials() {
   const navigate = useNavigate();
-  const { deleteTestimonialMutation } = useTestimonialMutations();
+  const { deleteTestimonialMutation, toggleTestimonialStatusMutation } = useTestimonialMutations();
   const [currentPage, setCurrentPage] = useState(1);
   const [orderType, setOrderType] = useState("Order Type");
   const [orderStatus, setOrderStatus] = useState("Order Status");
@@ -66,11 +67,13 @@ export default function Testimonials() {
       params.search = searchTerm;
     }
 
+    // Only apply isActive filter when explicitly selected (not "Order Status" default)
     if (orderStatus === "Active") {
-      params.isActive = true;
+      params.isActive = true; // Show ONLY active testimonials
     } else if (orderStatus === "Inactive") {
-      params.isActive = false;
+      params.isActive = false; // Show ONLY inactive testimonials
     }
+    // If orderStatus is "Order Status" (default), don't send isActive - backend will show all
 
     if (orderType === "Ascending") {
       params.sortOrder = 'asc';
@@ -113,8 +116,19 @@ export default function Testimonials() {
     }
   };
 
-  const handleRefresh = () => {
-    refetch();
+  const handleToggleStatus = (testimonial: Testimonial) => {
+    if (testimonial.id) {
+      toggleTestimonialStatusMutation.mutate(String(testimonial.id));
+    }
+  };
+
+  const handleRefresh = async () => {
+    try {
+      await refetch();
+      toast.success("Data refreshed successfully!");
+    } catch (error) {
+      toast.error("Failed to refresh data");
+    }
   };
 
   return (
@@ -264,7 +278,21 @@ export default function Testimonials() {
                       <td className="px-3 py-3 whitespace-normal text-sm text-gray-700 leading-relaxed">{t.content}</td>
                       <td className="px-3 py-3 whitespace-nowrap"><StarRating rating={t.rating} /></td>
                       <td className="px-3 py-3 whitespace-nowrap">
-                        <StatusBadge status={t.isActive ? "active" : "inactive"} />
+                        <div className="flex items-center">
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={t.isActive}
+                              onChange={() => handleToggleStatus(t)}
+                              disabled={toggleTestimonialStatusMutation.isPending}
+                            />
+                            <div className={`relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 ${toggleTestimonialStatusMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
+                            <span className="ml-2 text-xs font-medium text-gray-700">
+                              {t.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </label>
+                        </div>
                       </td>
                       <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center gap-2">

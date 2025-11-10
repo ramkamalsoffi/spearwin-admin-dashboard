@@ -27,7 +27,38 @@ export interface TestimonialListResponse {
 export const testimonialService = {
   // Get all testimonials with query parameters
   getTestimonials: async (params?: TestimonialQueryParams): Promise<TestimonialListResponse> => {
-    const response = await api.get('/testimonials', { params });
+    const queryParams = new URLSearchParams();
+    
+    if (params?.search) {
+      queryParams.append('search', params.search);
+    }
+    
+    if (params?.isActive !== undefined) {
+      // Convert boolean to string for URLSearchParams
+      // false.toString() = "false", true.toString() = "true"
+      queryParams.append('isActive', String(params.isActive));
+    }
+    
+    if (params?.page !== undefined) {
+      queryParams.append('page', params.page.toString());
+    }
+    
+    if (params?.limit !== undefined) {
+      queryParams.append('limit', params.limit.toString());
+    }
+    
+    if (params?.sortBy) {
+      queryParams.append('sortBy', params.sortBy);
+    }
+    
+    if (params?.sortOrder) {
+      queryParams.append('sortOrder', params.sortOrder);
+    }
+    
+    const queryString = queryParams.toString();
+    const url = `/testimonials${queryString ? `?${queryString}` : ''}`;
+    
+    const response = await api.get(url);
     return response.data;
   },
 

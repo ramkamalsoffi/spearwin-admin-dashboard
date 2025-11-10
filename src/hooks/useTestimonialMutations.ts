@@ -3,6 +3,7 @@ import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router";
 import { testimonialService } from "../services/testimonialService";
 import { CreateTestimonialRequest, UpdateTestimonialRequest } from "../services/types";
+import api from "../utils/axios";
 
 export const useTestimonialMutations = () => {
   const navigate = useNavigate();
@@ -68,9 +69,28 @@ export const useTestimonialMutations = () => {
     },
   });
 
+  // Toggle testimonial status mutation
+  const toggleTestimonialStatusMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await api.put(`/testimonials/${id}/toggle-status`);
+      return response.data;
+    },
+    onSuccess: (data, id) => {
+      queryClient.invalidateQueries({ queryKey: ['testimonials'] });
+      const isActive = data?.isActive ?? false;
+      toast.success(`Testimonial ${isActive ? 'activated' : 'deactivated'} successfully`);
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || "Failed to toggle testimonial status";
+      toast.error(errorMessage);
+      console.error("Error toggling testimonial status:", error);
+    },
+  });
+
   return {
     createTestimonialMutation,
     updateTestimonialMutation,
     deleteTestimonialMutation,
+    toggleTestimonialStatusMutation,
   };
 };

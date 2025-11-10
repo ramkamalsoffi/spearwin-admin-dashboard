@@ -316,6 +316,7 @@ export interface FAQ {
 export interface CreateFAQRequest {
   question: string;
   answer: string;
+  active?: boolean;
 }
 
 export interface UpdateFAQRequest extends Partial<CreateFAQRequest> {

@@ -5,11 +5,13 @@ import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import { faqService, FaqQueryParams } from "../services/faqService";
+import { useFaqMutations } from "../hooks/useFaqMutations";
 import { FAQ } from "../services/types";
 import { toast } from "react-hot-toast";
 
 export default function FAQs() {
   const navigate = useNavigate();
+  const { toggleFaqStatusMutation } = useFaqMutations();
   const [currentPage, setCurrentPage] = useState(1);
   const [orderType, setOrderType] = useState<"asc" | "desc">("desc");
   const [searchTerm, setSearchTerm] = useState("");
@@ -53,6 +55,13 @@ export default function FAQs() {
 
   const handleEdit = (faq: FAQ) => {
     navigate(`/edit-faq/${faq.id}`);
+  };
+
+  const handleToggleStatus = (faq: FAQ) => {
+    toggleFaqStatusMutation.mutate({
+      id: String(faq.id),
+      active: !faq.active
+    });
   };
 
   const handleRefresh = () => {
@@ -209,13 +218,21 @@ export default function FAQs() {
                       <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{faq.question}</td>
                       <td className="px-3 py-3 whitespace-normal text-sm text-gray-500 leading-relaxed max-w-xs">{faq.answer}</td>
                       <td className="px-3 py-3 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                          faq.active 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {faq.active ? 'Active' : 'Inactive'}
-                        </span>
+                        <div className="flex items-center">
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={faq.active}
+                              onChange={() => handleToggleStatus(faq)}
+                              disabled={toggleFaqStatusMutation.isPending}
+                            />
+                            <div className={`relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 ${toggleFaqStatusMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
+                            <span className="ml-2 text-xs font-medium text-gray-700">
+                              {faq.active ? 'Active' : 'Inactive'}
+                            </span>
+                          </label>
+                        </div>
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
                         {new Date(faq.createdAt).toLocaleDateString()}
