@@ -193,4 +193,85 @@ export const adminService = {
       throw error;
     }
   },
+
+  // Advanced CV Search - searches within extracted resume text
+  advancedCVSearch: async (params?: {
+    keywords?: string;
+    skills?: string;
+    location?: string;
+    company?: string;
+    minExperience?: number;
+    maxExperience?: number;
+    candidateName?: string;
+    email?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    page?: string;
+    limit?: string;
+  }): Promise<AdvancedCVSearchResponse> => {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.keywords) queryParams.append('keywords', params.keywords);
+      if (params?.skills) queryParams.append('skills', params.skills);
+      if (params?.location) queryParams.append('location', params.location);
+      if (params?.company) queryParams.append('company', params.company);
+      if (params?.minExperience !== undefined) queryParams.append('minExperience', params.minExperience.toString());
+      if (params?.maxExperience !== undefined) queryParams.append('maxExperience', params.maxExperience.toString());
+      if (params?.candidateName) queryParams.append('candidateName', params.candidateName);
+      if (params?.email) queryParams.append('email', params.email);
+      if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+      if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
+      if (params?.page) queryParams.append('page', params.page);
+      if (params?.limit) queryParams.append('limit', params.limit);
+      
+      const queryString = queryParams.toString();
+      const url = `/api/admin/resumes/search/advanced${queryString ? `?${queryString}` : ''}`;
+      console.log('Advanced CV Search URL:', url);
+      const response = await api.get(url);
+      console.log('Advanced CV Search Response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error in advanced CV search:', error);
+      console.error('Error response:', error.response?.data);
+      throw error;
+    }
+  },
 };
+
+// Advanced CV Search Types
+export interface AdvancedCVSearchResult {
+  candidateId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  currentTitle?: string;
+  experienceYears?: number;
+  currentCompany?: string;
+  currentLocation?: string;
+  expectedSalary?: number;
+  skills: string[];
+  resumeId: string;
+  resumeFileName: string;
+  resumeUploadedAt: Date | string;
+  matchScore?: number;
+  matchedSnippets?: string[];
+}
+
+export interface AdvancedCVSearchResponse {
+  results: AdvancedCVSearchResult[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+  searchQuery: {
+    keywords?: string;
+    skills?: string;
+    location?: string;
+    company?: string;
+    minExperience?: number;
+    maxExperience?: number;
+  };
+}

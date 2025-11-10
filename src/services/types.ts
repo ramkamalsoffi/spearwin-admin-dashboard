@@ -61,6 +61,7 @@ export interface Job {
   company?: {
     id: string;
     name: string;
+    companyId: string; // Format: spear-{code}
     logo?: string | null;
   };
 }
@@ -212,15 +213,19 @@ export interface Company {
   id: string;
   name: string;
   slug: string;
-  description: string;
-  website: string;
+  uuid?: string;
+  companyId: string; // Format: spear-{code}
+  description?: string;
+  website?: string;
   logo?: string;
-  industry: string;
-  foundedYear: number;
-  employeeCount: string;
-  headquarters: string;
-
-  address: string;
+  industry?: string;
+  foundedYear?: number;
+  employeeCount?: string;
+  headquarters?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
   linkedinUrl?: string;
   twitterUrl?: string;
   facebookUrl?: string;
@@ -232,7 +237,7 @@ export interface Company {
 
 export interface CreateCompanyRequest {
   name: string;
-  slug: string;
+  slug?: string; // Optional - auto-generated from UUID if not provided
   description: string;
   website: string;
   logo?: string;

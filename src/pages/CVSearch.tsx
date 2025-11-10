@@ -10,7 +10,7 @@ import SearchableDropdown from "../components/ui/SearchableDropdown";
 import { candidateService, CVSearchQueryParams } from "../services/candidateService";
 import { companyService } from "../services/companyService";
 import { skillsService } from "../services/skillsService";
-import { adminService, AdminApplication } from "../services/adminService";
+import { adminService, AdminApplication, AdvancedCVSearchResult } from "../services/adminService";
 import { FileIcon } from "../icons";
 
 export default function CVSearch() {
@@ -33,6 +33,20 @@ export default function CVSearch() {
 
   const [searchTriggered, setSearchTriggered] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  
+  // Advanced Search state
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [advancedSearchData, setAdvancedSearchData] = useState({
+    keywords: "",
+    skills: "",
+    location: "",
+    company: "",
+    minExperience: "",
+    maxExperience: "",
+    candidateName: "",
+    email: "",
+  });
+  const [advancedSearchTriggered, setAdvancedSearchTriggered] = useState(false);
 
   // Debounce search terms for dropdowns
   const [companySearch, setCompanySearch] = useState("");
@@ -212,6 +226,183 @@ export default function CVSearch() {
           />
         </div>
       </div>
+
+      {/* Advanced Search Section */}
+      <div className="px-4 sm:px-6 lg:px-8 py-4">
+        <div className="bg-white rounded-[10px] shadow-sm border border-gray-200">
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Advanced CV Search</h2>
+              <button
+                onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+                className="px-4 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-800 transition-colors flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                {showAdvancedSearch ? 'Hide' : 'Show'} Advanced Search
+              </button>
+            </div>
+
+            {showAdvancedSearch && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Keywords (Resume Text)
+                    </label>
+                    <input
+                      type="text"
+                      value={advancedSearchData.keywords}
+                      onChange={(e) => setAdvancedSearchData(prev => ({ ...prev, keywords: e.target.value }))}
+                      placeholder="Search within resume text..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Search within extracted resume content</p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Skills
+                    </label>
+                    <input
+                      type="text"
+                      value={advancedSearchData.skills}
+                      onChange={(e) => setAdvancedSearchData(prev => ({ ...prev, skills: e.target.value }))}
+                      placeholder="e.g., JavaScript, React"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Location
+                    </label>
+                    <input
+                      type="text"
+                      value={advancedSearchData.location}
+                      onChange={(e) => setAdvancedSearchData(prev => ({ ...prev, location: e.target.value }))}
+                      placeholder="City or location"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Company
+                    </label>
+                    <input
+                      type="text"
+                      value={advancedSearchData.company}
+                      onChange={(e) => setAdvancedSearchData(prev => ({ ...prev, company: e.target.value }))}
+                      placeholder="Current company"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Min Experience (Years)
+                    </label>
+                    <input
+                      type="number"
+                      value={advancedSearchData.minExperience}
+                      onChange={(e) => setAdvancedSearchData(prev => ({ ...prev, minExperience: e.target.value }))}
+                      placeholder="0"
+                      min="0"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Max Experience (Years)
+                    </label>
+                    <input
+                      type="number"
+                      value={advancedSearchData.maxExperience}
+                      onChange={(e) => setAdvancedSearchData(prev => ({ ...prev, maxExperience: e.target.value }))}
+                      placeholder="20"
+                      min="0"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Candidate Name
+                    </label>
+                    <input
+                      type="text"
+                      value={advancedSearchData.candidateName}
+                      onChange={(e) => setAdvancedSearchData(prev => ({ ...prev, candidateName: e.target.value }))}
+                      placeholder="Candidate name"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={advancedSearchData.email}
+                      onChange={(e) => setAdvancedSearchData(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="candidate@email.com"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-center gap-3">
+                  <button
+                    onClick={() => {
+                      setAdvancedSearchTriggered(true);
+                      setCurrentPage(1);
+                    }}
+                    className="bg-blue-900 hover:bg-blue-800 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Search Resumes
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAdvancedSearchData({
+                        keywords: "",
+                        skills: "",
+                        location: "",
+                        company: "",
+                        minExperience: "",
+                        maxExperience: "",
+                        candidateName: "",
+                        email: "",
+                      });
+                      setAdvancedSearchTriggered(false);
+                    }}
+                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Advanced Search Results */}
+      {advancedSearchTriggered && showAdvancedSearch && (
+        <div className="px-4 sm:px-6 lg:px-8 py-4">
+          <AdvancedSearchResults 
+            searchParams={advancedSearchData}
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+          />
+        </div>
+      )}
 
       {/* Search Form Section - Commented Out */}
       {/* <div className="px-4 sm:px-6 lg:px-8 py-4">
@@ -555,6 +746,242 @@ export default function CVSearch() {
         <CVStatusMaintenanceInline />
       </div>
     </>
+  );
+}
+
+// Advanced Search Results Component
+function AdvancedSearchResults({ 
+  searchParams, 
+  currentPage, 
+  setCurrentPage 
+}: { 
+  searchParams: any; 
+  currentPage: number; 
+  setCurrentPage: (page: number) => void;
+}) {
+  const navigate = useNavigate();
+
+  // Build query params
+  const buildQueryParams = () => {
+    const params: any = {
+      page: currentPage.toString(),
+      limit: '10',
+    };
+    
+    if (searchParams.keywords) params.keywords = searchParams.keywords;
+    if (searchParams.skills) params.skills = searchParams.skills;
+    if (searchParams.location) params.location = searchParams.location;
+    if (searchParams.company) params.company = searchParams.company;
+    if (searchParams.minExperience) params.minExperience = parseInt(searchParams.minExperience);
+    if (searchParams.maxExperience) params.maxExperience = parseInt(searchParams.maxExperience);
+    if (searchParams.candidateName) params.candidateName = searchParams.candidateName;
+    if (searchParams.email) params.email = searchParams.email;
+    
+    return params;
+  };
+
+  // Check if there's at least one search parameter
+  const hasSearchParams = () => {
+    return !!(
+      searchParams.keywords ||
+      searchParams.skills ||
+      searchParams.location ||
+      searchParams.company ||
+      searchParams.minExperience ||
+      searchParams.maxExperience ||
+      searchParams.candidateName ||
+      searchParams.email
+    );
+  };
+
+  const { 
+    data: searchResults, 
+    isLoading, 
+    error,
+    refetch 
+  } = useQuery({
+    queryKey: ['advanced-cv-search', buildQueryParams()],
+    queryFn: () => adminService.advancedCVSearch(buildQueryParams()),
+    enabled: hasSearchParams(), // Only run if there are search parameters
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const results = searchResults?.results || [];
+  const total = searchResults?.total || 0;
+  const totalPages = searchResults?.totalPages || 1;
+
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-[10px] shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900"></div>
+          <span className="ml-2 text-gray-600">Searching resumes...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white rounded-[10px] shadow-sm border border-gray-200 p-6">
+        <div className="text-center py-12">
+          <p className="text-red-600 mb-2">Error searching resumes</p>
+          <p className="text-sm text-gray-500 mb-4">
+            {(error as any)?.response?.data?.message || 'Please check your connection and try again'}
+          </p>
+          <button
+            onClick={() => refetch()}
+            className="px-4 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-800"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-[10px] shadow-sm border border-gray-200">
+      <div className="px-6 py-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-medium text-gray-900">
+            Search Results ({total} found)
+          </h3>
+          <button
+            onClick={() => refetch()}
+            className="p-2 text-gray-400 hover:text-gray-600"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+        </div>
+
+        {results.length === 0 ? (
+          <div className="text-center py-12">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No resumes found</h3>
+            <p className="mt-1 text-sm text-gray-500 mb-2">
+              {searchParams.keywords 
+                ? "No resumes found with extracted text matching your keywords. Resumes need to have their text extracted first."
+                : "Try adjusting your search criteria."}
+            </p>
+            {searchParams.keywords && (
+              <p className="text-xs text-gray-400">
+                Note: Advanced search requires resumes to have extracted text content. Contact your administrator to extract text from uploaded resumes.
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {results.map((result: AdvancedCVSearchResult) => {
+              const fullName = `${result.firstName} ${result.lastName}`.trim();
+              const skills = result.skills?.join(', ') || 'N/A';
+
+              return (
+                <div key={result.candidateId} className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-blue-300 transition-colors">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Name:</span>
+                      <p className="text-sm text-gray-900 font-medium">{fullName}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Email:</span>
+                      <p className="text-sm text-gray-900">{result.email || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Current Company:</span>
+                      <p className="text-sm text-gray-900">{result.currentCompany || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Experience:</span>
+                      <p className="text-sm text-gray-900">{result.experienceYears ? `${result.experienceYears} years` : 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Location:</span>
+                      <p className="text-sm text-gray-900">{result.currentLocation || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Expected Salary:</span>
+                      <p className="text-sm text-gray-900">
+                        {result.expectedSalary ? `₹${result.expectedSalary.toLocaleString()}` : 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Current Title:</span>
+                      <p className="text-sm text-gray-900">{result.currentTitle || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Resume:</span>
+                      <p className="text-sm text-gray-900 truncate">{result.resumeFileName}</p>
+                    </div>
+                    <div className="md:col-span-2 lg:col-span-4">
+                      <span className="text-sm font-medium text-gray-500">Skills:</span>
+                      <p className="text-sm text-gray-900 line-clamp-2">{skills}</p>
+                    </div>
+                    
+                    {/* Show matched snippets if available */}
+                    {result.matchedSnippets && result.matchedSnippets.length > 0 && (
+                      <div className="md:col-span-2 lg:col-span-4">
+                        <span className="text-sm font-medium text-gray-500">Matched Content:</span>
+                        <div className="mt-2 space-y-2">
+                          {result.matchedSnippets.slice(0, 3).map((snippet, idx) => (
+                            <div key={idx} className="bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
+                              <p className="text-xs text-gray-700">{snippet}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="md:col-span-2 lg:col-span-4 flex gap-2">
+                      <button 
+                        onClick={() => navigate(`/candidate/${result.candidateId}`)}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        View Profile →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Pagination */}
+            <div className="flex items-center justify-between border-t border-gray-200 pt-4">
+              <div className="text-sm text-gray-700">
+                Showing {((currentPage - 1) * 10) + 1}-{Math.min(currentPage * 10, total)} of {total}
+              </div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1 || isLoading}
+                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <span className="text-sm text-gray-500">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button 
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages || isLoading}
+                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -956,7 +1383,7 @@ function CVStatusMaintenanceInline() {
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{application.candidate?.email || 'N/A'}</td>
                         <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{application.job?.title || 'N/A'}</td>
-                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{application.job?.company?.name || 'N/A'}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500 font-mono">{application.job?.company?.id || 'N/A'}</td>
                         <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{location}</td>
                         <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
                           {application.candidate?.currentTitle || 'N/A'}

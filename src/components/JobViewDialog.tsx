@@ -128,7 +128,7 @@ export default function JobViewDialog({ isOpen, onClose, jobId }: JobViewDialogP
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Company</label>
-                  <p className="mt-1 text-base text-gray-900">{job.company?.name || job.companyId}</p>
+                  <p className="mt-1 text-base text-gray-900 font-mono">{job.company?.companyId || job.companyId || 'N/A'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Work Mode</label>

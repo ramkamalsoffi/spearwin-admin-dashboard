@@ -15,7 +15,6 @@ export default function EditCompany() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: "",
-    slug: "",
     description: "",
     website: "",
     logo: "",
@@ -94,7 +93,6 @@ export default function EditCompany() {
     if (company) {
       setFormData({
         name: company.name || "",
-        slug: company.slug || "",
         description: company.description || "",
         website: company.website || "",
         logo: company.logo || "",
@@ -229,7 +227,6 @@ export default function EditCompany() {
     const updateData: UpdateCompanyRequest = {
       id: id,
       name: formData.name.trim(),
-      slug: formData.slug.trim(),
       description: formData.description.trim(),
       website: formData.website.trim(),
       logo: formData.logo || undefined,
@@ -319,8 +316,8 @@ export default function EditCompany() {
               <h1 className="text-xl font-semibold text-gray-900 mb-6">Edit Company</h1>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Company Name */}
-                <div>
+                {/* Company Name with Company ID */}
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Company Name <span className="text-red-500">*</span>
                   </label>
@@ -333,6 +330,22 @@ export default function EditCompany() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
+                  {/* Company ID - shown below company name */}
+                  {company && company.companyId && (
+                    <div className="mt-2">
+                      <label className="block text-xs font-medium text-gray-500 mb-1">
+                        Company ID
+                      </label>
+                      <input
+                        type="text"
+                        value={company.companyId}
+                        readOnly
+                        disabled
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-blue-50 text-blue-700 font-mono text-sm cursor-not-allowed"
+                        title="Company ID cannot be changed"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Industry */}

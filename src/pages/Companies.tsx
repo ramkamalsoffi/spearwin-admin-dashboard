@@ -5,6 +5,7 @@ import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../components/ui/table";
+import CompanyViewDialog from "../components/CompanyViewDialog";
 import { companyService } from "../services/companyService";
 import { Company } from "../services/types";
 import api from "../utils/axios";
@@ -18,6 +19,8 @@ export default function Companies() {
   const [orderType, setOrderType] = useState("asc");
   const [orderStatus, setOrderStatus] = useState("All");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 
   // Debounce search term
   useEffect(() => {
@@ -129,6 +132,11 @@ export default function Companies() {
 
   const handleEdit = (company: Company) => {
     navigate(`/edit-company/${company.id}`);
+  };
+
+  const handleView = (company: Company) => {
+    setSelectedCompanyId(company.id);
+    setIsViewDialogOpen(true);
   };
 
   const handleDelete = (company: Company) => {
@@ -278,8 +286,10 @@ export default function Companies() {
             <Table className="w-full min-w-[700px]">
               <TableHeader>
                 <TableRow className="bg-blue-50 mx-4">
-                  <TableCell isHeader className="rounded-l-[20px] pl-6 pr-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Company</TableCell>
+                  <TableCell isHeader className="rounded-l-[20px] pl-6 pr-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Company ID</TableCell>
                   <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Industry</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Headquarters</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Employee Count</TableCell>
                   <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Website</TableCell>
                   <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Status</TableCell>
                   <TableCell isHeader className="rounded-r-[20px] pl-3 pr-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wide">Action</TableCell>
@@ -288,7 +298,7 @@ export default function Companies() {
               <TableBody className="bg-white divide-y divide-gray-200">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center">
+                    <td colSpan={7} className="px-6 py-8 text-center">
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-900"></div>
                         <span className="ml-2 text-gray-600">Loading companies...</span>
@@ -297,7 +307,7 @@ export default function Companies() {
                   </tr>
                 ) : companies.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
                       {searchTerm ? 'No companies found matching your search' : 'No companies found'}
                     </td>
                   </tr>
@@ -311,7 +321,7 @@ export default function Companies() {
                               <>
                                 <img 
                                   src={company.logo} 
-                                  alt={company.name}
+                                  alt={company.companyId || company.name}
                                   className="h-10 w-10 rounded-full object-cover border border-gray-200 bg-gray-100"
                                   onError={(e) => {
                                     const target = e.target as HTMLImageElement;
@@ -322,24 +332,27 @@ export default function Companies() {
                                 />
                                 <div className="h-10 w-10 rounded-full bg-gray-200 items-center justify-center hidden">
                                   <span className="text-sm font-medium text-gray-700">
-                                    {company.name.charAt(0).toUpperCase()}
+                                    {(company.companyId || company.name).charAt(0).toUpperCase()}
                                   </span>
                                 </div>
                               </>
                             ) : (
                               <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
                                 <span className="text-sm font-medium text-gray-700">
-                                  {company.name.charAt(0).toUpperCase()}
+                                  {(company.companyId || company.name).charAt(0).toUpperCase()}
                                 </span>
                               </div>
                             )}
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{company.name}</div>
+                            <div className="text-sm font-medium text-gray-900 font-mono">{company.companyId || 'N/A'}</div>
+                            <div className="text-xs text-gray-500 mt-0.5">{company.name}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{company.industry}</td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{company.industry || 'N/A'}</td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{company.headquarters || 'N/A'}</td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{company.employeeCount || 'N/A'}</td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{company.website || 'N/A'}</td>
                       <td className="px-3 py-3 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
@@ -352,6 +365,16 @@ export default function Companies() {
                       </td>
                       <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center gap-3">
+                          <button 
+                            className="p-1 text-green-600 hover:text-green-800" 
+                            onClick={() => handleView(company)}
+                            title="View company details"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
                           <button className="p-1 text-blue-600 hover:text-blue-800" onClick={() => handleEdit(company)}>
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -416,6 +439,16 @@ export default function Companies() {
           </div>
         </div>
       </div>
+
+      {/* Company View Dialog */}
+      <CompanyViewDialog
+        isOpen={isViewDialogOpen}
+        onClose={() => {
+          setIsViewDialogOpen(false);
+          setSelectedCompanyId(null);
+        }}
+        companyId={selectedCompanyId}
+      />
     </>
   );
 }

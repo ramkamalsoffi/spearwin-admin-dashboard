@@ -62,7 +62,12 @@ export const companyService = {
   // Create new company (ADMIN+)
   createCompany: async (companyData: CreateCompanyRequest): Promise<ApiResponse<Company>> => {
     const response = await api.post('/companies', companyData);
-    return response.data;
+    // Backend returns company object directly, wrap it in ApiResponse format
+    return {
+      success: true,
+      data: response.data,
+      message: 'Company created successfully'
+    };
   },
 
   // Update company
