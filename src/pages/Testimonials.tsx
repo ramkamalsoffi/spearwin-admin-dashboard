@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import PageMeta from "../components/common/PageMeta";
@@ -49,56 +49,55 @@ export default function Testimonials() {
   const [orderStatus, setOrderStatus] = useState("Order Status");
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Fetch testimonials data from API
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, orderStatus, orderType]);
+
+  // Build query parameters for API
+  const buildQueryParams = () => {
+    const params: any = {
+      page: currentPage,
+      limit: 10,
+      sortBy: 'createdAt',
+    };
+
+    if (searchTerm) {
+      params.search = searchTerm;
+    }
+
+    if (orderStatus === "Active") {
+      params.isActive = true;
+    } else if (orderStatus === "Inactive") {
+      params.isActive = false;
+    }
+
+    if (orderType === "Ascending") {
+      params.sortOrder = 'asc';
+    } else if (orderType === "Descending") {
+      params.sortOrder = 'desc';
+    }
+    // If orderType is "Order Type" (default), don't send sortOrder - backend will use default 'desc'
+
+    return params;
+  };
+
+  // Fetch testimonials data from API with query parameters
   const { data: testimonialsResponse, isLoading, error, refetch } = useQuery({
     queryKey: ['testimonials', currentPage, orderType, orderStatus, searchTerm],
     queryFn: async () => {
-      const response = await testimonialService.getTestimonials();
+      const params = buildQueryParams();
+      const response = await testimonialService.getTestimonials(params);
       return response;
     },
   });
 
-  // Extract testimonials from response - handle the specific API structure
-  let testimonials: Testimonial[] = [];
-  
-  if (testimonialsResponse && typeof testimonialsResponse === 'object') {
-    const responseObj = testimonialsResponse as any;
-    if (responseObj.testimonials && Array.isArray(responseObj.testimonials)) {
-      testimonials = responseObj.testimonials;
-    } else if (Array.isArray(responseObj.data)) {
-      testimonials = responseObj.data;
-    } else if (Array.isArray(responseObj)) {
-      testimonials = responseObj;
-    }
-  } else if (Array.isArray(testimonialsResponse)) {
-    testimonials = testimonialsResponse;
-  }
-
-  // Filter and sort testimonials
-  const filteredTestimonials = testimonials
-    .filter((testimonial: Testimonial) => {
-      if (searchTerm) {
-        return testimonial.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               testimonial.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               testimonial.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               testimonial.content?.toLowerCase().includes(searchTerm.toLowerCase());
-      }
-      return true;
-    })
-    .filter((testimonial: Testimonial) => {
-      if (orderStatus === "Active") return testimonial.isActive === true;
-      if (orderStatus === "Inactive") return testimonial.isActive === false;
-      return true;
-    });
-
-  const totalTestimonials = filteredTestimonials.length;
-  const testimonialsPerPage = 10;
-  const totalPages = Math.ceil(totalTestimonials / testimonialsPerPage);
-
-  // Get paginated testimonials
-  const startIndex = (currentPage - 1) * testimonialsPerPage;
-  const endIndex = startIndex + testimonialsPerPage;
-  const paginatedTestimonials = filteredTestimonials.slice(startIndex, endIndex);
+  // Extract testimonials and pagination info from API response
+  const testimonials: Testimonial[] = testimonialsResponse?.testimonials || [];
+  const totalTestimonials = testimonialsResponse?.total || 0;
+  const totalPages = testimonialsResponse?.totalPages || 0;
+  const startIndex = testimonialsResponse ? (testimonialsResponse.page - 1) * testimonialsResponse.limit : 0;
+  const endIndex = testimonialsResponse ? Math.min(startIndex + testimonialsResponse.limit, totalTestimonials) : 0;
 
   // render filters inline to match standardized layout
 
@@ -241,7 +240,7 @@ export default function Testimonials() {
                       </div>
                     </td>
                   </tr>
-                ) : paginatedTestimonials.length === 0 ? (
+                ) : testimonials.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center">
                       <div className="text-gray-500">
@@ -251,7 +250,7 @@ export default function Testimonials() {
                     </td>
                   </tr>
                 ) : (
-                  paginatedTestimonials.map((t) => (
+                  testimonials.map((t) => (
                     <tr key={t.id} className="hover:bg-gray-50">
                       <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm font-medium text-gray-500">
                         <UserInfo name={t.name} avatar={t.imageUrl} />

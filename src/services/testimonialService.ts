@@ -1,10 +1,33 @@
 import api from '../utils/axios';
 import { ApiResponse, Testimonial, CreateTestimonialRequest, UpdateTestimonialRequest } from './types';
 
+export interface TestimonialQueryParams {
+  search?: string;
+  isActive?: boolean;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface TestimonialListResponse {
+  testimonials: Testimonial[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  statistics: {
+    totalTestimonials: number;
+    activeTestimonials: number;
+    inactiveTestimonials: number;
+    averageRating: number;
+  };
+}
+
 export const testimonialService = {
-  // Get all testimonials
-  getTestimonials: async (): Promise<ApiResponse<Testimonial[]>> => {
-    const response = await api.get('/testimonials');
+  // Get all testimonials with query parameters
+  getTestimonials: async (params?: TestimonialQueryParams): Promise<TestimonialListResponse> => {
+    const response = await api.get('/testimonials', { params });
     return response.data;
   },
 
