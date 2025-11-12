@@ -84,5 +84,42 @@ export const imageUploadService = {
       data: { imageUrl },
     });
   },
+
+  /**
+   * Upload a single document file (PDF, DOC, DOCX, TXT)
+   * @param file - The document file to upload
+   * @param folder - Optional folder name (default: 'documents')
+   * @returns Promise with document URL
+   */
+  uploadDocument: async (file: File, folder: string = 'documents'): Promise<string> => {
+    const formData = new FormData();
+    formData.append('document', file);
+
+    const response = await api.post<{
+      success: boolean;
+      message: string;
+      data: {
+        documentUrl: string;
+        documentKey?: string;
+        originalName: string;
+        size: number;
+        mimeType: string;
+      };
+    }>(
+      `/file-upload/document/single?folder=${folder}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+
+    if (response.data.success) {
+      return response.data.data.documentUrl || response.data.data.documentKey || '';
+    }
+
+    throw new Error(response.data.message || 'Failed to upload document');
+  },
 };
 
