@@ -809,8 +809,8 @@ export default function AddProfile() {
                   />
                 </div>
 
-                {/* National ID Card */}
-                <div>
+                {/* National ID Card - Commented out */}
+                {/* <div>
                   <label htmlFor="nationalIdCard" className="block text-sm font-medium text-gray-700 mb-2">
                     National ID Card#
                   </label>
@@ -823,7 +823,7 @@ export default function AddProfile() {
                     placeholder="Enter card no"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
-                </div>
+                </div> */}
 
 
                 {/* Functional Area */}
@@ -847,8 +847,8 @@ export default function AddProfile() {
                   </select>
                 </div>
 
-                {/* Subscribe to Job Alert */}
-                <div>
+                {/* Subscribe to Job Alert - Commented out */}
+                {/* <div>
                   <label htmlFor="subscribeToJobAlert" className="block text-sm font-medium text-gray-700 mb-2">
                     Subscribe to Job Alert
                   </label>
@@ -863,10 +863,10 @@ export default function AddProfile() {
                     <option value="Yes">Yes</option>
                     <option value="No">No</option>
                   </select>
-                </div>
+                </div> */}
 
-                {/* Comments/Remarks */}
-                <div>
+                {/* Comments/Remarks - Commented out */}
+                {/* <div>
                   <label htmlFor="commentsRemarks" className="block text-sm font-medium text-gray-700 mb-2">
                     Comments/Remarks
                   </label>
@@ -879,7 +879,7 @@ export default function AddProfile() {
                     placeholder="Comments/Remarks"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
-                </div>
+                </div> */}
 
                 {/* Salary Currency */}
                 <div>
