@@ -7,7 +7,7 @@ import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../components/ui/table";
 import StatusBadge from "../components/ui/status-badge/StatusBadge";
 import SearchableDropdown from "../components/ui/SearchableDropdown";
-import { candidateService, CVSearchQueryParams } from "../services/candidateService";
+import { candidateService, CVSearchQueryParams, CandidateProfile } from "../services/candidateService";
 import { companyService } from "../services/companyService";
 import { skillsService } from "../services/skillsService";
 import { adminService, AdminApplication, AdvancedCVSearchResult } from "../services/adminService";
@@ -761,6 +761,39 @@ function AdvancedSearchResults({
 }) {
   const navigate = useNavigate();
 
+  // Fetch all applications to get candidate IDs who have applied
+  const { data: applicationsData } = useQuery({
+    queryKey: ['all-applications-for-filter'],
+    queryFn: async () => {
+      try {
+        // Fetch all applications (with a high limit to get all unique candidates)
+        const result = await adminService.getAllApplications({
+          page: '1',
+          limit: '1000', // High limit to get all applications
+        });
+        return result;
+      } catch (error) {
+        console.error('Error fetching applications for filter:', error);
+        return { applications: [] };
+      }
+    },
+    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
+  });
+
+  // Extract unique candidate IDs who have applied
+  const candidateIdsWithApplications = new Set<string>();
+  if (applicationsData?.applications) {
+    applicationsData.applications.forEach((app: AdminApplication) => {
+      if (app.candidateId) {
+        candidateIdsWithApplications.add(app.candidateId);
+      }
+      // Also check if candidate object has userId
+      if (app.candidate?.userId) {
+        candidateIdsWithApplications.add(app.candidate.userId);
+      }
+    });
+  }
+
   // Build query params
   const buildQueryParams = () => {
     const params: any = {
@@ -806,9 +839,19 @@ function AdvancedSearchResults({
     staleTime: 5 * 60 * 1000,
   });
 
-  const results = searchResults?.results || [];
-  const total = searchResults?.total || 0;
-  const totalPages = searchResults?.totalPages || 1;
+  // Filter results to only show candidates who have applied
+  const allResults = searchResults?.results || [];
+  const filteredResults = allResults.filter((result: AdvancedCVSearchResult) => {
+    // Check if candidateId is in the set of candidates who have applied
+    return candidateIdsWithApplications.has(result.candidateId);
+  });
+
+  // Calculate pagination for filtered results
+  const total = filteredResults.length;
+  const totalPages = Math.ceil(total / 10);
+  const startIndex = (currentPage - 1) * 10;
+  const endIndex = startIndex + 10;
+  const paginatedResults = filteredResults.slice(startIndex, endIndex);
 
   if (isLoading) {
     return (
@@ -845,7 +888,7 @@ function AdvancedSearchResults({
       <div className="px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-gray-900">
-            Search Results ({total} found)
+            Search Results ({total} candidates who have applied)
           </h3>
           <button
             onClick={() => refetch()}
@@ -857,26 +900,26 @@ function AdvancedSearchResults({
           </button>
         </div>
 
-        {results.length === 0 ? (
+        {paginatedResults.length === 0 ? (
           <div className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No resumes found</h3>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No candidates found</h3>
             <p className="mt-1 text-sm text-gray-500 mb-2">
               {searchParams.keywords 
-                ? "No resumes found with extracted text matching your keywords. Resumes need to have their text extracted first."
-                : "Try adjusting your search criteria."}
+                ? "No candidates who have applied found with extracted text matching your keywords. Resumes need to have their text extracted first."
+                : "No candidates who have applied match your search criteria. Try adjusting your filters."}
             </p>
             {searchParams.keywords && (
               <p className="text-xs text-gray-400">
-                Note: Advanced search requires resumes to have extracted text content. Contact your administrator to extract text from uploaded resumes.
+                Note: Advanced search requires resumes to have extracted text content. Only candidates who have applied for jobs are shown.
               </p>
             )}
           </div>
         ) : (
           <div className="space-y-4">
-            {results.map((result: AdvancedCVSearchResult) => {
+            {paginatedResults.map((result: AdvancedCVSearchResult) => {
               const fullName = `${result.firstName} ${result.lastName}`.trim();
               const skills = result.skills?.join(', ') || 'N/A';
 
@@ -950,34 +993,36 @@ function AdvancedSearchResults({
             })}
 
             {/* Pagination */}
-            <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-              <div className="text-sm text-gray-700">
-                Showing {((currentPage - 1) * 10) + 1}-{Math.min(currentPage * 10, total)} of {total}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between border-t border-gray-200 pt-4">
+                <div className="text-sm text-gray-700">
+                  Showing {startIndex + 1}-{Math.min(endIndex, total)} of {total}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1 || isLoading}
+                    className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <span className="text-sm text-gray-500">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button 
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages || isLoading}
+                    className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1 || isLoading}
-                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <span className="text-sm text-gray-500">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button 
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages || isLoading}
-                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+            )}
           </div>
         )}
       </div>
@@ -985,235 +1030,14 @@ function AdvancedSearchResults({
   );
 }
 
-// Applications List Section - Shows candidates who applied for jobs
+// All Candidates List Section - Shows all candidate users with their details
 function CVStatusMaintenanceInline() {
   const navigate = useNavigate();
-  const [applicationsPage, setApplicationsPage] = useState(1);
+  const [candidatesPage, setCandidatesPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>("");
-  const [jobTitleFilter, setJobTitleFilter] = useState<string>("");
-  const [companyNameFilter, setCompanyNameFilter] = useState<string>("");
   const [candidateNameFilter, setCandidateNameFilter] = useState<string>("");
-
-  // Map application status to StatusBadge type and get display label
-  const getApplicationStatusDisplay = (status: string): { 
-    badgeType: "active" | "inactive" | "pending" | "completed" | "cancelled";
-    label: string;
-  } => {
-    const normalizedStatus = status?.toUpperCase() || 'UNDER_REVIEW';
-    
-    const statusMap: Record<string, { badgeType: "active" | "inactive" | "pending" | "completed" | "cancelled"; label: string }> = {
-      'APPLIED': { badgeType: 'pending', label: 'Applied' },
-      'UNDER_REVIEW': { badgeType: 'pending', label: 'Under Review' },
-      'SHORTLISTED': { badgeType: 'active', label: 'Shortlisted' },
-      'INTERVIEWED': { badgeType: 'active', label: 'Interviewed' },
-      'SELECTED': { badgeType: 'completed', label: 'Selected' },
-      'REJECTED': { badgeType: 'cancelled', label: 'Rejected' },
-      'WITHDRAWN': { badgeType: 'cancelled', label: 'Withdrawn' },
-    };
-    
-    return statusMap[normalizedStatus] || { badgeType: 'pending', label: normalizedStatus.replace(/_/g, ' ') };
-  };
-
-  // Fetch applications with candidate details
-  const { 
-    data: applicationsData, 
-    isLoading: applicationsLoading, 
-    error: applicationsError,
-    refetch: refetchApplications 
-  } = useQuery({
-    queryKey: ['admin-applications', applicationsPage, statusFilter, jobTitleFilter, companyNameFilter, candidateNameFilter],
-    queryFn: async () => {
-      try {
-        const result = await adminService.getAllApplications({
-          page: applicationsPage.toString(),
-          limit: '10',
-          status: statusFilter || undefined,
-          jobTitle: jobTitleFilter || undefined,
-          companyName: companyNameFilter || undefined,
-          candidateName: candidateNameFilter || undefined,
-        });
-        console.log('Applications data:', result);
-        return result;
-      } catch (error) {
-        console.error('Error fetching applications:', error);
-        toast.error('Failed to load applications');
-        throw error;
-      }
-    },
-    staleTime: 5 * 60 * 1000,
-    retry: 1,
-    enabled: true, // Always enable the query
-  });
-
-  // Handle response data - ensure we extract it correctly
-  const applications = applicationsData?.applications || [];
-  const totalApplications = applicationsData?.total || 0;
-  const totalPages = applicationsData?.totalPages || 1;
-  
-  console.log('Full applications response:', applicationsData);
-  console.log('Applications array:', applications);
-  console.log('Applications count:', applications.length);
-  console.log('Total applications:', totalApplications);
-  console.log('Is Loading:', applicationsLoading);
-  console.log('Has Error:', applicationsError);
-
-  const handleViewResume = (application: AdminApplication) => {
-    console.log('Viewing resume for application:', application);
-    console.log('Application resumeFilePath:', application.resumeFilePath);
-    console.log('Application resume object:', application.resume);
-    console.log('Application resumeId:', application.resumeId);
-    
-    // Build resume URL - check multiple sources
-    let resumeUrl: string | null = null;
-    let filePath: string | null = null;
-    
-    // Priority 1: Check resumeFilePath on application (direct file path from application)
-    if (application.resumeFilePath) {
-      filePath = application.resumeFilePath;
-      console.log('Found resumeFilePath:', filePath);
-    } 
-    // Priority 2: Check resume object's filePath
-    else if (application.resume?.filePath) {
-      filePath = application.resume.filePath;
-      console.log('Found resume.filePath:', filePath);
-    }
-    // Priority 3: Try to construct from resume fileName (fallback)
-    else if (application.resume?.fileName) {
-      // Construct path assuming documents folder
-      filePath = `documents/${application.resume.fileName}`;
-      console.log('Constructed filePath from fileName:', filePath);
-    }
-    // Priority 4: Check if resumeId exists but resume object is missing
-    else if (application.resumeId) {
-      console.warn('Resume ID exists but resume object/filePath is missing:', application.resumeId);
-      toast.error('Resume file path not found. Please contact support.');
-      return;
-    }
-    
-    // If we have a filePath, construct the full URL
-    if (filePath) {
-      // Remove leading slash if present
-      const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
-      
-      // Check if it's already a full URL
-      if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
-        resumeUrl = cleanPath;
-        console.log('Using full URL:', resumeUrl);
-      } else {
-        // Construct DigitalOcean Spaces URL
-        // Format: https://{bucket}.{region}.digitaloceanspaces.com/{key}
-        resumeUrl = `https://spearwin.sfo3.digitaloceanspaces.com/${cleanPath}`;
-        console.log('Constructed resume URL:', resumeUrl);
-      }
-    }
-    
-    // Open the resume URL
-    if (resumeUrl) {
-      console.log('Opening resume URL:', resumeUrl);
-      try {
-        // Open in new tab
-        const newWindow = window.open(resumeUrl, '_blank');
-        if (!newWindow) {
-          toast.error('Please allow popups to view the resume');
-        } else {
-          toast.success('Opening resume...');
-        }
-      } catch (error) {
-        console.error('Error opening resume:', error);
-        toast.error('Failed to open resume. Please try again.');
-      }
-    } else {
-      console.error('No resume URL could be constructed');
-      console.error('Application data:', {
-        resumeFilePath: application.resumeFilePath,
-        resume: application.resume,
-        resumeId: application.resumeId,
-      });
-      toast.error('Resume not available for this application. File path is missing.');
-    }
-  };
-
-  const handleViewCandidate = (candidateId: string) => {
-    navigate(`/candidate/${candidateId}`);
-  };
-
-  const handleRefresh = () => {
-    refetchApplications();
-    toast.success('Applications refreshed');
-  };
-
-  const queryClient = useQueryClient();
-
-  // Mutation for updating application status using admin API
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ applicationId, status }: { applicationId: string; status: string }) => {
-      return adminService.updateApplicationStatus(applicationId, status);
-    },
-    onSuccess: () => {
-      // Invalidate and refetch applications list
-      queryClient.invalidateQueries({ queryKey: ['admin-applications'] });
-      toast.success('Application status updated successfully');
-    },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.message || 'Failed to update application status';
-      toast.error(errorMessage);
-      console.error('Error updating status:', error);
-    },
-  });
-
-  // Mutation for updating candidate/user status
-  const updateCandidateStatusMutation = useMutation({
-    mutationFn: async ({ userId, status }: { userId: string; status: string }) => {
-      return adminService.updateUserStatus(userId, status);
-    },
-    onSuccess: () => {
-      // Invalidate and refetch applications list
-      queryClient.invalidateQueries({ queryKey: ['admin-applications'] });
-      toast.success('Candidate status updated successfully');
-    },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.message || 'Failed to update candidate status';
-      toast.error(errorMessage);
-      console.error('Error updating candidate status:', error);
-    },
-  });
-
-  const handleStatusChange = (application: AdminApplication, newStatus: string) => {
-    // Since API returns null IDs, we need to handle this
-    // For now, we'll show an error if ID is null
-    if (!application.id) {
-      toast.error('Cannot update status: Application ID is missing');
-      console.error('Application ID is null:', application);
-      return;
-    }
-    
-    console.log('Updating application status:', {
-      applicationId: application.id,
-      currentStatus: application.status,
-      newStatus: newStatus
-    });
-    
-    updateStatusMutation.mutate({
-      applicationId: application.id.toString(),
-      status: newStatus,
-    });
-  };
-
-  const handleCandidateStatusChange = (application: AdminApplication, newStatus: string) => {
-    // Get userId from candidate - we need to fetch it if not available
-    // The backend should include userId in the candidate response
-    const userId = application.candidate?.userId;
-    
-    if (!userId) {
-      toast.error('Cannot update candidate status: User ID is missing');
-      return;
-    }
-    
-    updateCandidateStatusMutation.mutate({
-      userId: userId,
-      status: newStatus,
-    });
-  };
+  const [emailFilter, setEmailFilter] = useState<string>("");
+  const [companyFilter, setCompanyFilter] = useState<string>("");
 
   // Map user status to StatusBadge type
   const mapUserStatus = (status: string): "active" | "inactive" | "pending" | "completed" | "cancelled" => {
@@ -1232,14 +1056,141 @@ function CVStatusMaintenanceInline() {
     }
   };
 
+  // Fetch all candidates
+  const { 
+    data: candidatesData, 
+    isLoading: candidatesLoading, 
+    error: candidatesError,
+    refetch: refetchCandidates 
+  } = useQuery({
+    queryKey: ['all-candidates', candidatesPage, statusFilter, candidateNameFilter, emailFilter, companyFilter],
+    queryFn: async () => {
+      try {
+        const result = await candidateService.searchCandidates({
+          search: candidateNameFilter || undefined,
+          email: emailFilter || undefined,
+          currentCompany: companyFilter || undefined,
+          page: candidatesPage,
+          limit: 10,
+          sortBy: 'createdAt',
+          sortOrder: 'desc',
+        });
+        console.log('Candidates data:', result);
+        return result;
+      } catch (error) {
+        console.error('Error fetching candidates:', error);
+        toast.error('Failed to load candidates');
+        throw error;
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+    enabled: true, // Always enable the query
+  });
+
+  // Handle response data
+  const candidates = candidatesData?.candidates || [];
+  const totalCandidates = candidatesData?.total || 0;
+  const totalPages = candidatesData?.totalPages || 1;
+  
+  console.log('Full candidates response:', candidatesData);
+  console.log('Candidates array:', candidates);
+  console.log('Candidates count:', candidates.length);
+  console.log('Total candidates:', totalCandidates);
+  console.log('Is Loading:', candidatesLoading);
+  console.log('Has Error:', candidatesError);
+
+  const handleViewResume = (candidate: CandidateProfile) => {
+    // Get the first resume if available
+    const resume = candidate.resumes?.[0];
+    if (!resume) {
+      toast.error('No resume available for this candidate');
+      return;
+    }
+    
+    // Build resume URL
+    let resumeUrl: string | null = null;
+    const fileUrl = resume.fileUrl;
+    
+    if (fileUrl) {
+      // Check if it's already a full URL
+      if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+        resumeUrl = fileUrl;
+      } else {
+        // Construct DigitalOcean Spaces URL
+        const cleanPath = fileUrl.startsWith('/') ? fileUrl.slice(1) : fileUrl;
+        resumeUrl = `https://spearwin.sfo3.digitaloceanspaces.com/${cleanPath}`;
+      }
+    }
+    
+    // Open the resume URL
+    if (resumeUrl) {
+      try {
+        const newWindow = window.open(resumeUrl, '_blank');
+        if (!newWindow) {
+          toast.error('Please allow popups to view the resume');
+        } else {
+          toast.success('Opening resume...');
+        }
+      } catch (error) {
+        console.error('Error opening resume:', error);
+        toast.error('Failed to open resume. Please try again.');
+      }
+    } else {
+      toast.error('Resume URL not available');
+    }
+  };
+
+  const handleViewCandidate = (candidateId: string) => {
+    navigate(`/candidate/${candidateId}`);
+  };
+
+  const handleRefresh = () => {
+    refetchCandidates();
+    toast.success('Candidates refreshed');
+  };
+
+  const queryClient = useQueryClient();
+
+  // Mutation for updating candidate/user status
+  const updateCandidateStatusMutation = useMutation({
+    mutationFn: async ({ userId, status }: { userId: string; status: string }) => {
+      return adminService.updateUserStatus(userId, status);
+    },
+    onSuccess: () => {
+      // Invalidate and refetch candidates list
+      queryClient.invalidateQueries({ queryKey: ['all-candidates'] });
+      toast.success('Candidate status updated successfully');
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || 'Failed to update candidate status';
+      toast.error(errorMessage);
+      console.error('Error updating candidate status:', error);
+    },
+  });
+
+  const handleCandidateStatusChange = (candidate: CandidateProfile, newStatus: string) => {
+    const userId = candidate.userId || candidate.id;
+    
+    if (!userId) {
+      toast.error('Cannot update candidate status: User ID is missing');
+      return;
+    }
+    
+    updateCandidateStatusMutation.mutate({
+      userId: userId,
+      status: newStatus,
+    });
+  };
+
   return (
     <div className="bg-white rounded-[10px] shadow-sm border border-gray-200">
       <div className="px-6 py-4">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Job Applications - Candidate Details</h2>
+          <h2 className="text-lg font-semibold text-gray-900">All Candidates</h2>
           <button 
             onClick={handleRefresh}
-            disabled={applicationsLoading}
+            disabled={candidatesLoading}
             className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
           >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1256,43 +1207,16 @@ function CVStatusMaintenanceInline() {
               value={statusFilter}
               onChange={(e) => {
                 setStatusFilter(e.target.value);
-                setApplicationsPage(1);
+                setCandidatesPage(1);
               }}
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Status</option>
-              <option value="UNDER_REVIEW">Under Review</option>
-              <option value="SHORTLISTED">Shortlisted</option>
-              <option value="INTERVIEWED">Interviewed</option>
-              <option value="SELECTED">Selected</option>
-              <option value="REJECTED">Rejected</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+              <option value="SUSPENDED">Suspended</option>
+              <option value="PENDING_VERIFICATION">Pending Verification</option>
               </select>
-              </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Job Title</label>
-            <input
-              type="text"
-              value={jobTitleFilter}
-              onChange={(e) => {
-                setJobTitleFilter(e.target.value);
-                setApplicationsPage(1);
-              }}
-              placeholder="Filter by job title"
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Company</label>
-            <input
-              type="text"
-              value={companyNameFilter}
-              onChange={(e) => {
-                setCompanyNameFilter(e.target.value);
-                setApplicationsPage(1);
-              }}
-              placeholder="Filter by company"
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
               </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Candidate Name</label>
@@ -1301,44 +1225,70 @@ function CVStatusMaintenanceInline() {
               value={candidateNameFilter}
               onChange={(e) => {
                 setCandidateNameFilter(e.target.value);
-                setApplicationsPage(1);
+                setCandidatesPage(1);
               }}
               placeholder="Filter by candidate name"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
+            <input
+              type="text"
+              value={emailFilter}
+              onChange={(e) => {
+                setEmailFilter(e.target.value);
+                setCandidatesPage(1);
+              }}
+              placeholder="Filter by email"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+              </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Current Company</label>
+            <input
+              type="text"
+              value={companyFilter}
+              onChange={(e) => {
+                setCompanyFilter(e.target.value);
+                setCandidatesPage(1);
+              }}
+              placeholder="Filter by company"
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             </div>
               </div>
             </div>
 
-      {applicationsLoading ? (
+      {candidatesLoading ? (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900"></div>
-          <span className="ml-2 text-gray-600">Loading applications...</span>
+          <span className="ml-2 text-gray-600">Loading candidates...</span>
         </div>
-      ) : applicationsError ? (
+      ) : candidatesError ? (
         <div className="text-center py-12 px-6">
-          <p className="text-red-600 mb-2 font-medium">Error loading applications</p>
+          <p className="text-red-600 mb-2 font-medium">Error loading candidates</p>
           <p className="text-sm text-gray-500 mb-4">
-            {(applicationsError as any)?.response?.data?.message || 
-             (applicationsError as any)?.message || 
+            {(candidatesError as any)?.response?.data?.message || 
+             (candidatesError as any)?.message || 
              'Please check your connection and try again'}
           </p>
           <button 
-            onClick={() => refetchApplications()}
+            onClick={() => refetchCandidates()}
             className="px-4 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-800 transition-colors"
           >
             Retry
             </button>
           </div>
-      ) : applications.length === 0 ? (
+      ) : candidates.length === 0 ? (
         <div className="text-center py-12 px-6">
           <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
           </svg>
-          <p className="text-gray-500 text-lg font-medium mb-2">No applications found</p>
+          <p className="text-gray-500 text-lg font-medium mb-2">No candidates found</p>
           <p className="text-gray-400 text-sm mb-4">Try adjusting your filters or check back later</p>
           <button 
-            onClick={() => refetchApplications()}
+            onClick={() => refetchCandidates()}
             className="px-4 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-800 transition-colors"
           >
             Refresh
@@ -1352,99 +1302,75 @@ function CVStatusMaintenanceInline() {
                 <TableRow className="bg-blue-50">
                   <TableCell isHeader className="pl-6 pr-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Candidate Name</TableCell>
                   <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Email</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Job Title</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Company</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Location</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Phone</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Current Company</TableCell>
                   <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Current Title</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Location</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Experience</TableCell>
                   <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Status</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Applied Date</TableCell>
                   <TableCell isHeader className="pl-3 pr-6 py-3 text-left text-xs font-medium text-blue-900 uppercase">Actions</TableCell>
             </TableRow>
           </TableHeader>
           <TableBody className="bg-white divide-y divide-gray-200">
-                {applications.map((application: AdminApplication, index: number) => {
-                    const candidateName = `${application.candidate?.firstName || ''} ${application.candidate?.lastName || ''}`.trim() || 'N/A';
-                    // Try candidate city first, then job location city, then fallback to N/A
-                    const location = application.candidate?.city?.name || application.job?.location?.city?.name || 'N/A';
-                    // Use index as fallback key if id is null
-                    const rowKey = application.id || `app-${index}-${application.appliedAt}`;
+                {candidates.map((candidate: CandidateProfile) => {
+                    const candidateName = `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim() || 'N/A';
+                    const location = candidate.city?.name || candidate.currentLocation || 'N/A';
+                    const skills = candidate.skills?.map((s: any) => s.skill || s).join(', ') || 'N/A';
                     
                     return (
-                      <tr key={rowKey} className="hover:bg-gray-50">
+                      <tr key={candidate.id} className="hover:bg-gray-50">
                         <td className="pl-6 pr-3 py-3 whitespace-nowrap">
                           <div className="flex items-center gap-2">
                             <div>
                               <p className="text-sm font-medium text-gray-900">{candidateName}</p>
-                              {application.candidate?.currentTitle && (
-                                <p className="text-xs text-gray-500">{application.candidate.currentTitle}</p>
+                              {candidate.currentTitle && (
+                                <p className="text-xs text-gray-500">{candidate.currentTitle}</p>
                               )}
                             </div>
                           </div>
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{application.candidate?.email || 'N/A'}</td>
-                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{application.job?.title || 'N/A'}</td>
-                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500 font-mono">{application.job?.company?.id || 'N/A'}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{candidate.email || 'N/A'}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{candidate.phone || 'N/A'}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{candidate.currentCompany || 'N/A'}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{candidate.currentTitle || 'N/A'}</td>
                         <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{location}</td>
                         <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
-                          {application.candidate?.currentTitle || 'N/A'}
+                          {candidate.experienceYears ? `${candidate.experienceYears} years` : 'N/A'}
                         </td>
                 <td className="px-3 py-3 whitespace-nowrap">
-                          {(() => {
-                            const statusDisplay = getApplicationStatusDisplay(application.status || 'APPLIED');
-                            return (
-                              <StatusBadge 
-                                status={statusDisplay.badgeType} 
-                                customLabel={statusDisplay.label}
-                              />
-                            );
-                          })()}
-                </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
-                          {application.appliedAt ? new Date(application.appliedAt).toLocaleDateString() : 'N/A'}
+                          <StatusBadge 
+                            status={mapUserStatus(candidate.status || 'PENDING_VERIFICATION')} 
+                          />
                 </td>
                         <td className="pl-3 pr-6 py-3 whitespace-nowrap">
                   <div className="flex items-center gap-2">
+                            {candidate.resumes && candidate.resumes.length > 0 && (
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleViewResume(candidate);
+                                }}
+                                className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors active:scale-95 cursor-pointer"
+                                title="View Resume"
+                                type="button"
+                              >
+                                <FileIcon className="w-5 h-5" />
+                              </button>
+                            )}
                             <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleViewResume(application);
-                              }}
-                              className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors active:scale-95 cursor-pointer"
-                              title="View Resume"
-                              type="button"
-                            >
-                              <FileIcon className="w-5 h-5" />
-                    </button>
-                            {/* <button
-                              onClick={() => application.candidate?.id && handleViewCandidate(application.candidate.id)}
-                              className="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              onClick={() => handleViewCandidate(candidate.id)}
+                              className="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-colors"
                               title="View Candidate Profile"
-                              disabled={!application.candidate?.id}
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    </button> */}
-                            {/* Application Status Dropdown */}
+                              </svg>
+                            </button>
                             <select
-                              value={application.status || 'UNDER_REVIEW'}
-                              onChange={(e) => handleStatusChange(application, e.target.value)}
-                              disabled={!application.id || updateStatusMutation.isPending}
-                              className="text-xs px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed bg-white min-w-[120px]"
-                              title="Change Application Status"
-                            >
-                              <option value="UNDER_REVIEW">Under Review</option>
-                              <option value="SHORTLISTED">Shortlisted</option>
-                              <option value="INTERVIEWED">Interviewed</option>
-                              <option value="SELECTED">Selected</option>
-                              <option value="REJECTED">Rejected</option>
-                            </select>
-                            {/* Candidate Status Dropdown */}
-                            {/* <select
-                              value={application.candidate?.status || 'PENDING_VERIFICATION'}
-                              onChange={(e) => handleCandidateStatusChange(application, e.target.value)}
-                              disabled={!application.candidate?.userId || updateCandidateStatusMutation.isPending}
+                              value={candidate.status || 'PENDING_VERIFICATION'}
+                              onChange={(e) => handleCandidateStatusChange(candidate, e.target.value)}
+                              disabled={!candidate.userId || updateCandidateStatusMutation.isPending}
                               className="text-xs px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed bg-white min-w-[140px]"
                               title="Change Candidate Status"
                             >
@@ -1452,7 +1378,7 @@ function CVStatusMaintenanceInline() {
                               <option value="INACTIVE">Inactive</option>
                               <option value="SUSPENDED">Suspended</option>
                               <option value="PENDING_VERIFICATION">Pending Verification</option>
-                            </select> */}
+                            </select>
                   </div>
                 </td>
               </tr>
@@ -1466,12 +1392,12 @@ function CVStatusMaintenanceInline() {
       <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
         <div className="flex items-center justify-between">
           <div className="text-sm text-gray-700">
-                Showing {((applicationsPage - 1) * 10) + 1}-{Math.min(applicationsPage * 10, totalApplications)} of {totalApplications}
+                Showing {((candidatesPage - 1) * 10) + 1}-{Math.min(candidatesPage * 10, totalCandidates)} of {totalCandidates}
           </div>
           <div className="flex items-center gap-2">
             <button 
-                  onClick={() => setApplicationsPage(Math.max(1, applicationsPage - 1))}
-                  disabled={applicationsPage === 1 || applicationsLoading}
+                  onClick={() => setCandidatesPage(Math.max(1, candidatesPage - 1))}
+                  disabled={candidatesPage === 1 || candidatesLoading}
                   className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1479,11 +1405,11 @@ function CVStatusMaintenanceInline() {
               </svg>
             </button>
                 <span className="text-sm text-gray-500">
-                  Page {applicationsPage} of {totalPages}
+                  Page {candidatesPage} of {totalPages}
                 </span>
             <button 
-                  onClick={() => setApplicationsPage(Math.min(totalPages, applicationsPage + 1))}
-                  disabled={applicationsPage === totalPages || applicationsLoading}
+                  onClick={() => setCandidatesPage(Math.min(totalPages, candidatesPage + 1))}
+                  disabled={candidatesPage === totalPages || candidatesLoading}
                   className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

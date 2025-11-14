@@ -7,6 +7,8 @@ import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../components/ui/table";
 import { userService } from "../services/userService";
 import { User } from "../services/types";
+import CandidateViewDialog from "../components/CandidateViewDialog";
+import { useModal } from "../hooks/useModal";
 
 export default function UserProfilesManagement() {
   const navigate = useNavigate();
@@ -17,6 +19,10 @@ export default function UserProfilesManagement() {
   const [orderType, setOrderType] = useState<"asc" | "desc">("desc");
   const [filterStatus, setFilterStatus] = useState<string>("");
   const profilesPerPage = 10;
+  
+  // Modal state for candidate view dialog
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
+  const viewModal = useModal();
 
   // Debounce search term
   useEffect(() => {
@@ -90,6 +96,11 @@ export default function UserProfilesManagement() {
     const userId = String(user.id).trim();
     console.log('Edit clicked for user ID:', userId);
     navigate(`/edit-profile/${userId}`);
+  };
+
+  const handleViewCandidate = (user: User) => {
+    setSelectedCandidateId(user.id);
+    viewModal.openModal();
   };
 
   // Helper function to get status display
@@ -288,6 +299,20 @@ export default function UserProfilesManagement() {
                       </td>
                       <td className="pl-3 pr-6 py-3 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center gap-3">
+                          {/* Eye button for candidates */}
+                          {user.role === 'CANDIDATE' && (
+                            <button 
+                              className="p-1 text-blue-600 hover:text-blue-800" 
+                              onClick={() => handleViewCandidate(user)}
+                              title="View candidate details"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                            </button>
+                          )}
+                          
                           <button 
                             className="p-1 text-blue-600 hover:text-blue-800" 
                             onClick={() => handleEdit(user)}
@@ -366,6 +391,16 @@ export default function UserProfilesManagement() {
           </div>
         </div>
       </div>
+
+      {/* Candidate View Dialog */}
+      <CandidateViewDialog
+        isOpen={viewModal.isOpen}
+        onClose={() => {
+          viewModal.closeModal();
+          setSelectedCandidateId(null);
+        }}
+        userId={selectedCandidateId}
+      />
     </>
   );
 }

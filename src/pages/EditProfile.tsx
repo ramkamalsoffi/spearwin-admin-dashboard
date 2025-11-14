@@ -1,15 +1,33 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import { userService } from "../services/userService";
+import { imageUploadService } from "../services/imageUploadService";
+import { locationService, Country, State, City } from "../services/locationService";
+import DatePicker from "../components/form/date-picker";
+import { codes } from "currency-codes-ts";
 
 export default function EditProfile() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedCvFile, setSelectedCvFile] = useState<File | null>(null);
+  const [isUploadingCv, setIsUploadingCv] = useState(false);
+  const cvInputRef = useRef<HTMLInputElement>(null);
+  
+  // Location state management
+  const [selectedCountryId, setSelectedCountryId] = useState<number | null>(null);
+  const [selectedStateId, setSelectedStateId] = useState<number | null>(null);
+  const [nationalitySearchTerm, setNationalitySearchTerm] = useState("");
+  const [showNationalityDropdown, setShowNationalityDropdown] = useState(false);
+  
   const [formData, setFormData] = useState({
     // Basic Information
     profilePicture: "",
@@ -48,7 +66,9 @@ export default function EditProfile() {
     industry: "",
     profileSummary: "",
     referredBy: "",
+    referredByEmail: "",
     candidateJoiningDate: "",
+    cvResume: "",
     
     // Preferences & Status
     subscribeToJobAlert: "",
@@ -62,6 +82,40 @@ export default function EditProfile() {
   // Normalize ID and ensure it's ready
   const normalizedId = id ? String(id).trim() : null;
 
+  // Fetch countries
+  const { data: countriesData } = useQuery({
+    queryKey: ['countries'],
+    queryFn: () => locationService.getCountries(),
+  });
+
+  // Fetch states when country is selected
+  const { data: statesData } = useQuery({
+    queryKey: ['states', selectedCountryId],
+    queryFn: () => locationService.getStatesByCountry(selectedCountryId!),
+    enabled: !!selectedCountryId,
+  });
+
+  // Fetch cities when state is selected
+  const { data: citiesData } = useQuery({
+    queryKey: ['cities', selectedStateId],
+    queryFn: () => locationService.getCitiesByState(selectedStateId!),
+    enabled: !!selectedStateId,
+  });
+
+  // Get unique nationalities from countries
+  const nationalities = countriesData?.data
+    ? Array.from(new Set(
+        countriesData.data
+          .map((c: Country) => c.nationality)
+          .filter((n): n is string => !!n)
+      )).sort()
+    : [];
+
+  // Filter nationalities based on search term
+  const filteredNationalities = nationalities.filter((nat: string) =>
+    nat.toLowerCase().includes(nationalitySearchTerm.toLowerCase())
+  );
+
   // Fetch user data by ID
   const { data: userData, isLoading, error } = useQuery({
     queryKey: ['user', normalizedId],
@@ -74,6 +128,137 @@ export default function EditProfile() {
     refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
+
+  // Handle file change for profile picture
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please select a valid image file");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size should be less than 5MB");
+      return;
+    }
+
+    setSelectedFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    setIsUploadingImage(true);
+    try {
+      const imageUrl = await imageUploadService.uploadImage(file, 'profile-pictures');
+      setFormData(prev => ({
+        ...prev,
+        profilePicture: imageUrl
+      }));
+      toast.success("Profile picture uploaded successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to upload profile picture");
+      setSelectedFile(null);
+      setImagePreview(null);
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedFile(null);
+    setImagePreview(null);
+    setFormData(prev => ({
+      ...prev,
+      profilePicture: ""
+    }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleCvFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const allowedExtensions = ['.pdf', '.doc', '.docx'];
+    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+
+    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+      toast.error("Please select a valid CV file (PDF, DOC, or DOCX)");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("CV file size should be less than 10MB");
+      return;
+    }
+
+    setSelectedCvFile(file);
+    setIsUploadingCv(true);
+    try {
+      const cvUrl = await imageUploadService.uploadDocument(file, 'cv-resumes');
+      setFormData(prev => ({
+        ...prev,
+        cvResume: cvUrl
+      }));
+      toast.success("CV uploaded successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to upload CV");
+      setSelectedCvFile(null);
+    } finally {
+      setIsUploadingCv(false);
+    }
+  };
+
+  const handleRemoveCv = () => {
+    setSelectedCvFile(null);
+    setFormData(prev => ({
+      ...prev,
+      cvResume: ""
+    }));
+    if (cvInputRef.current) {
+      cvInputRef.current.value = "";
+    }
+  };
+
+  // Handle country change
+  const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const countryName = e.target.value;
+    const country = countriesData?.data?.find((c: Country) => c.name === countryName);
+    setSelectedCountryId(country?.id || null);
+    setFormData(prev => ({
+      ...prev,
+      country: countryName,
+      state: "",
+      city: ""
+    }));
+    setSelectedStateId(null);
+  };
+
+  // Handle state change
+  const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const stateName = e.target.value;
+    const state = statesData?.data?.find((s: State) => s.name === stateName);
+    setSelectedStateId(state?.id || null);
+    setFormData(prev => ({
+      ...prev,
+      state: stateName,
+      city: ""
+    }));
+  };
+
+  // Handle city change
+  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      city: e.target.value
+    }));
+  };
 
   // Reset form when ID changes
   useEffect(() => {
@@ -109,7 +294,9 @@ export default function EditProfile() {
         industry: "",
         profileSummary: "",
         referredBy: "",
+        referredByEmail: "",
         candidateJoiningDate: "",
+        cvResume: "",
         subscribeToJobAlert: "",
         commentsRemarks: "",
         active: "",
@@ -117,14 +304,35 @@ export default function EditProfile() {
         emailVerified: false,
         phoneVerified: false,
       });
+      setImagePreview(null);
+      setSelectedFile(null);
+      setSelectedCvFile(null);
+      setSelectedCountryId(null);
+      setSelectedStateId(null);
     }
   }, [normalizedId]);
 
   // Populate form when user data is loaded
   useEffect(() => {
-    if (userData && normalizedId) {
+    if (userData && normalizedId && countriesData) {
       const candidate = userData.candidate || {};
-      const user = userData;
+      const user = userData.data || userData;
+      
+      // Set image preview if profile picture exists
+      if (candidate.profilePicture) {
+        setImagePreview(candidate.profilePicture);
+      }
+      
+      // Set location IDs if location data exists
+      if (candidate.city?.state?.country?.name) {
+        const country = countriesData.data?.find((c: Country) => c.name === candidate.city.state.country.name);
+        if (country) {
+          setSelectedCountryId(country.id);
+        }
+      }
+      if (candidate.city?.state?.name && selectedCountryId) {
+        // States will be fetched automatically when country is set
+      }
       
       setFormData({
         profilePicture: candidate.profilePicture || "",
@@ -146,10 +354,10 @@ export default function EditProfile() {
         currentSalary: candidate.currentSalary?.toString() || "",
         salaryCurrency: "",
         profileType: candidate.profileType || "",
-        nationality: candidate.country || "",
-        country: candidate.country || "",
-        state: candidate.state || "",
-        city: candidate.cityName || "",
+        nationality: candidate.country || candidate.city?.state?.country?.name || "",
+        country: candidate.country || candidate.city?.state?.country?.name || "",
+        state: candidate.state || candidate.city?.state?.name || "",
+        city: candidate.cityName || candidate.city?.name || "",
         streetAddress: candidate.streetAddress || candidate.address || "",
         nationalIdCard: "",
         careerLevel: "",
@@ -157,7 +365,9 @@ export default function EditProfile() {
         industry: "",
         profileSummary: candidate.profileSummary || candidate.bio || "",
         referredBy: "",
+        referredByEmail: "",
         candidateJoiningDate: "",
+        cvResume: candidate.resumes?.[0]?.filePath || "",
         subscribeToJobAlert: "",
         commentsRemarks: "",
         active: user.status === 'ACTIVE' ? "Yes" : "No",
@@ -166,7 +376,7 @@ export default function EditProfile() {
         phoneVerified: user.phoneVerified || false,
       });
     }
-  }, [userData, normalizedId]);
+  }, [userData, normalizedId, countriesData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -213,6 +423,8 @@ export default function EditProfile() {
         streetAddress: data.streetAddress?.trim() || undefined,
         mobileNumber: data.mobileNumber?.trim() || undefined,
         jobExperience: data.experience?.trim() || undefined,
+        profilePicture: data.profilePicture || undefined,
+        cvResume: data.cvResume || undefined,
       };
 
       return userService.updateUserWithProfile(normalizedId, userData, candidateData);
@@ -337,15 +549,141 @@ export default function EditProfile() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Profile Picture
                   </label>
-                  <button
-                    type="button"
-                    className="w-full px-4 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                    Upload
-                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    disabled={isUploadingImage}
+                  />
+                  {imagePreview ? (
+                    <div className="relative">
+                      <img
+                        src={imagePreview}
+                        alt="Profile preview"
+                        className="w-full h-48 object-cover rounded-md border border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                        disabled={isUploadingImage}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                      {isUploadingImage && (
+                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-md">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingImage}
+                      className="w-full px-4 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-800 transition-colors flex items-center justify-center gap-2 disabled:bg-blue-400 disabled:cursor-not-allowed"
+                    >
+                      {isUploadingImage ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                          Upload
+                        </>
+                      )}
+                    </button>
+                  )}
+                  {!imagePreview && (
+                    <p className="mt-1 text-xs text-gray-500">JPG, PNG, WEBP up to 5MB</p>
+                  )}
+                </div>
+
+                {/* CV/Resume Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    CV/Resume
+                  </label>
+                  <input
+                    ref={cvInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={handleCvFileChange}
+                    className="hidden"
+                    disabled={isUploadingCv}
+                  />
+                  {selectedCvFile || formData.cvResume ? (
+                    <div className="relative">
+                      <div className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-md flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          </svg>
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">
+                              {selectedCvFile?.name || "CV/Resume uploaded"}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {(selectedCvFile?.size ? (selectedCvFile.size / 1024 / 1024).toFixed(2) : '0')} MB
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleRemoveCv}
+                          className="text-red-500 hover:text-red-700 transition-colors"
+                          disabled={isUploadingCv}
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                      {isUploadingCv && (
+                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-md">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => cvInputRef.current?.click()}
+                      disabled={isUploadingCv}
+                      className="w-full px-4 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-800 transition-colors flex items-center justify-center gap-2 disabled:bg-blue-400 disabled:cursor-not-allowed"
+                    >
+                      {isUploadingCv ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          </svg>
+                          Upload CV/Resume
+                        </>
+                      )}
+                    </button>
+                  )}
+                  {!selectedCvFile && !formData.cvResume && (
+                    <p className="mt-1 text-xs text-gray-500">PDF, DOC, DOCX up to 10MB</p>
+                  )}
                 </div>
 
                 {/* First Name */}
@@ -415,18 +753,35 @@ export default function EditProfile() {
                   />
                 </div>
 
-                {/* Date of Birth */}
+                {/* Date of Birth - Moved near Mobile Number with DatePicker */}
                 <div>
-                  <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 mb-2">
-                    Date of Birth
-                  </label>
-                  <input
-                    type="date"
+                  <DatePicker
                     id="dateOfBirth"
-                    name="dateOfBirth"
-                    value={formData.dateOfBirth}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    label="Date of Birth"
+                    placeholder="Select date of birth"
+                    defaultDate={formData.dateOfBirth ? new Date(formData.dateOfBirth) : undefined}
+                    onChange={(selectedDates, dateStr) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        dateOfBirth: dateStr || ""
+                      }));
+                    }}
+                  />
+                </div>
+
+                {/* Candidate Joining Date - Moved near Mobile Number with DatePicker */}
+                <div>
+                  <DatePicker
+                    id="candidateJoiningDate"
+                    label="Candidate Joining Date"
+                    placeholder="Select joining date"
+                    defaultDate={formData.candidateJoiningDate ? new Date(formData.candidateJoiningDate) : undefined}
+                    onChange={(selectedDates, dateStr) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        candidateJoiningDate: dateStr || ""
+                      }));
+                    }}
                   />
                 </div>
 
@@ -485,20 +840,25 @@ export default function EditProfile() {
                   />
                 </div>
 
-                {/* Experience */}
+                {/* Experience - Dropdown 0-25 */}
                 <div>
                   <label htmlFor="experience" className="block text-sm font-medium text-gray-700 mb-2">
                     Experience (Years)
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="experience"
                     name="experience"
                     value={formData.experience}
                     onChange={handleInputChange}
-                    placeholder="Enter experience"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-500"
+                  >
+                    <option value="">Select experience</option>
+                    {Array.from({ length: 26 }, (_, i) => (
+                      <option key={i} value={i.toString()}>
+                        {i} {i === 1 ? 'year' : 'years'}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Current Company */}
@@ -555,20 +915,25 @@ export default function EditProfile() {
                   </select>
                 </div>
 
-                {/* Notice Period */}
+                {/* Notice Period - Dropdown */}
                 <div>
                   <label htmlFor="noticePeriod" className="block text-sm font-medium text-gray-700 mb-2">
                     Notice Period
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="noticePeriod"
                     name="noticePeriod"
                     value={formData.noticePeriod}
                     onChange={handleInputChange}
-                    placeholder="Enter notice period"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-500"
+                  >
+                    <option value="">Select notice period</option>
+                    <option value="Immediate Joiner">Immediate Joiner</option>
+                    <option value="15 days">15 days</option>
+                    <option value="30 days">30 days</option>
+                    <option value="60 days">60 days</option>
+                    <option value="90 days">90 days</option>
+                  </select>
                 </div>
 
                 {/* Expected Salary */}
@@ -587,67 +952,128 @@ export default function EditProfile() {
                   />
                 </div>
 
-                {/* City */}
+                {/* Offer in Hand */}
                 <div>
-                  <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
-                    City
+                  <label htmlFor="offerInHand" className="block text-sm font-medium text-gray-700 mb-2">
+                    Offer in Hand
+                  </label>
+                  <input
+                    type="text"
+                    id="offerInHand"
+                    name="offerInHand"
+                    value={formData.offerInHand}
+                    onChange={handleInputChange}
+                    placeholder="Enter offers"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                {/* Salary Currency */}
+                <div>
+                  <label htmlFor="salaryCurrency" className="block text-sm font-medium text-gray-700 mb-2">
+                    Salary Currency
                   </label>
                   <select
-                    id="city"
-                    name="city"
-                    value={formData.city}
+                    id="salaryCurrency"
+                    name="salaryCurrency"
+                    value={formData.salaryCurrency}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-500"
                   >
-                    <option value="">Select city</option>
-                    <option value="Bangalore">Bangalore</option>
-                    <option value="Mumbai">Mumbai</option>
-                    <option value="Delhi">Delhi</option>
-                    <option value="Chennai">Chennai</option>
-                    <option value="Hyderabad">Hyderabad</option>
-                    <option value="Pune">Pune</option>
+                    <option value="">Select currency</option>
+                    {codes().map((currencyCode) => (
+                      <option key={currencyCode} value={currencyCode}>
+                        {currencyCode}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
-                {/* Country */}
-                <div>
-                  <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-2">
-                    Country
-                  </label>
-                  <select
-                    id="country"
-                    name="country"
-                    value={formData.country}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-500"
-                  >
-                    <option value="">Select country</option>
-                    <option value="India">India</option>
-                    <option value="USA">USA</option>
-                    <option value="UK">UK</option>
-                    <option value="Canada">Canada</option>
-                    <option value="Australia">Australia</option>
-                  </select>
+                {/* Country, State, City - In Same Row */}
+                <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Country - From Database */}
+                  <div>
+                    <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-2">
+                      Country
+                    </label>
+                    <select
+                      id="country"
+                      name="country"
+                      value={formData.country}
+                      onChange={handleCountryChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-500"
+                    >
+                      <option value="">Select country</option>
+                      {countriesData?.data?.map((country: Country) => (
+                        <option key={country.id} value={country.name}>
+                          {country.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* State - From Database */}
+                  <div>
+                    <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2">
+                      State
+                    </label>
+                    <select
+                      id="state"
+                      name="state"
+                      value={formData.state}
+                      onChange={handleStateChange}
+                      disabled={!selectedCountryId}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    >
+                      <option value="">{selectedCountryId ? "Select state" : "Select country first"}</option>
+                      {statesData?.data?.map((state: State) => (
+                        <option key={state.id} value={state.name}>
+                          {state.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* City - From Database */}
+                  <div>
+                    <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                      City
+                    </label>
+                    <select
+                      id="city"
+                      name="city"
+                      value={formData.city}
+                      onChange={handleCityChange}
+                      disabled={!selectedStateId}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    >
+                      <option value="">{selectedStateId ? "Select city" : "Select state first"}</option>
+                      {citiesData?.data?.map((city: City) => (
+                        <option key={city.id} value={city.name}>
+                          {city.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
-                {/* State */}
+                {/* Career Level */}
                 <div>
-                  <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2">
-                    State
+                  <label htmlFor="careerLevel" className="block text-sm font-medium text-gray-700 mb-2">
+                    Career Level
                   </label>
                   <select
-                    id="state"
-                    name="state"
-                    value={formData.state}
+                    id="careerLevel"
+                    name="careerLevel"
+                    value={formData.careerLevel}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-500"
                   >
-                    <option value="">Select state</option>
-                    <option value="Karnataka">Karnataka</option>
-                    <option value="Maharashtra">Maharashtra</option>
-                    <option value="Delhi">Delhi</option>
-                    <option value="Tamil Nadu">Tamil Nadu</option>
-                    <option value="Telangana">Telangana</option>
+                    <option value="">Select level</option>
+                    <option value="Entry Level">Entry Level</option>
+                    <option value="Mid Level">Mid Level</option>
+                    <option value="Senior Level">Senior Level</option>
+                    <option value="Executive">Executive</option>
                   </select>
                 </div>
 
@@ -667,6 +1093,62 @@ export default function EditProfile() {
                   />
                 </div>
 
+                {/* Referred By */}
+                <div>
+                  <label htmlFor="referredBy" className="block text-sm font-medium text-gray-700 mb-2">
+                    Referred By
+                  </label>
+                  <select
+                    id="referredBy"
+                    name="referredBy"
+                    value={formData.referredBy}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-500"
+                  >
+                    <option value="">Select referral source</option>
+                    <option value="LinkedIn">LinkedIn</option>
+                    <option value="Naukri">Naukri</option>
+                    <option value="Person">Person who referred</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                {/* Referred By Email - Show when "Person" is selected */}
+                {formData.referredBy === "Person" && (
+                  <div>
+                    <label htmlFor="referredByEmail" className="block text-sm font-medium text-gray-700 mb-2">
+                      Referrer Email
+                    </label>
+                    <input
+                      type="email"
+                      id="referredByEmail"
+                      name="referredByEmail"
+                      value={formData.referredByEmail}
+                      onChange={handleInputChange}
+                      placeholder="Enter referrer email"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                )}
+
+                {/* Active */}
+                <div>
+                  <label htmlFor="active" className="block text-sm font-medium text-gray-700 mb-2">
+                    Active
+                  </label>
+                  <select
+                    id="active"
+                    name="active"
+                    value={formData.active}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-500"
+                  >
+                    <option value="">Select status</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+
                 {/* Current Salary */}
                 <div>
                   <label htmlFor="currentSalary" className="block text-sm font-medium text-gray-700 mb-2">
@@ -682,6 +1164,88 @@ export default function EditProfile() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
+
+                {/* Nationality - Type-ahead Dropdown */}
+                <div className="relative">
+                  <label htmlFor="nationality" className="block text-sm font-medium text-gray-700 mb-2">
+                    Nationality
+                  </label>
+                  <input
+                    type="text"
+                    id="nationality"
+                    name="nationality"
+                    value={formData.nationality}
+                    onChange={(e) => {
+                      setFormData(prev => ({ ...prev, nationality: e.target.value }));
+                      setNationalitySearchTerm(e.target.value);
+                      setShowNationalityDropdown(true);
+                    }}
+                    onFocus={() => setShowNationalityDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowNationalityDropdown(false), 200)}
+                    placeholder="Type to search nationality"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  {showNationalityDropdown && filteredNationalities.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                      {filteredNationalities.map((nationality: string) => (
+                        <div
+                          key={nationality}
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, nationality }));
+                            setNationalitySearchTerm("");
+                            setShowNationalityDropdown(false);
+                          }}
+                          className="px-4 py-2 hover:bg-blue-50 cursor-pointer"
+                        >
+                          {nationality}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Industry */}
+                <div>
+                  <label htmlFor="industry" className="block text-sm font-medium text-gray-700 mb-2">
+                    Industry
+                  </label>
+                  <select
+                    id="industry"
+                    name="industry"
+                    value={formData.industry}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-500"
+                  >
+                    <option value="">Select industry</option>
+                    <option value="Technology">Technology</option>
+                    <option value="Finance">Finance</option>
+                    <option value="Healthcare">Healthcare</option>
+                    <option value="Education">Education</option>
+                    <option value="Manufacturing">Manufacturing</option>
+                  </select>
+                </div>
+
+                {/* Functional Area */}
+                <div>
+                  <label htmlFor="functionalArea" className="block text-sm font-medium text-gray-700 mb-2">
+                    Functional Area
+                  </label>
+                  <select
+                    id="functionalArea"
+                    name="functionalArea"
+                    value={formData.functionalArea}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-500"
+                  >
+                    <option value="">Select functional area</option>
+                    <option value="IT">IT</option>
+                    <option value="Finance">Finance</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="HR">HR</option>
+                    <option value="Operations">Operations</option>
+                  </select>
+                </div>
+
 
                 {/* Profile Type */}
                 <div>

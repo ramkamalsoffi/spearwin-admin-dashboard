@@ -10,6 +10,7 @@ import { userService } from "../../services/userService";
 import { imageUploadService } from "../../services/imageUploadService";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
+import CandidateViewDialog from "../CandidateViewDialog";
 
 interface UserProfileCardProps {
   userId?: string; // Optional userId prop - if not provided, will use current user
@@ -22,6 +23,8 @@ export default function UserProfileCard({ userId }: UserProfileCardProps) {
 
   // Single modal for all profile editing
   const editModal = useModal();
+  // Modal for viewing candidate details
+  const viewModal = useModal();
 
   // Fetch user profile data
   const { data: userData, isLoading, error, refetch } = useQuery({
@@ -397,15 +400,29 @@ export default function UserProfileCard({ userId }: UserProfileCardProps) {
               </a>
             </div>
           </div>
-          <button
-            onClick={editModal.openModal}
-            className="flex w-full items-center justify-center gap-2 rounded-full border border-blue-300 bg-white px-4 py-3 text-sm font-medium text-blue-700 shadow-theme-xs hover:bg-blue-50 hover:text-blue-900 lg:inline-flex lg:w-auto"
-          >
-            <svg className="fill-current" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path fillRule="evenodd" clipRule="evenodd" d="M15.0911 2.78206C14.2125 1.90338 12.7878 1.90338 11.9092 2.78206L4.57524 10.116C4.26682 10.4244 4.0547 10.8158 3.96468 11.2426L3.31231 14.3352C3.25997 14.5833 3.33653 14.841 3.51583 15.0203C3.69512 15.1996 3.95286 15.2761 4.20096 15.2238L7.29355 14.5714C7.72031 14.4814 8.11172 14.2693 8.42013 13.9609L15.7541 6.62695C16.6327 5.74827 16.6327 4.32365 15.7541 3.44497L15.0911 2.78206ZM12.9698 3.84272C13.2627 3.54982 13.7376 3.54982 14.0305 3.84272L14.6934 4.50563C14.9863 4.79852 14.9863 5.2734 14.6934 5.56629L14.044 6.21573L12.3204 4.49215L12.9698 3.84272ZM11.2597 5.55281L5.6359 11.1766C5.53309 11.2794 5.46238 11.4099 5.43238 11.5522L5.01758 13.5185L6.98394 13.1037C7.1262 13.0737 7.25666 13.003 7.35947 12.9002L12.9833 7.27639L11.2597 5.55281Z" fill="" />
-            </svg>
-            Edit Profile
-          </button>   
+          <div className="flex items-center gap-2">
+            {candidate?.id && (
+              <button
+                onClick={viewModal.openModal}
+                className="flex w-full items-center justify-center gap-2 rounded-full border border-blue-300 bg-white px-4 py-3 text-sm font-medium text-blue-700 shadow-theme-xs hover:bg-blue-50 hover:text-blue-900 lg:inline-flex lg:w-auto"
+                title="View Candidate Details"
+              >
+                <svg className="fill-current" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9 3C5 3 2.73 5.11 1 8.5C2.73 11.89 5 14 9 14C13 14 15.27 11.89 17 8.5C15.27 5.11 13 3 9 3ZM9 12.5C6.24 12.5 4 10.26 4 7.5C4 4.74 6.24 2.5 9 2.5C11.76 2.5 14 4.74 14 7.5C14 10.26 11.76 12.5 9 12.5ZM9 4.5C7.07 4.5 5.5 6.07 5.5 8C5.5 9.93 7.07 11.5 9 11.5C10.93 11.5 12.5 9.93 12.5 8C12.5 6.07 10.93 4.5 9 4.5Z" fill="currentColor"/>
+                </svg>
+                View Details
+              </button>
+            )}
+            <button
+              onClick={editModal.openModal}
+              className="flex w-full items-center justify-center gap-2 rounded-full border border-blue-300 bg-white px-4 py-3 text-sm font-medium text-blue-700 shadow-theme-xs hover:bg-blue-50 hover:text-blue-900 lg:inline-flex lg:w-auto"
+            >
+              <svg className="fill-current" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fillRule="evenodd" clipRule="evenodd" d="M15.0911 2.78206C14.2125 1.90338 12.7878 1.90338 11.9092 2.78206L4.57524 10.116C4.26682 10.4244 4.0547 10.8158 3.96468 11.2426L3.31231 14.3352C3.25997 14.5833 3.33653 14.841 3.51583 15.0203C3.69512 15.1996 3.95286 15.2761 4.20096 15.2238L7.29355 14.5714C7.72031 14.4814 8.11172 14.2693 8.42013 13.9609L15.7541 6.62695C16.6327 5.74827 16.6327 4.32365 15.7541 3.44497L15.0911 2.78206ZM12.9698 3.84272C13.2627 3.54982 13.7376 3.54982 14.0305 3.84272L14.6934 4.50563C14.9863 4.79852 14.9863 5.2734 14.6934 5.56629L14.044 6.21573L12.3204 4.49215L12.9698 3.84272ZM11.2597 5.55281L5.6359 11.1766C5.53309 11.2794 5.46238 11.4099 5.43238 11.5522L5.01758 13.5185L6.98394 13.1037C7.1262 13.0737 7.25666 13.003 7.35947 12.9002L12.9833 7.27639L11.2597 5.55281Z" fill="" />
+              </svg>
+              Edit Profile
+            </button>
+          </div>   
         </div>
       </div>
 
@@ -620,6 +637,13 @@ export default function UserProfileCard({ userId }: UserProfileCardProps) {
           </form>
         </div>
       </Modal>
+
+      {/* Candidate View Dialog */}
+      <CandidateViewDialog
+        isOpen={viewModal.isOpen}
+        onClose={viewModal.closeModal}
+        userId={targetUserId || null}
+      />
     </div>
   );
 }
