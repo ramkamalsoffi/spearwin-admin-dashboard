@@ -1100,43 +1100,107 @@ function CVStatusMaintenanceInline() {
   console.log('Is Loading:', candidatesLoading);
   console.log('Has Error:', candidatesError);
 
-  const handleViewResume = (candidate: CandidateProfile) => {
+  const handleViewResume = async (candidate: CandidateProfile) => {
+    console.log('Viewing resume for candidate:', candidate.id);
+    console.log('Candidate resumes:', candidate.resumes);
+    
     // Get the first resume if available
-    const resume = candidate.resumes?.[0];
+    let resume = candidate.resumes?.[0];
+    
+    // If no resume in the list, try to fetch the full profile
+    if (!resume && candidate.userId) {
+      try {
+        toast.loading('Loading resume information...');
+        const profileResponse = await candidateService.getCandidateProfile(candidate.userId);
+        const fullProfile = profileResponse.data;
+        console.log('Full profile data:', fullProfile);
+        resume = fullProfile?.resumes?.[0];
+        
+        if (resume) {
+          toast.dismiss();
+          toast.success('Resume loaded');
+        } else {
+          toast.dismiss();
+          toast.error('No resume available for this candidate');
+          return;
+        }
+      } catch (error) {
+        console.error('Error fetching candidate profile:', error);
+        toast.dismiss();
+        toast.error('Failed to load resume information');
+        return;
+      }
+    }
+    
     if (!resume) {
+      console.error('No resume found for candidate:', candidate.id);
       toast.error('No resume available for this candidate');
       return;
     }
     
-    // Build resume URL
-    let resumeUrl: string | null = null;
-    const fileUrl = resume.fileUrl;
+    console.log('Resume data:', resume);
     
-    if (fileUrl) {
-      // Check if it's already a full URL
-      if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
-        resumeUrl = fileUrl;
-      } else {
-        // Construct DigitalOcean Spaces URL
-        const cleanPath = fileUrl.startsWith('/') ? fileUrl.slice(1) : fileUrl;
-        resumeUrl = `https://spearwin.sfo3.digitaloceanspaces.com/${cleanPath}`;
-      }
+    // Build resume URL - Use filePath instead of fileUrl
+    let resumeUrl: string | null = null;
+    const filePath = (resume as any).filePath || (resume as any).fileUrl; // Support both field names for compatibility
+    
+    if (!filePath) {
+      console.error('Resume filePath is missing:', resume);
+      toast.error('Resume file path is not available');
+      return;
     }
+    
+    // Check if it's already a full URL
+    if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+      resumeUrl = filePath;
+    } else {
+      // Construct DigitalOcean Spaces URL
+      const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
+      resumeUrl = `https://spearwin.sfo3.digitaloceanspaces.com/${cleanPath}`;
+    }
+    
+    console.log('Resume URL:', resumeUrl);
     
     // Open the resume URL
     if (resumeUrl) {
       try {
-        const newWindow = window.open(resumeUrl, '_blank');
+        // Try to open in new window first
+        const newWindow = window.open(resumeUrl, '_blank', 'noopener,noreferrer');
         if (!newWindow) {
-          toast.error('Please allow popups to view the resume');
+          // If popup blocked, try to download instead
+          console.warn('Popup blocked, attempting to download resume');
+          const link = document.createElement('a');
+          link.href = resumeUrl;
+          link.target = '_blank';
+          link.download = resume.fileName || 'resume.pdf';
+          link.rel = 'noopener noreferrer';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          toast.success('Downloading resume...');
         } else {
           toast.success('Opening resume...');
         }
       } catch (error) {
         console.error('Error opening resume:', error);
-        toast.error('Failed to open resume. Please try again.');
+        // Fallback: try to download
+        try {
+          const link = document.createElement('a');
+          link.href = resumeUrl;
+          link.target = '_blank';
+          link.download = resume.fileName || 'resume.pdf';
+          link.rel = 'noopener noreferrer';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          toast.success('Downloading resume...');
+        } catch (downloadError) {
+          console.error('Error downloading resume:', downloadError);
+          toast.error('Failed to open resume. Please check the console for details.');
+        }
       }
     } else {
+      console.error('Resume URL is null or empty');
       toast.error('Resume URL not available');
     }
   };
@@ -1296,45 +1360,31 @@ function CVStatusMaintenanceInline() {
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto px-6 pb-4">
-            <Table className="w-full min-w-[1200px]">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto px-6 pb-4">
+            <Table className="w-full">
           <TableHeader>
                 <TableRow className="bg-blue-50">
-                  <TableCell isHeader className="pl-6 pr-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Candidate Name</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Email</TableCell>
+                  <TableCell isHeader className="pl-6 pr-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Email</TableCell>
                   <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Phone</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Current Company</TableCell>
-                  <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Current Title</TableCell>
                   <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Location</TableCell>
                   <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Experience</TableCell>
                   <TableCell isHeader className="px-3 py-3 text-left text-xs font-medium text-blue-900 uppercase">Status</TableCell>
+                  <TableCell isHeader className="px-3 py-3 text-center text-xs font-medium text-blue-900 uppercase">Resume</TableCell>
                   <TableCell isHeader className="pl-3 pr-6 py-3 text-left text-xs font-medium text-blue-900 uppercase">Actions</TableCell>
             </TableRow>
           </TableHeader>
           <TableBody className="bg-white divide-y divide-gray-200">
                 {candidates.map((candidate: CandidateProfile) => {
-                    const candidateName = `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim() || 'N/A';
                     const location = candidate.city?.name || candidate.currentLocation || 'N/A';
-                    const skills = candidate.skills?.map((s: any) => s.skill || s).join(', ') || 'N/A';
+                    const hasResume = candidate.resumes && candidate.resumes.length > 0;
                     
                     return (
                       <tr key={candidate.id} className="hover:bg-gray-50">
-                        <td className="pl-6 pr-3 py-3 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">{candidateName}</p>
-                              {candidate.currentTitle && (
-                                <p className="text-xs text-gray-500">{candidate.currentTitle}</p>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{candidate.email || 'N/A'}</td>
-                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{candidate.phone || 'N/A'}</td>
-                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{candidate.currentCompany || 'N/A'}</td>
-                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{candidate.currentTitle || 'N/A'}</td>
-                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{location}</td>
-                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
+                        <td className="pl-6 pr-3 py-3 text-sm text-gray-500 break-words">{candidate.email || 'N/A'}</td>
+                        <td className="px-3 py-3 text-sm text-gray-500">{candidate.phone || 'N/A'}</td>
+                        <td className="px-3 py-3 text-sm text-gray-500">{location}</td>
+                        <td className="px-3 py-3 text-sm text-gray-500">
                           {candidate.experienceYears ? `${candidate.experienceYears} years` : 'N/A'}
                         </td>
                 <td className="px-3 py-3 whitespace-nowrap">
@@ -1342,22 +1392,28 @@ function CVStatusMaintenanceInline() {
                             status={mapUserStatus(candidate.status || 'PENDING_VERIFICATION')} 
                           />
                 </td>
+                        <td className="px-3 py-3 whitespace-nowrap text-center">
+                          {hasResume ? (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleViewResume(candidate);
+                              }}
+                              className="mx-auto p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors active:scale-95 cursor-pointer"
+                              title="View Resume"
+                              type="button"
+                            >
+                              <FileIcon className="w-6 h-6" />
+                            </button>
+                          ) : (
+                            <span className="text-gray-400" title="No resume available">
+                              <FileIcon className="w-6 h-6 opacity-30" />
+                            </span>
+                          )}
+                        </td>
                         <td className="pl-3 pr-6 py-3 whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                            {candidate.resumes && candidate.resumes.length > 0 && (
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleViewResume(candidate);
-                                }}
-                                className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors active:scale-95 cursor-pointer"
-                                title="View Resume"
-                                type="button"
-                              >
-                                <FileIcon className="w-5 h-5" />
-                              </button>
-                            )}
+                  <div className="flex items-center gap-2 flex-wrap">
                             <button
                               onClick={() => handleViewCandidate(candidate.id)}
                               className="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-colors"
@@ -1365,6 +1421,15 @@ function CVStatusMaintenanceInline() {
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => navigate(`/edit-profile/${candidate.userId || candidate.id}`)}
+                              className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                              title="Edit Candidate"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                               </svg>
                             </button>
                             <select
@@ -1388,10 +1453,107 @@ function CVStatusMaintenanceInline() {
         </Table>
       </div>
 
+      {/* Mobile Card View */}
+      <div className="md:hidden px-6 pb-4 space-y-4">
+        {candidates.map((candidate: CandidateProfile) => {
+          const location = candidate.city?.name || candidate.currentLocation || 'N/A';
+          const hasResume = candidate.resumes && candidate.resumes.length > 0;
+          
+          return (
+            <div key={candidate.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-1">Email</p>
+                  <p className="text-sm text-gray-900 break-words">{candidate.email || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-1">Phone</p>
+                  <p className="text-sm text-gray-900">{candidate.phone || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-1">Location</p>
+                  <p className="text-sm text-gray-900">{location}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-1">Experience</p>
+                  <p className="text-sm text-gray-900">
+                    {candidate.experienceYears ? `${candidate.experienceYears} years` : 'N/A'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-1">Status</p>
+                  <StatusBadge 
+                    status={mapUserStatus(candidate.status || 'PENDING_VERIFICATION')} 
+                  />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-2">Resume</p>
+                  {hasResume ? (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleViewResume(candidate);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors active:scale-95 cursor-pointer w-full justify-center"
+                      title="View Resume"
+                      type="button"
+                    >
+                      <FileIcon className="w-5 h-5" />
+                      <span className="text-sm font-medium">View Resume</span>
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-500 rounded-md w-full justify-center opacity-50">
+                      <FileIcon className="w-5 h-5" />
+                      <span className="text-sm font-medium">No Resume Available</span>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-2">Actions</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => handleViewCandidate(candidate.id)}
+                      className="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-colors"
+                      title="View Candidate Profile"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => navigate(`/edit-profile/${candidate.userId || candidate.id}`)}
+                      className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                      title="Edit Candidate"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <select
+                      value={candidate.status || 'PENDING_VERIFICATION'}
+                      onChange={(e) => handleCandidateStatusChange(candidate, e.target.value)}
+                      disabled={!candidate.userId || updateCandidateStatusMutation.isPending}
+                      className="text-xs px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed bg-white flex-1"
+                      title="Change Candidate Status"
+                    >
+                      <option value="ACTIVE">Active</option>
+                      <option value="INACTIVE">Inactive</option>
+                      <option value="SUSPENDED">Suspended</option>
+                      <option value="PENDING_VERIFICATION">Pending Verification</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Pagination */}
-      <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-700">
+      <div className="px-4 sm:px-6 py-3 border-t border-gray-200 bg-gray-50">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="text-xs sm:text-sm text-gray-700 text-center sm:text-left">
                 Showing {((candidatesPage - 1) * 10) + 1}-{Math.min(candidatesPage * 10, totalCandidates)} of {totalCandidates}
           </div>
           <div className="flex items-center gap-2">
@@ -1404,7 +1566,7 @@ function CVStatusMaintenanceInline() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-                <span className="text-sm text-gray-500">
+                <span className="text-xs sm:text-sm text-gray-500">
                   Page {candidatesPage} of {totalPages}
                 </span>
             <button 

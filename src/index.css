@@ -419,6 +419,14 @@ layer(base);
 .flatpickr-wrapper {
   @apply w-full;
 }
+
+/* Ensure flatpickr input fields have consistent white background in dark mode */
+.flatpickr-wrapper input.flatpickr-input,
+input[id*="dateOfBirth"],
+input[id*="candidateJoiningDate"] {
+  @apply !bg-white dark:!bg-white !text-gray-800 dark:!text-gray-800;
+}
+
 .flatpickr-calendar {
   @apply mt-2 !bg-white !rounded-xl !p-5 !border !border-gray-200 !text-gray-500 dark:!bg-gray-dark dark:!border-gray-700 dark:!text-gray-400 dark:!shadow-theme-xl 2xsm:!w-auto;
 }

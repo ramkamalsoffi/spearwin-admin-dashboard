@@ -424,7 +424,7 @@ export default function EditProfile() {
         mobileNumber: data.mobileNumber?.trim() || undefined,
         jobExperience: data.experience?.trim() || undefined,
         profilePicture: data.profilePicture || undefined,
-        cvResume: data.cvResume || undefined,
+        // cvResume removed - not accepted in UpdateCandidateDataDto
       };
 
       return userService.updateUserWithProfile(normalizedId, userData, candidateData);

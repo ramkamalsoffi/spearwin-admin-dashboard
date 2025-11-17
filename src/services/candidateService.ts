@@ -62,7 +62,8 @@ export interface CandidateProfile {
   resumes?: Array<{
     id: string;
     fileName: string;
-    fileUrl: string;
+    filePath: string; // Changed from fileUrl to filePath to match backend schema
+    fileUrl?: string; // Keep for backward compatibility
     uploadedAt: Date;
   }>;
   city?: {
