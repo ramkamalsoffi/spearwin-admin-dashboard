@@ -80,8 +80,14 @@ export const jobService = {
   },
 
   // Get job applications
-  getJobApplications: async (jobId: string): Promise<any> => {
-    const response = await api.get(`/api/admin/jobs/${jobId}/applications`);
+  getJobApplications: async (jobId: string, params?: { page?: number; limit?: number }): Promise<any> => {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    
+    const queryString = queryParams.toString();
+    const url = `/api/admin/jobs/${jobId}/applications${queryString ? `?${queryString}` : ''}`;
+    const response = await api.get(url);
     return response.data;
   },
 };

@@ -241,6 +241,7 @@ export const adminService = {
 // Advanced CV Search Types
 export interface AdvancedCVSearchResult {
   candidateId: string;
+  userId?: string;
   firstName: string;
   lastName: string;
   email: string;
