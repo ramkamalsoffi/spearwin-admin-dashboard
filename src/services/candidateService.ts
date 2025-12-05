@@ -104,20 +104,21 @@ export const candidateService = {
   searchCandidates: async (params: CVSearchQueryParams): Promise<CVSearchResponse> => {
     const queryParams = new URLSearchParams();
     
-    // Build query string
-    if (params.search) queryParams.append('search', params.search);
-    if (params.email) queryParams.append('email', params.email);
-    if (params.currentCompany) queryParams.append('currentCompany', params.currentCompany);
-    if (params.currentLocation) queryParams.append('currentLocation', params.currentLocation);
-    if (params.profileType) queryParams.append('profileType', params.profileType);
-    if (params.skills) {
-      // Add skills to search term if not already in search
-      if (params.search && !params.search.includes(params.skills)) {
-        queryParams.set('search', `${params.search} ${params.skills}`);
-      } else if (!params.search) {
-        queryParams.append('search', params.skills);
-      }
+    // Build search string - combine all searchable fields into one 'search' parameter
+    // The backend searches in: email, phone, firstName, lastName
+    // Note: currentCompany, currentLocation, and profileType are NOT supported by the backend
+    const searchTerms: string[] = [];
+    if (params.search) searchTerms.push(params.search);
+    if (params.email) searchTerms.push(params.email);
+    // Note: currentCompany is not supported by backend - would need backend changes to filter by company
+    // if (params.currentCompany) searchTerms.push(params.currentCompany);
+    if (params.skills) searchTerms.push(params.skills);
+    
+    // Combine all search terms into one search parameter
+    if (searchTerms.length > 0) {
+      queryParams.append('search', searchTerms.join(' '));
     }
+    
     if (params.page) queryParams.append('page', params.page.toString());
     if (params.limit) queryParams.append('limit', params.limit.toString());
     if (params.sortBy) queryParams.append('sortBy', params.sortBy);

@@ -63,7 +63,7 @@ const AppHeader: React.FC = () => {
           <div className="hidden lg:block">
             <form>
               <div className="relative">
-                <span className="absolute -translate-y-1/2 pointer-events-none left-4 top-1/2">
+                {/* <span className="absolute -translate-y-1/2 pointer-events-none left-4 top-1/2">
                   <svg
                     className="fill-gray-400"
                     width="18"
@@ -79,13 +79,13 @@ const AppHeader: React.FC = () => {
                       fill=""
                     />
                   </svg>
-                </span>
-                <input
+                </span> */}
+                {/* <input
                   ref={inputRef}
                   type="text"
                   placeholder="Search"
                   className="h-10 w-[280px] rounded-full border border-gray-200 bg-gray-50 py-2.5 pl-12 pr-4 text-sm text-gray-700 placeholder:text-gray-400 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                />
+                /> */}
               </div>
             </form>
           </div>

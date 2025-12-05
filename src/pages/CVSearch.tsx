@@ -1022,6 +1022,39 @@ function CVStatusMaintenanceInline() {
   const [candidateNameFilter, setCandidateNameFilter] = useState<string>("");
   const [emailFilter, setEmailFilter] = useState<string>("");
   const [companyFilter, setCompanyFilter] = useState<string>("");
+  const [selectedCandidateUserId, setSelectedCandidateUserId] = useState<string | null>(null);
+
+  // Debounced filter values for API calls
+  const [debouncedCandidateNameFilter, setDebouncedCandidateNameFilter] = useState<string>("");
+  const [debouncedEmailFilter, setDebouncedEmailFilter] = useState<string>("");
+  const [debouncedCompanyFilter, setDebouncedCompanyFilter] = useState<string>("");
+
+  // Debounce candidate name filter (1 second)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedCandidateNameFilter(candidateNameFilter);
+      setCandidatesPage(1); // Reset to first page when filter changes
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [candidateNameFilter]);
+
+  // Debounce email filter (1 second)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedEmailFilter(emailFilter);
+      setCandidatesPage(1); // Reset to first page when filter changes
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [emailFilter]);
+
+  // Debounce company filter (1 second)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedCompanyFilter(companyFilter);
+      setCandidatesPage(1); // Reset to first page when filter changes
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [companyFilter]);
 
   // Map user status to StatusBadge type
   const mapUserStatus = (status: string): "active" | "inactive" | "pending" | "completed" | "cancelled" => {
@@ -1047,13 +1080,13 @@ function CVStatusMaintenanceInline() {
     error: candidatesError,
     refetch: refetchCandidates 
   } = useQuery({
-    queryKey: ['all-candidates', candidatesPage, statusFilter, candidateNameFilter, emailFilter, companyFilter],
+    queryKey: ['all-candidates', candidatesPage, statusFilter, debouncedCandidateNameFilter, debouncedEmailFilter, debouncedCompanyFilter],
     queryFn: async () => {
       try {
         const result = await candidateService.searchCandidates({
-          search: candidateNameFilter || undefined,
-          email: emailFilter || undefined,
-          currentCompany: companyFilter || undefined,
+          search: debouncedCandidateNameFilter || undefined,
+          email: debouncedEmailFilter || undefined,
+          currentCompany: debouncedCompanyFilter || undefined,
           page: candidatesPage,
           limit: 10,
           sortBy: 'createdAt',
@@ -1189,8 +1222,13 @@ function CVStatusMaintenanceInline() {
     }
   };
 
-  const handleViewCandidate = (candidateId: string) => {
-    navigate(`/candidate/${candidateId}`);
+  const handleViewCandidate = (candidate: CandidateProfile) => {
+    const userId = candidate.userId || candidate.id;
+    if (userId) {
+      setSelectedCandidateUserId(userId);
+    } else {
+      toast.error('User ID not available for this candidate');
+    }
   };
 
   const handleRefresh = () => {
@@ -1273,7 +1311,6 @@ function CVStatusMaintenanceInline() {
               value={candidateNameFilter}
               onChange={(e) => {
                 setCandidateNameFilter(e.target.value);
-                setCandidatesPage(1);
               }}
               placeholder="Filter by candidate name"
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1286,7 +1323,6 @@ function CVStatusMaintenanceInline() {
               value={emailFilter}
               onChange={(e) => {
                 setEmailFilter(e.target.value);
-                setCandidatesPage(1);
               }}
               placeholder="Filter by email"
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1299,7 +1335,6 @@ function CVStatusMaintenanceInline() {
               value={companyFilter}
               onChange={(e) => {
                 setCompanyFilter(e.target.value);
-                setCandidatesPage(1);
               }}
               placeholder="Filter by company"
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1399,7 +1434,7 @@ function CVStatusMaintenanceInline() {
                         <td className="pl-3 pr-6 py-3 whitespace-nowrap">
                   <div className="flex items-center gap-2 flex-wrap">
                             <button
-                              onClick={() => handleViewCandidate(candidate.id)}
+                              onClick={() => handleViewCandidate(candidate)}
                               className="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-colors"
                               title="View Candidate Profile"
                             >
@@ -1497,7 +1532,7 @@ function CVStatusMaintenanceInline() {
                   <p className="text-xs font-medium text-gray-500 mb-2">Actions</p>
                   <div className="flex items-center gap-2 flex-wrap">
                     <button
-                      onClick={() => handleViewCandidate(candidate.id)}
+                      onClick={() => handleViewCandidate(candidate)}
                       className="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-colors"
                       title="View Candidate Profile"
                     >
@@ -1567,6 +1602,13 @@ function CVStatusMaintenanceInline() {
       </div>
         </>
       )}
+
+      {/* Candidate View Dialog */}
+      <CandidateViewDialog
+        isOpen={selectedCandidateUserId !== null}
+        onClose={() => setSelectedCandidateUserId(null)}
+        userId={selectedCandidateUserId}
+      />
     </div>
   );
 }
@@ -1580,6 +1622,18 @@ function JobApplicationsSection() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [jobSearch, setJobSearch] = useState("");
   const [applicationsPage, setApplicationsPage] = useState(1);
+
+  // Debounced email filter for API calls
+  const [debouncedEmailFilter, setDebouncedEmailFilter] = useState<string>("");
+
+  // Debounce email filter (1 second)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedEmailFilter(emailFilter);
+      setApplicationsPage(1); // Reset to first page when filter changes
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [emailFilter]);
 
   // Fetch jobs for dropdown
   const { data: jobsData, isLoading: jobsLoading } = useQuery({
@@ -1606,7 +1660,7 @@ function JobApplicationsSection() {
     error: applicationsError,
     refetch: refetchApplications 
   } = useQuery({
-    queryKey: ['all-applications', jobTitleFilter, emailFilter, statusFilter, applicationsPage],
+    queryKey: ['all-applications', jobTitleFilter, debouncedEmailFilter, statusFilter, applicationsPage],
     queryFn: async () => {
       const params: any = {
         page: applicationsPage.toString(),
@@ -1614,7 +1668,7 @@ function JobApplicationsSection() {
       };
       
       if (jobTitleFilter) params.jobTitle = jobTitleFilter;
-      if (emailFilter) params.candidateName = emailFilter; // Using candidateName for email search
+      if (debouncedEmailFilter) params.candidateName = debouncedEmailFilter; // Using candidateName for email search
       if (statusFilter) params.status = statusFilter;
       
       const response = await adminService.getAllApplications(params);
@@ -1780,7 +1834,6 @@ function JobApplicationsSection() {
                 value={emailFilter}
                 onChange={(e) => {
                   setEmailFilter(e.target.value);
-                  setApplicationsPage(1);
                 }}
                 placeholder="Enter candidate email..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
