@@ -433,6 +433,7 @@ export default function AddJob() {
                     <option value="REMOTE">Remote</option>
                     <option value="ONSITE">Onsite</option>
                     <option value="HYBRID">Hybrid</option>
+                    <option value="HYBRID">Work From Office</option>
                   </select>
                 </div>
 
