@@ -14,24 +14,25 @@ export default function AdminUsers() {
   const [orderType, setOrderType] = useState("Order Type");
   const [orderStatus, setOrderStatus] = useState("Order Status");
   const [searchTerm, setSearchTerm] = useState("");
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, orderStatus, orderType, filterBy]);
+  }, [searchTerm, orderStatus, orderType, filterBy, rowsPerPage]);
 
   // Build query parameters for API
   const buildQueryParams = () => {
     const params: any = {
       page: currentPage,
-      limit: 10,
+      limit: rowsPerPage,
     };
 
     if (searchTerm) {
       params.search = searchTerm;
     }
 
-    // Map orderStatus to backend status values
+    // Map orderStatus to backend status valuesin 
     if (orderStatus === "Active") {
       params.status = "ACTIVE";
     } else if (orderStatus === "Pending") {
@@ -66,7 +67,7 @@ export default function AdminUsers() {
 
   // Fetch admin users data from API with query parameters
   const { data: adminUsersResponse, isLoading, error, refetch } = useQuery({
-    queryKey: ['adminUsers', currentPage, filterBy, orderType, orderStatus, searchTerm],
+    queryKey: ['adminUsers', currentPage, filterBy, orderType, orderStatus, searchTerm, rowsPerPage],
     queryFn: async () => {
       const params = buildQueryParams();
       const queryString = new URLSearchParams(
@@ -328,27 +329,47 @@ export default function AdminUsers() {
           
           {/* Pagination */}
           <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-700">
-                Showing {startIndex + 1}-{Math.min(endIndex, totalUsers)} of {totalUsers} users
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-gray-700">
+                  Showing {startIndex + 1}-{Math.min(endIndex, totalUsers)} of {totalUsers} users
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">Rows per page:</span>
+                  <select
+                    value={rowsPerPage}
+                    onChange={(e) => {
+                      setRowsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
               </div>
+
               <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">
+                  Page {currentPage} of {totalPages || 1}
+                </span>
                 <button 
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                  disabled={currentPage === 1 || isLoading}
+                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <span className="text-sm text-gray-500">
-                  Page {currentPage} of {totalPages || 1}
-                </span>
                 <button 
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage >= totalPages}
-                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                  disabled={currentPage >= totalPages || isLoading}
+                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

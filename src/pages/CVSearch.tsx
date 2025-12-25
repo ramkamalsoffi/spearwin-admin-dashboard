@@ -784,13 +784,14 @@ function AdvancedSearchResults({
 }) {
   const navigate = useNavigate();
   const [selectedCandidateUserId, setSelectedCandidateUserId] = useState<string | null>(null);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
 
   // Build query params
   const buildQueryParams = () => {
     const params: any = {
       page: currentPage.toString(),
-      limit: '10',
+      limit: rowsPerPage.toString(),
     };
     
     if (searchParams.keywords) params.keywords = searchParams.keywords;
@@ -987,32 +988,54 @@ function AdvancedSearchResults({
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-                <div className="text-sm text-gray-700">
-                  Showing {((currentPage - 1) * 10) + 1}-{Math.min(currentPage * 10, total)} of {total}
-                </div>
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1 || isLoading}
-                    className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
-                  <span className="text-sm text-gray-500">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <button 
-                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages || isLoading}
-                    className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
+              <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm text-gray-700">
+                      Showing {((currentPage - 1) * rowsPerPage) + 1}-{Math.min(currentPage * rowsPerPage, total)} of {total}
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500">Rows per page:</span>
+                      <select
+                        value={rowsPerPage}
+                        onChange={(e) => {
+                          setRowsPerPage(Number(e.target.value));
+                          setCurrentPage(1);
+                        }}
+                        className="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      >
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button 
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1 || isLoading}
+                      className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button 
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages || isLoading}
+                      className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -1034,6 +1057,7 @@ function AdvancedSearchResults({
 function CVStatusMaintenanceInline() {
   const navigate = useNavigate();
   const [candidatesPage, setCandidatesPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [candidateNameFilter, setCandidateNameFilter] = useState<string>("");
   const [emailFilter, setEmailFilter] = useState<string>("");
@@ -1096,7 +1120,7 @@ function CVStatusMaintenanceInline() {
     error: candidatesError,
     refetch: refetchCandidates 
   } = useQuery({
-    queryKey: ['all-candidates', candidatesPage, statusFilter, debouncedCandidateNameFilter, debouncedEmailFilter, debouncedCompanyFilter],
+    queryKey: ['all-candidates', candidatesPage, rowsPerPage, statusFilter, debouncedCandidateNameFilter, debouncedEmailFilter, debouncedCompanyFilter],
     queryFn: async () => {
       try {
         const result = await candidateService.searchCandidates({
@@ -1104,7 +1128,7 @@ function CVStatusMaintenanceInline() {
           email: debouncedEmailFilter || undefined,
           currentCompany: debouncedCompanyFilter || undefined,
           page: candidatesPage,
-          limit: 10,
+          limit: rowsPerPage,
           sortBy: 'createdAt',
           sortOrder: 'desc',
         });
@@ -1587,27 +1611,47 @@ function CVStatusMaintenanceInline() {
 
       {/* Pagination */}
       <div className="px-4 sm:px-6 py-3 border-t border-gray-200 bg-gray-50">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="text-xs sm:text-sm text-gray-700 text-center sm:text-left">
-                Showing {((candidatesPage - 1) * 10) + 1}-{Math.min(candidatesPage * 10, totalCandidates)} of {totalCandidates}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-gray-700">
+              Showing {((candidatesPage - 1) * rowsPerPage) + 1}-{Math.min(candidatesPage * rowsPerPage, totalCandidates)} of {totalCandidates}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">Rows per page:</span>
+              <select
+                value={rowsPerPage}
+                onChange={(e) => {
+                  setRowsPerPage(Number(e.target.value));
+                  setCandidatesPage(1);
+                }}
+                className="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
           </div>
+
           <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">
+              Page {candidatesPage} of {totalPages}
+            </span>
             <button 
-                  onClick={() => setCandidatesPage(Math.max(1, candidatesPage - 1))}
-                  disabled={candidatesPage === 1 || candidatesLoading}
-                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => setCandidatesPage(Math.max(1, candidatesPage - 1))}
+              disabled={candidatesPage === 1 || candidatesLoading}
+              className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-                <span className="text-xs sm:text-sm text-gray-500">
-                  Page {candidatesPage} of {totalPages}
-                </span>
             <button 
-                  onClick={() => setCandidatesPage(Math.min(totalPages, candidatesPage + 1))}
-                  disabled={candidatesPage === totalPages || candidatesLoading}
-                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => setCandidatesPage(Math.min(totalPages, candidatesPage + 1))}
+              disabled={candidatesPage === totalPages || candidatesLoading}
+              className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -1638,6 +1682,7 @@ function JobApplicationsSection() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [jobSearch, setJobSearch] = useState("");
   const [applicationsPage, setApplicationsPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(20);
 
   // Debounced email filter for API calls
   const [debouncedEmailFilter, setDebouncedEmailFilter] = useState<string>("");
@@ -1676,11 +1721,11 @@ function JobApplicationsSection() {
     error: applicationsError,
     refetch: refetchApplications 
   } = useQuery({
-    queryKey: ['all-applications', jobTitleFilter, debouncedEmailFilter, statusFilter, applicationsPage],
+    queryKey: ['all-applications', jobTitleFilter, debouncedEmailFilter, statusFilter, applicationsPage, rowsPerPage],
     queryFn: async () => {
       const params: any = {
         page: applicationsPage.toString(),
-        limit: '20',
+        limit: rowsPerPage.toString(),
       };
       
       if (jobTitleFilter) params.jobTitle = jobTitleFilter;
@@ -2129,11 +2174,34 @@ function JobApplicationsSection() {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="px-4 sm:px-6 py-3 border-t border-gray-200 bg-gray-50">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                  <div className="text-xs sm:text-sm text-gray-700 text-center sm:text-left">
-                    Showing {((applicationsPage - 1) * 20) + 1}-{Math.min(applicationsPage * 20, totalApplications)} of {totalApplications}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm text-gray-700">
+                      Showing {((applicationsPage - 1) * rowsPerPage) + 1}-{Math.min(applicationsPage * rowsPerPage, totalApplications)} of {totalApplications}
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500">Rows per page:</span>
+                      <select
+                        value={rowsPerPage}
+                        onChange={(e) => {
+                          setRowsPerPage(Number(e.target.value));
+                          setApplicationsPage(1);
+                        }}
+                        className="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      >
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                      </select>
+                    </div>
                   </div>
+
                   <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">
+                      Page {applicationsPage} of {totalPages}
+                    </span>
                     <button 
                       onClick={() => setApplicationsPage(Math.max(1, applicationsPage - 1))}
                       disabled={applicationsPage === 1 || applicationsLoading}
@@ -2143,9 +2211,6 @@ function JobApplicationsSection() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                       </svg>
                     </button>
-                    <span className="text-xs sm:text-sm text-gray-500">
-                      Page {applicationsPage} of {totalPages}
-                    </span>
                     <button 
                       onClick={() => setApplicationsPage(Math.min(totalPages, applicationsPage + 1))}
                       disabled={applicationsPage === totalPages || applicationsLoading}

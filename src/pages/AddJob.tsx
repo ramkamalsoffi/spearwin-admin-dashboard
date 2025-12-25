@@ -413,7 +413,7 @@ export default function AddJob() {
                     placeholder="Enter job title"
                     className={`w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 ${
                       errors.title 
-                        ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
+                        ? "border-blue-200 bg-blue-50 focus:ring-blue-200 focus:border-blue-300" 
                         : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                     }`}
                   />
@@ -431,7 +431,7 @@ export default function AddJob() {
                     onChange={handleInputChange}
                     className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 ${
                       errors.companyId 
-                        ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
+                        ? "border-blue-200 bg-blue-50 focus:ring-blue-200 focus:border-blue-300" 
                         : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                     }`}
                   >
@@ -459,7 +459,7 @@ export default function AddJob() {
                     onChange={handleInputChange}
                     className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 ${
                       errors.jobType 
-                        ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
+                        ? "border-blue-200 bg-blue-50 focus:ring-blue-200 focus:border-blue-300" 
                         : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                     } ${!formData.jobType ? "text-gray-500" : "text-gray-900"}`}
                   >
@@ -484,7 +484,7 @@ export default function AddJob() {
                     onChange={handleInputChange}
                     className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 ${
                       errors.workMode 
-                        ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
+                        ? "border-blue-200 bg-blue-50 focus:ring-blue-200 focus:border-blue-300" 
                         : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                     } ${!formData.workMode ? "text-gray-500" : "text-gray-900"}`}
                   >
@@ -508,7 +508,7 @@ export default function AddJob() {
                     onChange={handleInputChange}
                     className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 ${
                       errors.experienceLevel 
-                        ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
+                        ? "border-blue-200 bg-blue-50 focus:ring-blue-200 focus:border-blue-300" 
                         : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                     } ${!formData.experienceLevel ? "text-gray-500" : "text-gray-900"}`}
                   >
@@ -532,7 +532,7 @@ export default function AddJob() {
                     onChange={handleInputChange}
                     className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 ${
                       errors.status 
-                        ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
+                        ? "border-blue-200 bg-blue-50 focus:ring-blue-200 focus:border-blue-300" 
                         : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                     } ${!formData.status ? "text-gray-500" : "text-gray-900"}`}
                   >
@@ -572,7 +572,7 @@ export default function AddJob() {
                     rows={4}
                     className={`w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 ${
                       errors.description 
-                        ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
+                        ? "border-blue-200 bg-blue-50 focus:ring-blue-200 focus:border-blue-300" 
                         : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                     }`}
                   />

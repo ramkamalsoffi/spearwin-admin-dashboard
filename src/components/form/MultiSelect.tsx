@@ -83,9 +83,9 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
       <div className={`relative inline-block w-full ${isOpen ? "z-[100]" : "z-10"}`}>
         <div className="relative flex flex-col items-center">
           <div onClick={toggleDropdown} className="w-full">
-            <div className={`mb-2 flex min-h-[42px] w-full rounded-md border bg-white py-1.5 pl-3 pr-3 shadow-sm transition focus-within:ring-1 ${
+            <div className={`mb-2 flex min-h-[42px] w-full rounded-md border py-1.5 pl-3 pr-3 shadow-sm transition focus-within:ring-1 ${
               error 
-                ? "border-red-500 focus-within:border-red-500 focus-within:ring-red-500" 
+                ? "border-blue-200 bg-blue-50 focus-within:border-blue-300 focus-within:ring-blue-200" 
                 : "border-gray-300 focus-within:border-blue-500 focus-within:ring-blue-500"
             } cursor-pointer`}>
               <div className="flex flex-wrap flex-auto gap-2">

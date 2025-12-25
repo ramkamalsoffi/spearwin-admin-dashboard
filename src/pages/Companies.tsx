@@ -15,9 +15,9 @@ export default function Companies() {
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterBy, setFilterBy] = useState("Name");
   const [orderType, setOrderType] = useState("asc");
   const [orderStatus, setOrderStatus] = useState("All");
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
@@ -32,14 +32,14 @@ export default function Companies() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // Reset page when order status or order type changes
+  // Reset page when order status, order type or rows per page changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [orderStatus, orderType]);
+  }, [orderStatus, orderType, rowsPerPage]);
 
   // Fetch companies from API
   const { data: companiesResponse, isLoading, error, refetch } = useQuery({
-    queryKey: ['companies', debouncedSearchTerm, currentPage, orderStatus, orderType],
+    queryKey: ['companies', debouncedSearchTerm, currentPage, orderStatus, orderType, rowsPerPage],
     queryFn: async () => {
       console.log('Making API call with orderStatus:', orderStatus, 'orderType:', orderType);
       console.log('orderStatus type:', typeof orderStatus);
@@ -53,7 +53,7 @@ export default function Companies() {
         result = await companyService.getActiveCompanies({
           search: debouncedSearchTerm || undefined,
           page: currentPage,
-          limit: 10,
+          limit: rowsPerPage,
           sortBy: 'name',
           sortOrder: orderType
         });
@@ -62,7 +62,7 @@ export default function Companies() {
         result = await companyService.getInactiveCompanies({
           search: debouncedSearchTerm || undefined,
           page: currentPage,
-          limit: 10,
+          limit: rowsPerPage,
           sortBy: 'name',
           sortOrder: orderType
         });
@@ -71,7 +71,7 @@ export default function Companies() {
         result = await companyService.getCompanies({
           search: debouncedSearchTerm || undefined,
           page: currentPage,
-          limit: 10,
+          limit: rowsPerPage,
           sortBy: 'name',
           sortOrder: orderType
         });
@@ -95,40 +95,27 @@ export default function Companies() {
       queryClient.invalidateQueries({ queryKey: ['companies'] });
       toast.success(`Company ${variables.isActive ? 'activated' : 'deactivated'} successfully`);
     },
-    onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to update company status';
+    onError: (error: unknown) => {
+      const errorMessage = (error as any).response?.data?.message || 'Failed to update company status';
       toast.error(errorMessage);
       console.error('Error updating company status:', error);
     },
   });
 
-  // Debug logging
-  console.log('Companies Response:', companiesResponse);
-  console.log('Companies Loading:', isLoading);
-  console.log('Companies Error:', error);
-
   // Handle error
-  if (error) {
-    const errorMessage = (error as any).response?.data?.message || "Failed to fetch companies";
-    toast.error(errorMessage);
-    console.error("Error fetching companies:", error);
-  }
+  useEffect(() => {
+    if (error) {
+      const errorMessage = (error as any).response?.data?.message || "Failed to fetch companies";
+      toast.error(errorMessage);
+      console.error("Error fetching companies:", error);
+    }
+  }, [error]);
 
   // Use the companies directly from API response
   const companies = companiesResponse?.data || [];
   
-  console.log('Order Status:', orderStatus);
-  console.log('Companies from API:', companies);
-  console.log('Company details:', companies.map(c => ({ 
-    id: c.id, 
-    name: c.name, 
-    isActive: c.isActive,
-    isVerified: c.isVerified
-  })));
-  
-  const totalCompanies = companies.length;
-  const totalPages = Math.ceil(totalCompanies / 10);
-  const currentPageFromAPI = companiesResponse?.page || 1;
+  const totalCompanies = companiesResponse?.total || 0;
+  const totalPages = companiesResponse?.totalPages || 1;
 
   const handleEdit = (company: Company) => {
     navigate(`/edit-company/${company.id}`);
@@ -137,13 +124,6 @@ export default function Companies() {
   const handleView = (company: Company) => {
     setSelectedCompanyId(company.id);
     setIsViewDialogOpen(true);
-  };
-
-  const handleDelete = (company: Company) => {
-    if (window.confirm(`Are you sure you want to delete ${company.name}?`)) {
-      // TODO: Implement delete functionality
-      toast.success(`Company ${company.name} deleted successfully`);
-    }
   };
 
   const handleRefresh = async () => {
@@ -316,7 +296,7 @@ export default function Companies() {
                     <tr key={company.id} className="hover:bg-gray-50">
                       <td className="pl-6 pr-3 py-3 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 relative">
+                          <div className="shrink-0 h-10 w-10 relative">
                             {company.logo ? (
                               <>
                                 <img 
@@ -408,27 +388,47 @@ export default function Companies() {
 
           {/* Pagination */}
           <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-700">
-                Showing {companies.length > 0 ? ((currentPage - 1) * 10) + 1 : 0}-{Math.min(currentPage * 10, totalCompanies)} of {totalCompanies}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-gray-700">
+                  Showing {totalCompanies > 0 ? ((currentPage - 1) * rowsPerPage) + 1 : 0}-{Math.min(currentPage * rowsPerPage, totalCompanies)} of {totalCompanies}
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">Rows per page:</span>
+                  <select
+                    value={rowsPerPage}
+                    onChange={(e) => {
+                      setRowsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
               </div>
+
               <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">
+                  Page {currentPage} of {totalPages}
+                </span>
                 <button 
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1 || isLoading}
-                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <span className="text-sm text-gray-500">
-                  Page {currentPage} of {totalPages}
-                </span>
                 <button 
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages || isLoading}
-                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

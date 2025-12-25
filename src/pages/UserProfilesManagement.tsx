@@ -18,7 +18,7 @@ export default function UserProfilesManagement() {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [orderType, setOrderType] = useState<"asc" | "desc">("desc");
   const [filterStatus, setFilterStatus] = useState<string>("");
-  const profilesPerPage = 10;
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   
   // Modal state for candidate view dialog
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
@@ -37,12 +37,12 @@ export default function UserProfilesManagement() {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterStatus, orderType, debouncedSearchTerm]);
+  }, [filterStatus, orderType, debouncedSearchTerm, rowsPerPage]);
 
   // Build query parameters
   const queryParams = {
     page: currentPage,
-    limit: profilesPerPage,
+    limit: rowsPerPage,
     sortBy: 'createdAt',
     sortOrder: orderType,
     ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
@@ -76,8 +76,8 @@ export default function UserProfilesManagement() {
       };
       toast.success(`User ${statusMessages[variables.status] || 'updated'} successfully`);
     },
-    onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to update user status';
+    onError: (error: unknown) => {
+      const errorMessage = (error as any).response?.data?.message || 'Failed to update user status';
       toast.error(errorMessage);
       console.error('Error updating user status:', error);
     },
@@ -136,10 +136,13 @@ export default function UserProfilesManagement() {
   };
 
   // Handle error
-  if (error) {
-    const errorMessage = (error as any).response?.data?.message || "Failed to fetch users";
-    console.error("Error fetching users:", error);
-  }
+  useEffect(() => {
+    if (error) {
+      const errorMessage = (error as any).response?.data?.message || "Failed to fetch users";
+      toast.error(errorMessage);
+      console.error("Error fetching users:", error);
+    }
+  }, [error]);
 
   const handleRefresh = () => {
     refetch();
@@ -360,27 +363,47 @@ export default function UserProfilesManagement() {
 
           {/* Pagination */}
           <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-700">
-                Showing {((currentPage - 1) * profilesPerPage) + 1}-{Math.min(currentPage * profilesPerPage, totalProfiles)} of {totalProfiles}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-gray-700">
+                  Showing {((currentPage - 1) * rowsPerPage) + 1}-{Math.min(currentPage * rowsPerPage, totalProfiles)} of {totalProfiles}
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">Rows per page:</span>
+                  <select
+                    value={rowsPerPage}
+                    onChange={(e) => {
+                      setRowsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
               </div>
+
               <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">
+                  Page {currentPage} of {totalPages}
+                </span>
                 <button 
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1 || isLoading}
-                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <span className="text-sm text-gray-500">
-                  Page {currentPage} of {totalPages}
-                </span>
                 <button 
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages || isLoading}
-                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
