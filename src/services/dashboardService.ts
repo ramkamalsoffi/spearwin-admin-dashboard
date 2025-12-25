@@ -24,11 +24,15 @@ export interface DashboardStats {
   verifiedUsers: number;
   todayJobs: number;
   activeJobs: number;
+  totalResumes: number;
+  todayResumes: number;
   todayUsersChange: number;
   activeUsersChange: number;
   verifiedUsersChange: number;
   todayJobsChange: number;
   activeJobsChange: number;
+  totalResumesChange: number;
+  todayResumesChange: number;
 }
 
 export interface ApiResponse {
@@ -45,6 +49,12 @@ export interface ApiResponse {
     activeJobs: number;
     todayJobsChange: number;
     activeJobsChange: number;
+  };
+  resumes: {
+    totalResumes: number;
+    todayResumes: number;
+    totalResumesChange: number;
+    todayResumesChange: number;
   };
 }
 
@@ -66,11 +76,15 @@ export const dashboardService = {
       verifiedUsers: data.users.verifiedUsers,
       todayJobs: data.jobs.todayJobs,
       activeJobs: data.jobs.activeJobs,
+      totalResumes: data.resumes.totalResumes,
+      todayResumes: data.resumes.todayResumes,
       todayUsersChange: data.users.todayUsersChange,
       activeUsersChange: data.users.activeUsersChange,
       verifiedUsersChange: data.users.verifiedUsersChange,
       todayJobsChange: data.jobs.todayJobsChange,
       activeJobsChange: data.jobs.activeJobsChange,
+      totalResumesChange: data.resumes.totalResumesChange,
+      todayResumesChange: data.resumes.todayResumesChange,
     };
   },
 
@@ -96,11 +110,15 @@ export const dashboardService = {
       verifiedUsers: statsData.users.verifiedUsers,
       todayJobs: statsData.jobs.todayJobs,
       activeJobs: statsData.jobs.activeJobs,
+      totalResumes: statsData.resumes.totalResumes,
+      todayResumes: statsData.resumes.todayResumes,
       todayUsersChange: statsData.users.todayUsersChange,
       activeUsersChange: statsData.users.activeUsersChange,
       verifiedUsersChange: statsData.users.verifiedUsersChange,
       todayJobsChange: statsData.jobs.todayJobsChange,
       activeJobsChange: statsData.jobs.activeJobsChange,
+      totalResumesChange: statsData.resumes.totalResumesChange,
+      todayResumesChange: statsData.resumes.todayResumesChange,
     };
     
     return {

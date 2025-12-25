@@ -49,12 +49,28 @@ export default function CVSearch() {
     email: "",
   });
   const [advancedSearchTriggered, setAdvancedSearchTriggered] = useState(false);
+  const [debouncedAdvancedSearchData, setDebouncedAdvancedSearchData] = useState(advancedSearchData);
 
   // Debounce search terms for dropdowns
   const [companySearch, setCompanySearch] = useState("");
   const [candidateSearch, setCandidateSearch] = useState("");
   const [emailSearch, setEmailSearch] = useState("");
   const [skillSearch, setSkillSearch] = useState("");
+
+  // Debounce advanced search data (1 second)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedAdvancedSearchData(advancedSearchData);
+      
+      // Automatically trigger search results display if any field has a value
+      const hasValue = Object.values(advancedSearchData).some(val => val !== "" && val !== null && val !== undefined);
+      if (hasValue) {
+        setAdvancedSearchTriggered(true);
+        setCurrentPage(1);
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [advancedSearchData]);
 
   // Debounce search term for candidate name
   useEffect(() => {
@@ -399,7 +415,7 @@ export default function CVSearch() {
       {advancedSearchTriggered && showAdvancedSearch && (
         <div className="px-4 sm:px-6 lg:px-8 py-4">
           <AdvancedSearchResults 
-            searchParams={advancedSearchData}
+            searchParams={debouncedAdvancedSearchData}
             currentPage={currentPage}
             setCurrentPage={setCurrentPage}
           />

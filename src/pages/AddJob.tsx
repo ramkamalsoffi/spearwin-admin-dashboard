@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery, useQueries } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
+import MultiSelect from "../components/form/MultiSelect";
 import { jobService, companyService } from "../services";
 import { CreateJobRequest } from "../services/types";
 import { locationService, Country, State, City } from "../services/locationService";
@@ -75,8 +76,10 @@ export default function AddJob() {
   const [loadingAttributes, setLoadingAttributes] = useState(false);
 
   // Location state
-  const [selectedCountryId, setSelectedCountryId] = useState<number | null>(null);
-  const [selectedStateId, setSelectedStateId] = useState<number | null>(null);
+  const [selectedCountryIds, setSelectedCountryIds] = useState<number[]>([]);
+  const [selectedStateIds, setSelectedStateIds] = useState<number[]>([]);
+  const [selectedCityIds, setSelectedCityIds] = useState<number[]>([]);
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
 
   // Fetch countries for location
   const { data: countriesData } = useQuery({
@@ -84,19 +87,39 @@ export default function AddJob() {
     queryFn: () => locationService.getCountries(),
   });
 
-  // Fetch states when country is selected
-  const { data: statesData } = useQuery({
-    queryKey: ['states', selectedCountryId],
-    queryFn: () => locationService.getStatesByCountry(selectedCountryId!),
-    enabled: !!selectedCountryId,
+  // Fetch states when countries are selected
+  const statesQueries = useQueries({
+    queries: selectedCountryIds.map(id => ({
+      queryKey: ['states', id],
+      queryFn: () => locationService.getStatesByCountry(id),
+      enabled: !!id,
+    }))
   });
 
-  // Fetch cities when state is selected
-  const { data: citiesData } = useQuery({
-    queryKey: ['cities', selectedStateId],
-    queryFn: () => locationService.getCitiesByState(selectedStateId!),
-    enabled: !!selectedStateId,
+  // Combine all states from all selected countries
+  const allStates = statesQueries.reduce((acc, query) => {
+    if (query.data?.data) {
+      return [...acc, ...query.data.data];
+    }
+    return acc;
+  }, [] as State[]);
+
+  // Fetch cities when states are selected
+  const citiesQueries = useQueries({
+    queries: selectedStateIds.map(id => ({
+      queryKey: ['cities', id],
+      queryFn: () => locationService.getCitiesByState(id),
+      enabled: !!id,
+    }))
   });
+
+  // Combine all cities from all selected states
+  const allCities = citiesQueries.reduce((acc, query) => {
+    if (query.data?.data) {
+      return [...acc, ...query.data.data];
+    }
+    return acc;
+  }, [] as City[]);
 
   // Fetch companies for dropdown
   const { data: companiesData } = useQuery({
@@ -158,24 +181,29 @@ export default function AddJob() {
   };
 
   // Handle location changes
-  const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const countryId = e.target.value ? parseInt(e.target.value) : null;
-    setSelectedCountryId(countryId);
-    setSelectedStateId(null);
+  const handleCountryChange = (countryIds: string[]) => {
+    const ids = countryIds.map(id => parseInt(id));
+    setSelectedCountryIds(ids);
+    // Reset states and cities that are no longer valid
+    setSelectedStateIds([]);
+    setSelectedCityIds([]);
     setFormData(prev => ({ ...prev, cityId: "" }));
   };
 
-  const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const stateId = e.target.value ? parseInt(e.target.value) : null;
-    setSelectedStateId(stateId);
+  const handleStateChange = (stateIds: string[]) => {
+    const ids = stateIds.map(id => parseInt(id));
+    setSelectedStateIds(ids);
+    // Reset cities that are no longer valid
+    setSelectedCityIds([]);
     setFormData(prev => ({ ...prev, cityId: "" }));
   };
 
-  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const cityId = e.target.value ? parseInt(e.target.value) : null;
+  const handleCityChange = (cityIds: string[]) => {
+    const ids = cityIds.map(id => parseInt(id));
+    setSelectedCityIds(ids);
     setFormData(prev => ({
       ...prev,
-      cityId: cityId ? cityId.toString() : ""
+      cityId: ids.length > 0 ? ids[0].toString() : "" // Keep cityId for backward compatibility if needed
     }));
   };
 
@@ -258,18 +286,37 @@ export default function AddJob() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate form data
-    if (!formData.title || !formData.companyId || !formData.description || 
-        !formData.jobType || !formData.workMode || !formData.experienceLevel || !formData.status) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
     // Validate description length
-    if (formData.description.length < 10) {
+    if (formData.description && formData.description.length < 10) {
       toast.error("Description must be at least 10 characters long");
       return;
     }
+
+    // Validate required fields
+    const newErrors: Record<string, boolean> = {};
+    if (!formData.title) newErrors.title = true;
+    if (!formData.companyId) newErrors.companyId = true;
+    if (!formData.description) newErrors.description = true;
+    if (!formData.jobType) newErrors.jobType = true;
+    if (!formData.workMode) newErrors.workMode = true;
+    if (!formData.experienceLevel) newErrors.experienceLevel = true;
+    if (!formData.status) newErrors.status = true;
+    if (selectedCityIds.length === 0) newErrors.cityIds = true;
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.error("Please fill in all required fields");
+      
+      // Scroll to the first error
+      const firstErrorField = Object.keys(newErrors)[0];
+      const element = document.getElementById(firstErrorField);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+
+    setErrors({});
 
     if (formData.description.length > 5000) {
       toast.error("Description must be less than 5000 characters");
@@ -297,7 +344,7 @@ export default function AddJob() {
       benefits: formData.benefits || null,
       minSalary: formData.minSalary ? parseFloat(formData.minSalary) : null,
       maxSalary: formData.maxSalary ? parseFloat(formData.maxSalary) : null,
-      cityId: formData.cityId ? parseInt(formData.cityId) : null,
+      cityId: selectedCityIds.length > 0 ? selectedCityIds[0] : null,
       skillsRequired: skillsArray.length > 0 ? skillsArray : [],
       jobType: formData.jobType as CreateJobRequest['jobType'],
       workMode: formData.workMode as CreateJobRequest['workMode'],
@@ -355,7 +402,7 @@ export default function AddJob() {
                 {/* Job Title */}
                 <div>
                   <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                    Job Title
+                    Job Title <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -364,23 +411,29 @@ export default function AddJob() {
                     value={formData.title}
                     onChange={handleInputChange}
                     placeholder="Enter job title"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 ${
+                      errors.title 
+                        ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
+                        : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                    }`}
                   />
                 </div>
 
                 {/* Company */}
                 <div>
                   <label htmlFor="companyId" className="block text-sm font-medium text-gray-700 mb-2">
-                    Company
+                    Company <span className="text-red-500">*</span>
                   </label>
                   <select
                     id="companyId"
                     name="companyId"
                     value={formData.companyId}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 ${
+                      errors.companyId 
+                        ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
+                        : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                    }`}
                   >
                     <option value="">Select a company</option>
                     {companiesData?.data?.map((company) => {
@@ -397,15 +450,18 @@ export default function AddJob() {
                 {/* Job Type */}
                 <div>
                   <label htmlFor="jobType" className="block text-sm font-medium text-gray-700 mb-2">
-                    Job Type
+                    Job Type <span className="text-red-500">*</span>
                   </label>
                   <select
                     id="jobType"
                     name="jobType"
                     value={formData.jobType}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-500"
-                    required
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 ${
+                      errors.jobType 
+                        ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
+                        : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                    } ${!formData.jobType ? "text-gray-500" : "text-gray-900"}`}
                   >
                     <option value="">Select job type</option>
                     <option value="FULL_TIME">Full Time</option>
@@ -419,15 +475,18 @@ export default function AddJob() {
                 {/* Work Mode */}
                 <div>
                   <label htmlFor="workMode" className="block text-sm font-medium text-gray-700 mb-2">
-                    Work Mode
+                    Work Mode <span className="text-red-500">*</span>
                   </label>
                   <select
                     id="workMode"
                     name="workMode"
                     value={formData.workMode}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-500"
-                    required
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 ${
+                      errors.workMode 
+                        ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
+                        : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                    } ${!formData.workMode ? "text-gray-500" : "text-gray-900"}`}
                   >
                     <option value="">Select work mode</option>
                     <option value="REMOTE">Remote</option>
@@ -440,15 +499,18 @@ export default function AddJob() {
                 {/* Experience Level */}
                 <div>
                   <label htmlFor="experienceLevel" className="block text-sm font-medium text-gray-700 mb-2">
-                    Experience Level
+                    Experience Level <span className="text-red-500">*</span>
                   </label>
                   <select
                     id="experienceLevel"
                     name="experienceLevel"
                     value={formData.experienceLevel}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-500"
-                    required
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 ${
+                      errors.experienceLevel 
+                        ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
+                        : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                    } ${!formData.experienceLevel ? "text-gray-500" : "text-gray-900"}`}
                   >
                     <option value="">Select experience level</option>
                     <option value="ENTRY_LEVEL">Entry Level</option>
@@ -461,14 +523,18 @@ export default function AddJob() {
                 {/* Status */}
                 <div>
                   <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                    Status
+                    Status <span className="text-red-500">*</span>
                   </label>
                   <select
                     id="status"
                     name="status"
                     value={formData.status}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-500"
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 ${
+                      errors.status 
+                        ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
+                        : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                    } ${!formData.status ? "text-gray-500" : "text-gray-900"}`}
                   >
                     <option value="">Select status</option>
                     <option value="DRAFT">Draft</option>
@@ -495,7 +561,7 @@ export default function AddJob() {
                 {/* Job Description */}
                 <div className="md:col-span-2">
                   <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                    Job Description
+                    Job Description <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     id="description"
@@ -504,8 +570,11 @@ export default function AddJob() {
                     onChange={handleInputChange}
                     placeholder="Enter job description (minimum 10 characters)"
                     rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 ${
+                      errors.description 
+                        ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
+                        : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                    }`}
                   />
                 </div>
 
@@ -594,65 +663,44 @@ export default function AddJob() {
 
                 {/* Location - Country */}
                 <div>
-                  <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-2">
-                    Country
-                  </label>
-                  <select
-                    id="country"
-                    value={selectedCountryId || ""}
+                  <MultiSelect
+                    label="Country"
+                    options={countriesData?.data?.map((country: Country) => ({
+                      value: country.id.toString(),
+                      text: country.name
+                    })) || []}
+                    defaultSelected={selectedCountryIds.map(id => id.toString())}
                     onChange={handleCountryChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">Select a country</option>
-                    {countriesData?.data?.map((country: Country) => (
-                      <option key={country.id} value={country.id}>
-                        {country.name}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 {/* Location - State */}
                 <div>
-                  <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2">
-                    State
-                  </label>
-                  <select
-                    id="state"
-                    value={selectedStateId || ""}
+                  <MultiSelect
+                    label="State"
+                    options={allStates.map((state: State) => ({
+                      value: state.id.toString(),
+                      text: state.name
+                    }))}
+                    defaultSelected={selectedStateIds.map(id => id.toString())}
                     onChange={handleStateChange}
-                    disabled={!selectedCountryId}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  >
-                    <option value="">{selectedCountryId ? "Select a state" : "Select country first"}</option>
-                    {statesData?.data?.map((state: State) => (
-                      <option key={state.id} value={state.id}>
-                        {state.name}
-                      </option>
-                    ))}
-                  </select>
+                    disabled={selectedCountryIds.length === 0}
+                  />
                 </div>
 
                 {/* Location - City */}
-                <div className="md:col-span-2">
-                  <label htmlFor="cityId" className="block text-sm font-medium text-gray-700 mb-2">
-                    City
-                  </label>
-                  <select
-                    id="cityId"
-                    name="cityId"
-                    value={formData.cityId}
+                <div id="cityIds" className="md:col-span-2">
+                  <MultiSelect
+                    label="City"
+                    options={allCities.map((city: City) => ({
+                      value: city.id.toString(),
+                      text: city.name
+                    }))}
+                    defaultSelected={selectedCityIds.map(id => id.toString())}
                     onChange={handleCityChange}
-                    disabled={!selectedStateId}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  >
-                    <option value="">{selectedStateId ? "Select a city" : "Select state first"}</option>
-                    {citiesData?.data?.map((city: City) => (
-                      <option key={city.id} value={city.id}>
-                        {city.name}
-                      </option>
-                    ))}
-                  </select>
+                    disabled={selectedStateIds.length === 0}
+                    error={errors.cityIds}
+                  />
                 </div>
 
                 {/* Skills Required */}

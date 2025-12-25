@@ -47,7 +47,7 @@ export default function Home() {
       <div className="px-4">
         
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6 mb-6 lg:mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
           {/* Today User */}
           <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-gray-200">
             <div className="flex items-start">
@@ -149,6 +149,48 @@ export default function Home() {
             <div className="flex items-center">
                   <span className={`text-xs font-medium ${(stats?.activeJobsChange ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     {(stats?.activeJobsChange ?? 0) >= 0 ? '↗' : '↘'} {Math.abs(stats?.activeJobsChange ?? 0)}% {(stats?.activeJobsChange ?? 0) >= 0 ? 'Up' : 'Down'} from yesterday
+                  </span>
+                </div>
+          </div>
+
+          {/* Total CVs */}
+          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-gray-200">
+            <div className="flex items-start">
+              <div className="flex-1 w-3/4">
+                <p className="text-sm font-medium text-gray-600 mb-1">Total CVs</p>
+                <p className="text-2xl font-bold text-gray-900 mb-2">{stats?.totalResumes?.toLocaleString() || '0'}</p>
+                
+              </div>
+                <div className="w-12 flex justify-end">
+                  <div className="w-12 h-12 bg-purple-100 rounded-[20px] flex items-center justify-center">
+                    <img src="/images/dashboard/blue-icon.png" alt="total cvs" className="w-8 h-6" />
+                  </div>
+                </div>
+            </div>
+            <div className="flex items-center">
+                  <span className={`text-xs font-medium ${(stats?.totalResumesChange ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {(stats?.totalResumesChange ?? 0) >= 0 ? '↗' : '↘'} {Math.abs(stats?.totalResumesChange ?? 0)}% {(stats?.totalResumesChange ?? 0) >= 0 ? 'Up' : 'Down'} from yesterday
+                  </span>
+                </div>
+          </div>
+
+          {/* Today's CVs */}
+          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-gray-200">
+            <div className="flex items-start">
+              <div className="flex-1 w-3/4">
+                <p className="text-sm font-medium text-gray-600 mb-1">Today's CVs</p>
+                <p className="text-2xl font-bold text-gray-900 mb-2">{stats?.todayResumes?.toLocaleString() || '0'}</p>
+                
+              </div>
+                <div className="w-12 flex justify-end">
+                  <div className="w-12 h-12 bg-teal-100 rounded-[20px] flex items-center justify-center">
+                    <img src="/images/dashboard/green-icon.png" alt="todays cvs" className="w-8 h-6" />
+                  </div>
+                </div>
+            </div>
+            <div className="flex items-center">
+                  <span className={`text-xs font-medium ${(stats?.todayResumesChange ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {(stats?.todayResumesChange ?? 0) >= 0 ? '↗' : '↘'} {Math.abs(stats?.todayResumesChange ?? 0)}% {(stats?.todayResumesChange ?? 0) >= 0 ? 'Up' : 'Down'} from yesterday
                   </span>
                 </div>
           </div>

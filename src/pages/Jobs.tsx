@@ -13,6 +13,7 @@ export default function Jobs() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [orderType, setOrderType] = useState<string>("desc");
@@ -32,7 +33,7 @@ export default function Jobs() {
   // Build query parameters from filters
   const queryParams: JobQueryParams = {
     page: currentPage,
-    limit: 10,
+    limit: rowsPerPage,
     sortBy: 'createdAt',
     sortOrder: orderType === "asc" ? 'asc' : 'desc',
     ...(debouncedSearch && { search: debouncedSearch }),
@@ -53,9 +54,8 @@ export default function Jobs() {
   }
 
   const jobs = jobsResponse?.data || [];
-  const totalJobs = jobsResponse?.total || jobs.length;
-  const jobsPerPage = 10;
-  const totalPages = Math.ceil(totalJobs / jobsPerPage);
+  const totalJobs = jobsResponse?.total || 0;
+  const totalPages = jobsResponse?.totalPages || 1;
 
   // Debug: Log jobs data
   console.log('Jobs Response:', jobsResponse);
@@ -112,10 +112,10 @@ export default function Jobs() {
     toast.success("Jobs data refreshed!");
   };
 
-  // Reset to first page when filters change
+  // Reset to first page when filters or limit change
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearch, orderType, orderStatus]);
+  }, [debouncedSearch, orderType, orderStatus, rowsPerPage]);
 
   return (
     <>
@@ -343,15 +343,35 @@ export default function Jobs() {
           {/* Pagination */}
           {!isLoading && !error && jobs.length > 0 && (
             <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-700">
-                  Showing {((currentPage - 1) * jobsPerPage) + 1}-{Math.min(currentPage * jobsPerPage, totalJobs)} of {totalJobs}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="text-sm text-gray-700">
+                    Showing {((currentPage - 1) * rowsPerPage) + 1}-{Math.min(currentPage * rowsPerPage, totalJobs)} of {totalJobs}
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">Rows per page:</span>
+                    <select
+                      value={rowsPerPage}
+                      onChange={(e) => setRowsPerPage(Number(e.target.value))}
+                      className="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                    </select>
+                  </div>
                 </div>
+
                 <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500 mr-2">
+                    Page {currentPage} of {totalPages}
+                  </span>
                   <button 
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                    className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 transition-colors"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -360,7 +380,7 @@ export default function Jobs() {
                   <button 
                     onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
-                    className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                    className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 transition-colors"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
