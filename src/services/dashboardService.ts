@@ -21,14 +21,14 @@ export interface RecentUser {
 export interface DashboardStats {
   todayUsers: number;
   activeUsers: number;
-  verifiedUsers: number;
+  totalCandidates: number;
   todayJobs: number;
   activeJobs: number;
   totalResumes: number;
   todayResumes: number;
   todayUsersChange: number;
   activeUsersChange: number;
-  verifiedUsersChange: number;
+  totalCandidatesChange: number;
   todayJobsChange: number;
   activeJobsChange: number;
   totalResumesChange: number;
@@ -39,10 +39,10 @@ export interface ApiResponse {
   users: {
     todayUsers: number;
     activeUsers: number;
-    verifiedUsers: number;
+    totalCandidates: number;
     todayUsersChange: number;
     activeUsersChange: number;
-    verifiedUsersChange: number;
+    totalCandidatesChange: number;
   };
   jobs: {
     todayJobs: number;
@@ -73,14 +73,14 @@ export const dashboardService = {
     return {
       todayUsers: data.users.todayUsers,
       activeUsers: data.users.activeUsers,
-      verifiedUsers: data.users.verifiedUsers,
+      totalCandidates: data.users.totalCandidates,
       todayJobs: data.jobs.todayJobs,
       activeJobs: data.jobs.activeJobs,
       totalResumes: data.resumes.totalResumes,
       todayResumes: data.resumes.todayResumes,
       todayUsersChange: data.users.todayUsersChange,
       activeUsersChange: data.users.activeUsersChange,
-      verifiedUsersChange: data.users.verifiedUsersChange,
+      totalCandidatesChange: data.users.totalCandidatesChange,
       todayJobsChange: data.jobs.todayJobsChange,
       activeJobsChange: data.jobs.activeJobsChange,
       totalResumesChange: data.resumes.totalResumesChange,
@@ -107,14 +107,14 @@ export const dashboardService = {
     const stats: DashboardStats = {
       todayUsers: statsData.users.todayUsers,
       activeUsers: statsData.users.activeUsers,
-      verifiedUsers: statsData.users.verifiedUsers,
+      totalCandidates: statsData.users.totalCandidates,
       todayJobs: statsData.jobs.todayJobs,
       activeJobs: statsData.jobs.activeJobs,
       totalResumes: statsData.resumes.totalResumes,
       todayResumes: statsData.resumes.todayResumes,
       todayUsersChange: statsData.users.todayUsersChange,
       activeUsersChange: statsData.users.activeUsersChange,
-      verifiedUsersChange: statsData.users.verifiedUsersChange,
+      totalCandidatesChange: statsData.users.totalCandidatesChange,
       todayJobsChange: statsData.jobs.todayJobsChange,
       activeJobsChange: statsData.jobs.activeJobsChange,
       totalResumesChange: statsData.resumes.totalResumesChange,

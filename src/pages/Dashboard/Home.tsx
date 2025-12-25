@@ -90,23 +90,23 @@ export default function Home() {
                 </div>
           </div>
 
-          {/* Verified Users */}
+          {/* Total Candidates */}
           <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-gray-200">
             <div className="flex items-start">
               <div className="flex-1 w-3/4">
-                <p className="text-sm font-medium text-gray-600 mb-1">Verified Users</p>
-                <p className="text-2xl font-bold text-gray-900 mb-2">{stats?.verifiedUsers?.toLocaleString() || '0'}</p>
+                <p className="text-sm font-medium text-gray-600 mb-1">Total Candidates</p>
+                <p className="text-2xl font-bold text-gray-900 mb-2">{stats?.totalCandidates?.toLocaleString() || '0'}</p>
                
               </div>
                 <div className="w-12 flex justify-end">
                   <div className="w-12 h-12 bg-green-100 rounded-[20px] flex items-center justify-center">
-                    <img src="/images/dashboard/green-icon.png" alt="verified users" className="w-8 h-6" />
+                    <img src="/images/dashboard/green-icon.png" alt="total candidates" className="w-8 h-6" />
                   </div>
                 </div>
             </div>
             <div className="flex items-center">
-                  <span className={`text-xs font-medium ${(stats?.verifiedUsersChange ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {(stats?.verifiedUsersChange ?? 0) >= 0 ? '↗' : '↘'} {Math.abs(stats?.verifiedUsersChange ?? 0)}% {(stats?.verifiedUsersChange ?? 0) >= 0 ? 'Up' : 'Down'} from yesterday
+                  <span className={`text-xs font-medium ${(stats?.totalCandidatesChange ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {(stats?.totalCandidatesChange ?? 0) >= 0 ? '↗' : '↘'} {Math.abs(stats?.totalCandidatesChange ?? 0)}% {(stats?.totalCandidatesChange ?? 0) >= 0 ? 'Up' : 'Down'} from yesterday
                   </span>
                 </div>
           </div>
