@@ -380,7 +380,7 @@ export default function EditCompany() {
                     Website
                   </label>
                   <input
-                    type="url"
+                    type="text"
                     name="website"
                     value={formData.website}
                     onChange={handleInputChange}
@@ -595,7 +595,7 @@ export default function EditCompany() {
                         LinkedIn URL
                       </label>
                       <input
-                        type="url"
+                        type="text"
                         name="linkedinUrl"
                         value={formData.linkedinUrl}
                         onChange={handleInputChange}
@@ -610,7 +610,7 @@ export default function EditCompany() {
                         Twitter URL
                       </label>
                       <input
-                        type="url"
+                        type="text"
                         name="twitterUrl"
                         value={formData.twitterUrl}
                         onChange={handleInputChange}
@@ -625,7 +625,7 @@ export default function EditCompany() {
                         Facebook URL
                       </label>
                       <input
-                        type="url"
+                        type="text"
                         name="facebookUrl"
                         value={formData.facebookUrl}
                         onChange={handleInputChange}

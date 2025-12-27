@@ -88,6 +88,23 @@ export const adminService = {
     return response.data;
   },
 
+  // Initiate Google OAuth flow for admin
+  initiateGoogleAuth: () => {
+    if (typeof window !== 'undefined') {
+      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      // Use the same Google OAuth endpoint as candidates
+      // The backend should handle admin vs candidate based on the redirect or user type
+      window.location.href = `${backendUrl}/api/auth/google`;
+    }
+  },
+
+  // Authenticate with Google (backend endpoint)
+  authenticateWithGoogle: async (googleData: any): Promise<ApiResponse<LoginResponse>> => {
+    const response = await api.post('/api/auth/google', googleData);
+    return response.data;
+  },
+
+
   // Get all applications with candidate details
   getAllApplications: async (params?: ApplicationQueryParams): Promise<ApplicationsListResponse> => {
     try {

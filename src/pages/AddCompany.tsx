@@ -202,10 +202,6 @@ export default function AddCompany() {
       return;
     }
     
-    if (!formData.website.trim()) {
-      toast.error("Company website is required");
-      return;
-    }
     
     if (!formData.industry) {
       toast.error("Please select an industry");
@@ -342,17 +338,16 @@ export default function AddCompany() {
                 {/* Website */}
                 <div>
                   <label htmlFor="website" className="block text-sm font-medium text-gray-700 mb-2">
-                    Website <span className="text-red-500">*</span>
+                    Website
                   </label>
                   <input
-                    type="url"
+                    type="text"
                     id="website"
                     name="website"
                     value={formData.website}
                     onChange={handleInputChange}
                     placeholder="https://www.company.com"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
                   />
                 </div>
 
@@ -617,7 +612,7 @@ export default function AddCompany() {
                         LinkedIn URL
                       </label>
                       <input
-                        type="url"
+                        type="text"
                         id="linkedinUrl"
                         name="linkedinUrl"
                         value={formData.linkedinUrl}
@@ -633,7 +628,7 @@ export default function AddCompany() {
                         Twitter URL
                       </label>
                       <input
-                        type="url"
+                        type="text"
                         id="twitterUrl"
                         name="twitterUrl"
                         value={formData.twitterUrl}
@@ -649,7 +644,7 @@ export default function AddCompany() {
                         Facebook URL
                       </label>
                       <input
-                        type="url"
+                        type="text"
                         id="facebookUrl"
                         name="facebookUrl"
                         value={formData.facebookUrl}

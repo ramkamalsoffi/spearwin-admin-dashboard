@@ -18,6 +18,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
+  loginWithGoogle: (googleData: any) => Promise<boolean>;
   logout: () => void;
   loading: boolean;
 }
@@ -64,6 +65,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const loginWithGoogle = async (googleData: any): Promise<boolean> => {
+    setLoading(true);
+    
+    try {
+      const response = await adminService.authenticateWithGoogle(googleData);
+      
+      if (response.success && response.data) {
+        const { accessToken, refreshToken, user } = response.data;
+        
+        setUser(user);
+        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        setLoading(false);
+        return true;
+      }
+      
+      setLoading(false);
+      return false;
+    } catch (error) {
+      console.error('Google login error:', error);
+      setLoading(false);
+      return false;
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
@@ -75,6 +102,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     user,
     isAuthenticated: !!user,
     login,
+    loginWithGoogle,
     logout,
     loading,
   };
