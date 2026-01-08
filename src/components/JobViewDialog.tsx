@@ -4,6 +4,13 @@ import { toast } from "react-hot-toast";
 import { jobService } from "../services";
 import { Job } from "../services/types";
 
+const workModeLabels: Record<string, string> = {
+  'REMOTE': 'Remote',
+  'ONSITE': 'Onsite',
+  'HYBRID': 'Hybrid',
+  'WORK_FROM_OFFICE': 'Work From Office'
+};
+
 interface JobViewDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -132,7 +139,7 @@ export default function JobViewDialog({ isOpen, onClose, jobId }: JobViewDialogP
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Work Mode</label>
-                  <p className="mt-1 text-base text-gray-900">{job.workMode}</p>
+                  <p className="mt-1 text-base text-gray-900">{workModeLabels[job.workMode] || job.workMode}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Job Type</label>

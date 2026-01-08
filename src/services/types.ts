@@ -24,7 +24,7 @@ export interface Job {
   responsibilities?: string | null;
   benefits?: string | null;
   jobType: 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERNSHIP' | 'FREELANCE';
-  workMode: 'REMOTE' | 'ONSITE' | 'HYBRID';
+  workMode: 'REMOTE' | 'ONSITE' | 'HYBRID' | 'WORK_FROM_OFFICE';
   experienceLevel: 'ENTRY_LEVEL' | 'MID_LEVEL' | 'SENIOR_LEVEL' | 'EXECUTIVE';
   status: 'DRAFT' | 'PUBLISHED' | 'CLOSED' | 'ARCHIVED';
   minExperience?: number | null;
@@ -78,7 +78,7 @@ export interface CreateJobRequest {
   cityId?: number | null;
   skillsRequired?: string[];
   jobType: 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERNSHIP' | 'FREELANCE';
-  workMode: 'REMOTE' | 'ONSITE' | 'HYBRID';
+  workMode: 'REMOTE' | 'ONSITE' | 'HYBRID' | 'WORK_FROM_OFFICE';
   experienceLevel: 'ENTRY_LEVEL' | 'MID_LEVEL' | 'SENIOR_LEVEL' | 'EXECUTIVE';
   status: 'DRAFT' | 'PUBLISHED' | 'CLOSED' | 'ARCHIVED';
 }

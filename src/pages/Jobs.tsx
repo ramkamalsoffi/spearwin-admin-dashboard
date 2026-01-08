@@ -8,6 +8,12 @@ import JobViewDialog from "../components/JobViewDialog";
 import { jobService } from "../services";
 import type { JobQueryParams } from "../services/jobService";
 import { Job, PaginatedApiResponse } from "../services/types";
+const workModeLabels: Record<string, string> = {
+  'REMOTE': 'Remote',
+  'ONSITE': 'Onsite',
+  'HYBRID': 'Hybrid',
+  'WORK_FROM_OFFICE': 'Work From Office'
+};
 
 export default function Jobs() {
   const navigate = useNavigate();
@@ -267,7 +273,7 @@ export default function Jobs() {
                     <tr key={job.id} className="hover:bg-gray-50">
                       <td className="pl-6 pr-3 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{job.title}</td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500 font-mono">{job.company?.companyId || job.companyId || 'N/A'}</td>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{job.workMode}</td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{workModeLabels[job.workMode] || job.workMode}</td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900">{job.jobType}</td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">{job.description?.substring(0, 50)}...</td>
                       <td className="px-3 py-3 whitespace-nowrap">
