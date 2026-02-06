@@ -7,19 +7,19 @@ import toast from "react-hot-toast";
 // Function to extract name from email ID
 const getNameFromEmail = (email: string): string => {
   if (!email) return 'Admin User';
-  
+
   // Extract the part before @ and convert to proper case
   const emailPart = email.split('@')[0];
-  
+
   // Handle common email patterns
   if (emailPart.includes('.')) {
     // Split by dots and capitalize each part
-    return emailPart.split('.').map(part => 
+    return emailPart.split('.').map(part =>
       part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
     ).join(' ');
   } else if (emailPart.includes('_')) {
     // Split by underscores and capitalize each part
-    return emailPart.split('_').map(part => 
+    return emailPart.split('_').map(part =>
       part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
     ).join(' ');
   } else {
@@ -56,6 +56,12 @@ export default function UserDropdown() {
     }
     return 'Admin User';
   };
+
+  // Get profile picture
+  const getProfilePicture = () => {
+    return user?.profilePicture || "/images/user/owner.jpg";
+  };
+
   return (
     <div className="relative">
       <button
@@ -63,16 +69,24 @@ export default function UserDropdown() {
         className="flex items-center gap-3 text-blue-900 dropdown-toggle hover:bg-blue-50 rounded-lg p-2 transition-colors"
       >
         <span className="overflow-hidden rounded-full h-9 w-9">
-          <img src="/images/user/owner.jpg" alt="User" className="w-full h-full object-cover" />
+          <img
+            src={getProfilePicture()}
+            alt="User"
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              if (e.currentTarget.src !== "/images/user/owner.jpg") {
+                e.currentTarget.src = "/images/user/owner.jpg";
+              }
+            }}
+          />
         </span>
         <div className="flex flex-col items-start">
           <span className="text-sm font-medium text-blue-900">{getDisplayName()}</span>
-          <span className="text-xs text-blue-700">Admin</span>
+          <span className="text-xs text-blue-700">{user?.role || 'Admin'}</span>
         </div>
         <svg
-          className={`stroke-blue-700 transition-transform duration-200 ml-1 ${
-            isOpen ? "rotate-180" : ""
-          }`}
+          className={`stroke-blue-700 transition-transform duration-200 ml-1 ${isOpen ? "rotate-180" : ""
+            }`}
           width="16"
           height="16"
           viewBox="0 0 18 20"

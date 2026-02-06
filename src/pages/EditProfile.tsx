@@ -9,9 +9,11 @@ import { imageUploadService } from "../services/imageUploadService";
 import { locationService, Country, State, City } from "../services/locationService";
 import DatePicker from "../components/form/date-picker";
 import { codes } from "currency-codes-ts";
+import { useAuth } from "../context/AuthContext";
 
 export default function EditProfile() {
   const navigate = useNavigate();
+  const { user: currentUser, updateUser } = useAuth();
   const { id } = useParams<{ id: string }>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -21,13 +23,13 @@ export default function EditProfile() {
   const [selectedCvFile, setSelectedCvFile] = useState<File | null>(null);
   const [isUploadingCv, setIsUploadingCv] = useState(false);
   const cvInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Location state management
   const [selectedCountryId, setSelectedCountryId] = useState<number | null>(null);
   const [selectedStateId, setSelectedStateId] = useState<number | null>(null);
   const [nationalitySearchTerm, setNationalitySearchTerm] = useState("");
   const [showNationalityDropdown, setShowNationalityDropdown] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     // Basic Information
     profilePicture: "",
@@ -39,7 +41,7 @@ export default function EditProfile() {
     gender: "",
     maritalStatus: "",
     mobileNumber: "",
-    
+
     // Professional Information
     experience: "",
     currentCompany: "",
@@ -51,7 +53,7 @@ export default function EditProfile() {
     currentSalary: "",
     salaryCurrency: "",
     profileType: "",
-    
+
     // Location & Address
     nationality: "",
     country: "",
@@ -59,7 +61,7 @@ export default function EditProfile() {
     city: "",
     streetAddress: "",
     nationalIdCard: "",
-    
+
     // Career Information
     careerLevel: "",
     functionalArea: "",
@@ -69,7 +71,7 @@ export default function EditProfile() {
     referredByEmail: "",
     candidateJoiningDate: "",
     cvResume: "",
-    
+
     // Preferences & Status
     subscribeToJobAlert: "",
     commentsRemarks: "",
@@ -105,10 +107,10 @@ export default function EditProfile() {
   // Get unique nationalities from countries
   const nationalities = countriesData?.data
     ? Array.from(new Set(
-        countriesData.data
-          .map((c: Country) => c.nationality)
-          .filter((n): n is string => !!n)
-      )).sort()
+      countriesData.data
+        .map((c: Country) => c.nationality)
+        .filter((n): n is string => !!n)
+    )).sort()
     : [];
 
   // Filter nationalities based on search term
@@ -317,12 +319,12 @@ export default function EditProfile() {
     if (userData && normalizedId && countriesData) {
       const candidate = userData.candidate || {};
       const user = userData.data || userData;
-      
+
       // Set image preview if profile picture exists
       if (candidate.profilePicture) {
         setImagePreview(candidate.profilePicture);
       }
-      
+
       // Set location IDs if location data exists
       if (candidate.city?.state?.country?.name) {
         const country = countriesData.data?.find((c: Country) => c.name === candidate.city.state.country.name);
@@ -333,7 +335,7 @@ export default function EditProfile() {
       if (candidate.city?.state?.name && selectedCountryId) {
         // States will be fetched automatically when country is set
       }
-      
+
       setFormData({
         profilePicture: candidate.profilePicture || "",
         firstName: candidate.firstName || "",
@@ -429,8 +431,18 @@ export default function EditProfile() {
 
       return userService.updateUserWithProfile(normalizedId, userData, candidateData);
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       toast.success("User profile updated successfully!");
+
+      // If editing own profile, update AuthContext
+      if (normalizedId === currentUser?.id) {
+        updateUser({
+          firstName: variables.firstName,
+          lastName: variables.lastName,
+          profilePicture: variables.profilePicture,
+        });
+      }
+
       navigate("/user-profiles");
     },
     onError: (error: any) => {
@@ -446,7 +458,7 @@ export default function EditProfile() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validation
     if (!formData.email || !formData.firstName || !formData.lastName) {
       toast.error("Please fill in all required fields (Email, First Name, Last Name)");
@@ -521,11 +533,11 @@ export default function EditProfile() {
         title="Edit User Profile | spearwin-admin"
         description="Edit user profile"
       />
-      
+
       {/* Title Bar */}
       <div className="px-4 sm:px-6 lg:px-30 ">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2">
-          <PageBreadcrumb 
+          <PageBreadcrumb
             items={[
               { label: "Dashboard", path: "/" },
               { label: "User Profiles", path: "/user-profiles" },
@@ -543,7 +555,7 @@ export default function EditProfile() {
           <div className="p-6">
             <form onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                
+
                 {/* Profile Picture */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">

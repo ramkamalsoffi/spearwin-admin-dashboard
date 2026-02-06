@@ -17,7 +17,7 @@ interface UserProfileCardProps {
 }
 
 export default function UserProfileCard({ userId }: UserProfileCardProps) {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, updateUser } = useAuth();
   const queryClient = useQueryClient();
   const targetUserId = userId || currentUser?.id;
 
@@ -47,30 +47,30 @@ export default function UserProfileCard({ userId }: UserProfileCardProps) {
   const candidate = user?.candidate || {};
   const admin = user?.admin || {};
   const superAdmin = user?.superAdmin || {};
-  
+
   // Use useMemo to prevent unnecessary recalculations - depend on userData to update when refetched
   const userProfile = useMemo(() => {
     const currentUser = userData?.data || userData;
     const currentCandidate = currentUser?.candidate || {};
     const currentAdmin = currentUser?.admin || {};
     const currentSuperAdmin = currentUser?.superAdmin || {};
-    
+
     // Determine which profile type we're working with
     const profile = currentCandidate?.id ? currentCandidate : (currentAdmin?.id ? currentAdmin : currentSuperAdmin);
     const isAdmin = !!currentAdmin?.id || !!currentSuperAdmin?.id;
-    
+
     return {
       id: currentUser?.id || profile?.userId,
       firstName: profile?.firstName || currentUser?.firstName,
       lastName: profile?.lastName || currentUser?.lastName,
       email: profile?.email || currentAdmin?.email || currentSuperAdmin?.email || currentUser?.email,
       phone: profile?.phone || currentAdmin?.phone || currentSuperAdmin?.phone || currentUser?.phone,
-      avatar: currentCandidate?.profilePicture || currentCandidate?.profilePictures?.[0]?.filePath || 
-              currentAdmin?.profileImage || currentSuperAdmin?.profileImage,
+      avatar: currentCandidate?.profilePicture || currentCandidate?.profilePictures?.[0]?.filePath ||
+        currentAdmin?.profileImage || currentSuperAdmin?.profileImage,
       designation: currentCandidate?.currentTitle || currentAdmin?.designation || currentSuperAdmin?.designation,
       role: currentUser?.role,
       location: currentCandidate?.cityName || currentCandidate?.city?.name || currentCandidate?.currentLocation ||
-               currentAdmin?.city || currentSuperAdmin?.city,
+        currentAdmin?.city || currentSuperAdmin?.city,
       bio: profile?.bio || currentAdmin?.bio || currentSuperAdmin?.bio,
       socialLinks: {
         linkedin: currentCandidate?.linkedinUrl || currentAdmin?.linkedinUrl || currentSuperAdmin?.linkedinUrl,
@@ -79,11 +79,11 @@ export default function UserProfileCard({ userId }: UserProfileCardProps) {
         instagram: currentCandidate?.instagramUrl || currentAdmin?.instagramUrl || currentSuperAdmin?.instagramUrl,
       },
       country: currentCandidate?.country || currentCandidate?.city?.state?.country?.name ||
-               currentAdmin?.country || currentSuperAdmin?.country,
+        currentAdmin?.country || currentSuperAdmin?.country,
       state: currentCandidate?.state || currentCandidate?.city?.state?.name ||
-             currentAdmin?.state || currentSuperAdmin?.state,
+        currentAdmin?.state || currentSuperAdmin?.state,
       cityName: currentCandidate?.cityName || currentCandidate?.city?.name ||
-                currentAdmin?.city || currentSuperAdmin?.city,
+        currentAdmin?.city || currentSuperAdmin?.city,
       address: currentCandidate?.address,
       streetAddress: currentCandidate?.streetAddress || currentAdmin?.streetAddress || currentSuperAdmin?.streetAddress,
       department: currentAdmin?.department,
@@ -123,7 +123,7 @@ export default function UserProfileCard({ userId }: UserProfileCardProps) {
   // Update form data when user data changes (only when a new user is loaded or data is first fetched)
   useEffect(() => {
     if (!userData || isLoading) return;
-    
+
     // Extract user, candidate, and admin inside effect
     const currentUser = userData?.data || userData;
     const currentCandidate = currentUser?.candidate || {};
@@ -131,7 +131,7 @@ export default function UserProfileCard({ userId }: UserProfileCardProps) {
     const currentSuperAdmin = currentUser?.superAdmin || {};
     const profile = currentCandidate?.id ? currentCandidate : (currentAdmin?.id ? currentAdmin : currentSuperAdmin);
     const currentUserId = currentUser?.id || profile?.userId;
-    
+
     if (currentUserId && currentUserId !== lastLoadedUserId) {
       setMetaFormData({
         firstName: profile?.firstName || currentUser?.firstName || "",
@@ -152,11 +152,11 @@ export default function UserProfileCard({ userId }: UserProfileCardProps) {
 
       setAddressFormData({
         country: currentCandidate?.country || currentCandidate?.city?.state?.country?.name ||
-                 currentAdmin?.country || currentSuperAdmin?.country || "",
+          currentAdmin?.country || currentSuperAdmin?.country || "",
         state: currentCandidate?.state || currentCandidate?.city?.state?.name ||
-               currentAdmin?.state || currentSuperAdmin?.state || "",
+          currentAdmin?.state || currentSuperAdmin?.state || "",
         cityName: currentCandidate?.cityName || currentCandidate?.city?.name ||
-                  currentAdmin?.city || currentSuperAdmin?.city || "",
+          currentAdmin?.city || currentSuperAdmin?.city || "",
         address: currentCandidate?.address || "",
         streetAddress: currentCandidate?.streetAddress || currentAdmin?.streetAddress || currentSuperAdmin?.streetAddress || "",
       });
@@ -188,17 +188,29 @@ export default function UserProfileCard({ userId }: UserProfileCardProps) {
       }
       return adminService.updateUserProfile(targetUserId, data);
     },
-    onSuccess: async () => {
+    onSuccess: async (response, variables: any) => {
       toast.success("Profile updated successfully");
       editModal.closeModal();
-      
+
+      // If updating our own profile, update the AuthContext
+      if (targetUserId === currentUser?.id) {
+        // Map the fields from the variables sent to the API to the User object structure
+        const userUpdate: any = {};
+        if (variables.firstName) userUpdate.firstName = variables.firstName;
+        if (variables.lastName) userUpdate.lastName = variables.lastName;
+        if (variables.profileImage) userUpdate.profilePicture = variables.profileImage;
+        if (variables.designation) userUpdate.designation = variables.designation;
+
+        updateUser(userUpdate);
+      }
+
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['user-profile', targetUserId] });
       queryClient.invalidateQueries({ queryKey: ['admin-profile'] });
-      
+
       // Refetch the user profile data immediately to show updated values
       await refetch();
-      
+
       // Reset lastLoadedUserId to allow form to update with new data
       setLastLoadedUserId(null);
     },
@@ -217,7 +229,7 @@ export default function UserProfileCard({ userId }: UserProfileCardProps) {
         toast.error("Please select a valid image file");
         return;
       }
-      
+
       // Validate file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
         toast.error("Image size should be less than 5MB");
@@ -225,7 +237,7 @@ export default function UserProfileCard({ userId }: UserProfileCardProps) {
       }
 
       setProfileImageFile(file);
-      
+
       // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -261,7 +273,7 @@ export default function UserProfileCard({ userId }: UserProfileCardProps) {
       ...metaFormData,
       ...addressFormData,
     };
-    
+
     updateProfileMutation.mutate(combinedData);
   };
 
@@ -332,8 +344,8 @@ export default function UserProfileCard({ userId }: UserProfileCardProps) {
         <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
             <div className="w-20 h-20 overflow-hidden border border-blue-200 rounded-full">
-              <img 
-                src={getAvatarUrl()} 
+              <img
+                src={getAvatarUrl()}
                 alt={userProfile ? `${userProfile.firstName} ${userProfile.lastName}` : "user"}
                 className="w-full h-full object-cover"
                 onError={(e) => {
@@ -408,7 +420,7 @@ export default function UserProfileCard({ userId }: UserProfileCardProps) {
                 title="View Candidate Details"
               >
                 <svg className="fill-current" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M9 3C5 3 2.73 5.11 1 8.5C2.73 11.89 5 14 9 14C13 14 15.27 11.89 17 8.5C15.27 5.11 13 3 9 3ZM9 12.5C6.24 12.5 4 10.26 4 7.5C4 4.74 6.24 2.5 9 2.5C11.76 2.5 14 4.74 14 7.5C14 10.26 11.76 12.5 9 12.5ZM9 4.5C7.07 4.5 5.5 6.07 5.5 8C5.5 9.93 7.07 11.5 9 11.5C10.93 11.5 12.5 9.93 12.5 8C12.5 6.07 10.93 4.5 9 4.5Z" fill="currentColor"/>
+                  <path d="M9 3C5 3 2.73 5.11 1 8.5C2.73 11.89 5 14 9 14C13 14 15.27 11.89 17 8.5C15.27 5.11 13 3 9 3ZM9 12.5C6.24 12.5 4 10.26 4 7.5C4 4.74 6.24 2.5 9 2.5C11.76 2.5 14 4.74 14 7.5C14 10.26 11.76 12.5 9 12.5ZM9 4.5C7.07 4.5 5.5 6.07 5.5 8C5.5 9.93 7.07 11.5 9 11.5C10.93 11.5 12.5 9.93 12.5 8C12.5 6.07 10.93 4.5 9 4.5Z" fill="currentColor" />
                 </svg>
                 View Details
               </button>
@@ -422,7 +434,7 @@ export default function UserProfileCard({ userId }: UserProfileCardProps) {
               </svg>
               Edit Profile
             </button>
-          </div>   
+          </div>
         </div>
       </div>
 
@@ -430,37 +442,37 @@ export default function UserProfileCard({ userId }: UserProfileCardProps) {
       <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-6">
+            <h4 className="text-lg font-semibold text-gray-800 lg:mb-6">
               Personal Information
             </h4>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
               <div>
-                <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">First Name</p>
-                <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                <p className="mb-2 text-xs leading-normal text-gray-500">First Name</p>
+                <p className="text-sm font-medium text-gray-900">
                   {userProfile?.firstName || "Not set"}
                 </p>
               </div>
               <div>
-                <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">Last Name</p>
-                <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                <p className="mb-2 text-xs leading-normal text-gray-500">Last Name</p>
+                <p className="text-sm font-medium text-gray-900">
                   {userProfile?.lastName || "Not set"}
                 </p>
               </div>
               <div>
-                <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">Email address</p>
-                <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                <p className="mb-2 text-xs leading-normal text-gray-500">Email address</p>
+                <p className="text-sm font-medium text-gray-900">
                   {userProfile?.email || "Not set"}
                 </p>
               </div>
               <div>
-                <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">Phone</p>
-                <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                <p className="mb-2 text-xs leading-normal text-gray-500">Phone</p>
+                <p className="text-sm font-medium text-gray-900">
                   {userProfile?.phone || "Not set"}
                 </p>
               </div>
               <div>
-                <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">Bio</p>
-                <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                <p className="mb-2 text-xs leading-normal text-gray-500">Bio</p>
+                <p className="text-sm font-medium text-gray-900">
                   {userProfile?.bio || "Not set"}
                 </p>
               </div>
@@ -473,23 +485,23 @@ export default function UserProfileCard({ userId }: UserProfileCardProps) {
       <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-6">Address</h4>
+            <h4 className="text-lg font-semibold text-gray-800 lg:mb-6">Address</h4>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
               <div>
-                <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">Country</p>
-                <p className="text-sm font-medium text-gray-800 dark:text-white/90">{getDisplayValue('country')}</p>
+                <p className="mb-2 text-xs leading-normal text-gray-500">Country</p>
+                <p className="text-sm font-medium text-gray-900">{getDisplayValue('country')}</p>
               </div>
               <div>
-                <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">State</p>
-                <p className="text-sm font-medium text-gray-800 dark:text-white/90">{getDisplayValue('state')}</p>
+                <p className="mb-2 text-xs leading-normal text-gray-500">State</p>
+                <p className="text-sm font-medium text-gray-900">{getDisplayValue('state')}</p>
               </div>
               <div>
-                <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">City</p>
-                <p className="text-sm font-medium text-gray-800 dark:text-white/90">{getDisplayValue('city')}</p>
+                <p className="mb-2 text-xs leading-normal text-gray-500">City</p>
+                <p className="text-sm font-medium text-gray-900">{getDisplayValue('city')}</p>
               </div>
               <div>
-                <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">Street Address</p>
-                <p className="text-sm font-medium text-gray-800 dark:text-white/90">{getDisplayValue('address')}</p>
+                <p className="mb-2 text-xs leading-normal text-gray-500">Street Address</p>
+                <p className="text-sm font-medium text-gray-900">{getDisplayValue('address')}</p>
               </div>
             </div>
           </div>

@@ -12,6 +12,7 @@ interface User {
   department: string;
   lastLoginAt: string;
   createdAt: string;
+  profilePicture?: string;
 }
 
 interface AuthContextType {
@@ -20,6 +21,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   loginWithGoogle: (googleData: any) => Promise<boolean>;
   logout: () => void;
+  updateUser: (userData: Partial<User>) => void;
   loading: boolean;
 }
 
@@ -41,13 +43,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
-    
+
     try {
       const response = await adminService.login({ email, password });
-      
+
       if (response.success && response.data) {
         const { accessToken, refreshToken, user } = response.data;
-        
+
         setUser(user);
         localStorage.setItem('user', JSON.stringify(user));
         localStorage.setItem('accessToken', accessToken);
@@ -55,7 +57,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setLoading(false);
         return true;
       }
-      
+
       setLoading(false);
       return false;
     } catch (error) {
@@ -67,13 +69,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const loginWithGoogle = async (googleData: any): Promise<boolean> => {
     setLoading(true);
-    
+
     try {
       const response = await adminService.authenticateWithGoogle(googleData);
-      
+
       if (response.success && response.data) {
         const { accessToken, refreshToken, user } = response.data;
-        
+
         setUser(user);
         localStorage.setItem('user', JSON.stringify(user));
         localStorage.setItem('accessToken', accessToken);
@@ -81,7 +83,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setLoading(false);
         return true;
       }
-      
+
       setLoading(false);
       return false;
     } catch (error) {
@@ -98,12 +100,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('refreshToken');
   };
 
+  const updateUser = (userData: Partial<User>) => {
+    setUser(prevUser => {
+      if (!prevUser) return null;
+      const updatedUser = { ...prevUser, ...userData };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      return updatedUser;
+    });
+  };
+
   const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
     login,
     loginWithGoogle,
     logout,
+    updateUser,
     loading,
   };
 
