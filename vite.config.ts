@@ -16,6 +16,7 @@ export default defineConfig({
     }),
   ],
   server: {
+    port: 8999,
     hmr: true,
     watch: {
       usePolling: true,
@@ -28,7 +29,7 @@ export default defineConfig({
       '127.0.0.1',
     ],
     host: true, // Allow external connections
-    port: 3001,
+    port: 8999,
   },
   build: {
     chunkSizeWarningLimit: 2000,
